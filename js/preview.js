@@ -109,6 +109,8 @@ frame.addEventListener('pointerdown', e => {
   if (S.view === 'slider' && (e.target === sliderHandle || E.fit === 'fit')) {
     drag = { type: 'slider' }; setSlider(e.clientX);
   } else if (E.fit === 'fill' && S.view !== 'before') {
+    if (lastDims && lastDims.L) { item.focus = { ...focusOf(item, lastDims.L.dw, lastDims.L.dh, lastDims.cw, lastDims.ch) }; }
+    item.manual = true;
     drag = { type: 'pan', x: e.clientX, y: e.clientY, fx: item.focus.x, fy: item.focus.y };
     frame.classList.add('panning');
   } else return;
@@ -132,7 +134,7 @@ frame.addEventListener('pointermove', e => {
 const endDrag = () => {
   const wasPan = drag && drag.type === 'pan';
   drag = null; frame.classList.remove('panning');
-  if (wasPan) { quick = false; schedule(); }
+  if (wasPan) { quick = false; syncUI(); schedule(); }
 };
 frame.addEventListener('pointerup', endDrag);
 frame.addEventListener('pointercancel', endDrag);

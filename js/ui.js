@@ -42,7 +42,7 @@ function set(key, val) {
 }
 
 function syncUI() {
-  const E = cfgFor(cur());
+  const it0 = cur(), E = cfgFor(it0);
   $$('[data-group]').forEach(g => {
     const v = String(E[g.dataset.group]);
     $$('button[data-val]', g).forEach(b => {
@@ -62,6 +62,8 @@ function syncUI() {
   $('#panelFixed').hidden = E.sizeMode !== 'fixed';
   $('#alignRow').hidden = E.fit !== 'fit';
   $('#zoomRow').hidden = E.fit !== 'fill';
+  $('#recenter').hidden = !(it0 && it0.manual && S.autoCenter);
+  renderAnalysis();
   $('#cardMargins').hidden = E.fit === 'fill';
   $('#bgFillNote').hidden = E.fit !== 'fill';
   $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
@@ -125,7 +127,7 @@ $('#zoom').addEventListener('input', e => {
 });
 $('#resetFocus').addEventListener('click', () => {
   const it = cur(); if (!it) return;
-  it.focus = { x: .5, y: .5 }; it.zoom = 1; syncUI(); schedule();
+  it.focus = { x: .5, y: .5 }; it.zoom = 1; it.manual = false; syncUI(); schedule();
 });
 
 // Логотип водяного знака

@@ -17,11 +17,19 @@ function computeSize(iw, ih, cap, c = S) {
   return { cw: Math.max(1, Math.round(cw * k)), ch: Math.max(1, Math.round(ch * k)), limited: kExport < 0.9999 };
 }
 
+/* Куда смотрит кадр в режиме «Заполнить»: вручную сдвинутый — как есть, иначе — на главный объект */
+function focusOf(item, dw, dh, cw, ch) {
+  const an = item.an;
+  if (!S.autoCenter || item.manual || !an || !an.subject) return item.focus;
+  const fx = dw - cw, fy = dh - ch, cl = v => Math.max(0, Math.min(1, v));
+  return { x: fx > .5 ? cl((an.subject.x * dw - cw / 2) / fx) : .5, y: fy > .5 ? cl((an.subject.y * dh - ch / 2) / fy) : .5 };
+}
+
 function layout(iw, ih, cw, ch, item, c = S) {
   if (c.fit === 'fill') {
     const s = Math.max(cw / iw, ch / ih) * item.zoom;
-    const dw = iw * s, dh = ih * s;
-    return { dx: -(dw - cw) * item.focus.x, dy: -(dh - ch) * item.focus.y, dw, dh };
+    const dw = iw * s, dh = ih * s, f = focusOf(item, dw, dh, cw, ch);
+    return { dx: -(dw - cw) * f.x, dy: -(dh - ch) * f.y, dw, dh };
   }
   const s = Math.min(cw / iw, ch / ih);
   const dw = iw * s, dh = ih * s;
@@ -421,6 +429,7 @@ async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S) {
 
 async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = exWork, p3 = false } = {}) {
   const c = cfgFor(item);
+  if (c.fit === 'fill' && S.autoCenter && item.an === undefined) await ensureAnalysis(item, bmp);
   const { cw, ch } = computeSize(item.w, item.h, cap, c);
   canvas.width = cw; canvas.height = ch;
   const ctx = canvas.getContext('2d', p3 ? { colorSpace: 'display-p3' } : undefined);

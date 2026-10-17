@@ -67,6 +67,22 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   ok(same, 'окно результатов: размер совпадает с реальным экспортом');
   await p.keyboard.press('Escape');
   ok(await p.evaluate(() => !busy), 'после закрытия окна результатов экран разблокирован');
+  // анализ фото: резкость и шум
+  const an = await p.evaluate(async () => {
+    const mk = (blur, noise) => {
+      const c = document.createElement('canvas'); c.width = 800; c.height = 600; const x = c.getContext('2d'); let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      x.fillStyle = '#888'; x.fillRect(0, 0, 800, 600);
+      for (let i = 0; i < 140; i++) { x.fillStyle = `hsl(${rnd() * 360},60%,${20 + rnd() * 60}%)`; x.fillRect(rnd() * 760, rnd() * 560, 20 + rnd() * 90, 20 + rnd() * 90); }
+      if (blur) { const t = document.createElement('canvas'); t.width = 800; t.height = 600; const y = t.getContext('2d'); y.filter = `blur(${blur}px)`; y.drawImage(c, 0, 0); x.clearRect(0, 0, 800, 600); x.drawImage(t, 0, 0); }
+      if (noise) { const d = x.getImageData(0, 0, 800, 600); for (let i = 0; i < d.data.length; i += 4) { const n = (rnd() - .5) * noise * 3.4; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; } x.putImageData(d, 0, 0); }
+      return c;
+    };
+    const a = await analyzePhoto(mk(0, 0)), b = await analyzePhoto(mk(3, 0)), n = await analyzePhoto(mk(0, 14));
+    return { sharp: a.sharp, soft: b.sharp, noise0: a.noise, noise1: n.noise };
+  });
+  ok(an.sharp > an.soft * 1.5, `резкость: чёткое ${an.sharp.toFixed(2)} против размытого ${an.soft.toFixed(2)}`);
+  ok(an.noise1 > an.noise0 + 2, `шум: ${an.noise0.toFixed(1)} → ${an.noise1.toFixed(1)}`);
+  ok(await p.evaluate(() => S.autoCenter === true), 'умная центровка включена по умолчанию');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
 })();

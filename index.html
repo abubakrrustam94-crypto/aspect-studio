@@ -175,8 +175,10 @@
               <span class="field-label">Масштаб кадра</span>
               <div class="range-row"><input type="range" id="zoom" min="100" max="300" value="100" aria-label="Масштаб"><output id="zoomOut">100%</output></div>
             </div>
+            <label class="switch"><input type="checkbox" data-key="autoCenter"><span class="track"></span><span>Умная центровка: кадр сам смотрит на главный объект</span></label>
             <div class="row" style="margin:0">
               <button type="button" class="btn btn-tonal btn-sm" id="resetFocus">↺ Сбросить кадр</button>
+              <button type="button" class="btn btn-outlined btn-sm" id="recenter" hidden>🎯 Центровать по объекту</button>
             </div>
             <p class="note" style="margin:0">Двигай кадр пальцем или мышью прямо в предпросмотре («Результат»). Для каждого фото — свой кадр.</p>
           </div>
@@ -265,6 +267,17 @@
               </div>
             </div>
           </div>
+        </section>
+
+        <section class="card" id="cardAnalysis" data-tab="quality">
+          <div class="card-title">🧠 Анализ фото</div>
+          <div class="an-stats" id="anStats"></div>
+          <p class="note" id="anAdvice" style="margin:10px 0 0"></p>
+          <div class="row" style="margin-top:12px">
+            <button type="button" class="btn btn-tonal btn-sm" id="anTuneOne">✨ Подобрать для этого</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="anTuneAll" hidden>✨ Для всех фото</button>
+          </div>
+          <p class="note" style="margin:10px 0 0">Подбор включит или выключит улучшение, выберет увеличение, резкость, шумоподавление и тип фона по этому фото. Результат можно поправить вручную или отменить.</p>
         </section>
 
         <section class="card" id="cardEnhance" data-tab="quality">
@@ -431,6 +444,7 @@
 
   <script src="js/core.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/analyze.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>

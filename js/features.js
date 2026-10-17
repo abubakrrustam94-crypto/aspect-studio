@@ -343,7 +343,7 @@ async function ensureView(item, bmp) {   // картинка «До» с учё�
 }
 async function commitXform(item) {
   syncDims(item);
-  item.focus = { x: .5, y: .5 }; item.zoom = 1; item.sample = null; item.dom = null;
+  item.focus = { x: .5, y: .5 }; item.zoom = 1; item.sample = null; item.dom = null; item.an = undefined; item.manual = false;
   if (cache.id === item.id) releaseCache();
   try {
     const bmp = await loadBitmap(item);
@@ -560,3 +560,68 @@ $('#rvClose').addEventListener('click', closeReview);
 $('#rvRecalc').addEventListener('click', () => { if (rv.locked) { rv.token++; exWork.cancel(); rvLock(false); } rv.res.clear(); items.forEach(rvPaint); rvGrid.querySelectorAll('.rv-pic').forEach((p, i) => { const it = items[i]; const img = new Image(); img.src = it.thumb; img.alt = ''; p.replaceChildren(img); }); rvSummary(); rvCompute(); });
 $('#rvZip').addEventListener('click', () => { closeReview(); exportAll(); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && rvEl.classList.contains('show')) closeReview(); });
+
+/* ===================================================================
+   Анализ фото, автоподбор, умная центровка
+   =================================================================== */
+const anBusy = new Set();
+async function ensureAnalysis(item, bmp) {
+  if (item.an !== undefined) return item.an;
+  if (anBusy.has(item.id)) return null;
+  anBusy.add(item.id);
+  let own = null;
+  try {
+    let b = bmp;
+    if (!b) { own = await loadBitmap(item); b = own; }
+    item.an = await analyzePhoto(b);
+  } catch (e) { console.warn('analysis', e); item.an = null; }
+  finally { anBusy.delete(item.id); if (own) closeBmp(own); }
+  return item.an;
+}
+function renderAnalysis() {
+  const it = cur(), box = $('#anStats');
+  if (!box) return;
+  $('#anTuneAll').hidden = items.length < 2;
+  if (!it) { box.replaceChildren(); $('#anAdvice').textContent = 'Загрузи фото, чтобы увидеть анализ.'; $('#anTuneOne').disabled = true; return; }
+  if (it.an === undefined) {
+    $('#anAdvice').textContent = 'Анализирую…'; $('#anTuneOne').disabled = true; box.replaceChildren();
+    ensureAnalysis(it).then(() => { if (cur() === it) { renderAnalysis(); if (cfgFor(it).fit === 'fill') schedule(); } });
+    return;
+  }
+  const an = it.an;
+  $('#anTuneOne').disabled = !an;
+  if (!an) { box.replaceChildren(); $('#anAdvice').textContent = 'Не удалось проанализировать это фото.'; return; }
+  const [sl, sc] = anSharpLabel(an.sharp), [nl, nc] = anNoiseLabel(an.noise);
+  const stat = (name, val, cls) => `<div class="an-stat ${cls || ''}"><small>${name}</small><b>${val}</b></div>`;
+  box.innerHTML = stat('Резкость', sl, sc) + stat('Шум', nl, nc) + stat('Размер', `${an.w}×${an.h}<br>${an.mp.toFixed(1)} Мп`) +
+    stat('Объект', an.subject ? (an.faces ? `лиц: ${an.faces}` : 'найден') : 'по центру');
+  $('#anAdvice').textContent = anAdvice(it, an);
+}
+function applyTune(it, patch) {
+  if (!it.ov) { it.ov = {}; OV_KEYS.forEach(k => { it.ov[k] = S[k]; }); }
+  Object.assign(it.ov, patch);
+}
+$('#anTuneOne').addEventListener('click', async () => {
+  const it = cur(); if (!it || busy) return;
+  const an = await ensureAnalysis(it); if (!an) return;
+  const prev = it.ov ? { ...it.ov } : null;
+  applyTune(it, anRecommend(it, an));
+  renderThumbs(); syncUI(); schedule();
+  toast('Настройки подобраны для этого фото', false, { action: { label: 'Отменить', fn: () => { it.ov = prev; renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
+});
+$('#anTuneAll').addEventListener('click', async () => {
+  if (busy || !items.length) return;
+  busy = true; exporting = true; $('.layout').classList.add('locked'); setToolbarBusy(true);
+  const prev = items.map(i => [i, i.ov ? { ...i.ov } : null]);
+  try {
+    for (let i = 0; i < items.length; i++) {
+      toast(`Анализ ${i + 1} из ${items.length}…`);
+      await yieldUI();
+      const it = items[i], an = await ensureAnalysis(it);
+      if (an) applyTune(it, anRecommend(it, an));
+    }
+  } finally { busy = false; exporting = false; $('.layout').classList.remove('locked'); setToolbarBusy(false); }
+  renderThumbs(); syncUI(); schedule();
+  toast('Настройки подобраны для каждого фото', false, { action: { label: 'Отменить', fn: () => { prev.forEach(([i, o]) => { i.ov = o; }); renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
+});
+$('#recenter').addEventListener('click', () => { const it = cur(); if (!it) return; it.manual = false; syncUI(); schedule(); });
