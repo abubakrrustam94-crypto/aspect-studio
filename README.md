@@ -68,5 +68,3 @@ git push
 npm i playwright
 node tests/run.js
 ```
-# aspect-studio
-# aspect-studio

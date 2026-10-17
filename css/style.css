@@ -420,7 +420,7 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .mp-x { border: none; background: none; font-size: 18px; line-height: 1; opacity: .55; padding: 4px 8px; border-radius: 50%; color: inherit; }
 .mp-x:hover { opacity: 1; background: color-mix(in srgb, var(--md-sys-color-error) 22%, transparent); }
 
-.cropper { position: fixed; inset: 0; z-index: 210; display: none; flex-direction: column; background: rgba(8,8,12,.97); }
+.cropper { position: fixed; inset: 0; z-index: 210; display: none; flex-direction: column; background: #08080c; }
 .cropper.show { display: flex; }
 .cropper .inspect-bar { color: #eee; }
 .crop-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 12px; }
@@ -455,3 +455,21 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .col-settings > .card[data-tab] { animation: tabIn .3s var(--motion-emphasized); }
 @keyframes tabIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (min-width: 900px) { .tabs { position: sticky; top: 12px; z-index: 6; } }
+
+/* ========== Обрезка: компактная раскладка для телефонов ========== */
+.cp-top { gap: 8px; padding-bottom: 4px; }
+.cp-top .icon-btn { width: 44px; height: 44px; font-size: 19px; flex: none; }
+.cp-top .seg { flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.cp-top .seg::-webkit-scrollbar { display: none; }
+.cp-top .seg button { flex: none; white-space: nowrap; padding: 8px 14px; }
+.cp-foot { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 8px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.cp-foot #cpInfo { grid-column: 1 / -1; text-align: center; order: -1; min-width: 0; }
+.cp-foot .btn { width: 100%; justify-content: center; white-space: nowrap; padding-left: 10px; padding-right: 10px; }
+.cp-foot #cpDone { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-weight: 700; }
+.crop-wrap { padding: 20px 18px; }
+.cropper .icon-btn { background: #272731; color: #f1f1f6; box-shadow: none; }
+.cropper .icon-btn:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.cropper .seg { background: #1e1e27; }
+.cropper .seg button { color: #d6d6e0; }
+.cropper .seg button.active { color: var(--md-sys-color-on-primary-container); }
+.cp-foot .btn-outlined { color: #e4e4ec; border-color: #5a5a68; }
