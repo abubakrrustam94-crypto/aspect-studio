@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Aspect Studio — смена формата фото без обрезки</title>
+  <meta name="description" content="Меняй соотношение сторон фото без обрезки: размытый фон, градиенты, пресеты для соцсетей, пакетная обработка и ZIP. Всё локально в браузере.">
+  <meta name="theme-color" content="#0f0f14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="no-toolbar">
+  <div class="app">
+    <header class="top-bar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">📐</div>
+        <div class="brand-text">
+          <h1>Aspect Studio</h1>
+          <p>Смена формата без обрезки</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="installBtn" hidden title="Установить приложение" aria-label="Установить приложение">⬇️</button>
+        <button class="icon-btn" id="themeToggle" title="Сменить тему (T)" aria-label="Сменить тему">🌙</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- ============ Основная колонка ============ -->
+      <div class="col-main">
+        <section class="card" id="uploadCard">
+          <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Выбрать фото">
+            <div class="upload-icon">📷</div>
+            <div>
+              <div class="upload-title">Перетащи фото, нажми или вставь (Ctrl+V)</div>
+              <div class="upload-hint">JPG · PNG · WEBP · AVIF · можно сразу много</div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" multiple>
+          </div>
+          <div class="thumbs-row" id="thumbsRow" hidden>
+            <div class="thumbs" id="thumbs"></div>
+            <div class="row" style="flex-direction:column;align-items:flex-end;gap:6px">
+              <span class="count-pill" id="countPill"></span>
+              <button class="btn btn-outlined btn-sm" id="selAll" type="button" title="Какие фото попадут в ZIP">Снять все</button>
+              <button class="btn btn-outlined btn-sm" id="clearAll" type="button">Очистить</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card preview-card" id="previewCard" hidden aria-label="Предпросмотр">
+          <div class="preview-head">
+            <div class="seg" data-group="view" role="group" aria-label="Режим просмотра">
+              <button type="button" data-val="slider" title="Слайдер до / после">Слайдер</button>
+              <button type="button" data-val="before" title="Только оригинал">До</button>
+              <button type="button" data-val="after" title="Только результат">После</button>
+            </div>
+            <div class="head-right">
+              <div class="nav-group" id="navGroup">
+                <button type="button" id="prevBtn" aria-label="Предыдущее фото">‹</button>
+                <span id="navLabel">1 / 1</span>
+                <button type="button" id="nextBtn" aria-label="Следующее фото">›</button>
+              </div>
+              <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр">📌</button>
+            </div>
+          </div>
+          <div class="stage" id="stage">
+            <div class="frame" id="frame">
+              <img id="beforeImg" class="before-img" alt="Оригинал">
+              <canvas id="afterCanvas" aria-label="Результат"></canvas>
+              <span class="tag tag-l" id="tagBefore">До</span>
+              <span class="tag tag-r" id="tagAfter">После</span>
+              <div class="slider-handle" id="sliderHandle" role="slider" tabindex="0" aria-label="Граница сравнения до и после" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+            </div>
+          </div>
+          <p class="hint-line" id="panHint" hidden>Перетащи изображение, чтобы сдвинуть кадр</p>
+          <div class="info-row" id="infoRow" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <!-- ============ Настройки ============ -->
+      <div class="col-settings" id="colSettings" data-tab="frame">
+        <nav class="tabs" id="settingsTabs" role="tablist" aria-label="Разделы настроек">
+          <button type="button" role="tab" data-tab="frame"><i aria-hidden="true">🎯</i><span>Кадр</span></button>
+          <button type="button" role="tab" data-tab="bg"><i aria-hidden="true">🎨</i><span>Фон</span></button>
+          <button type="button" role="tab" data-tab="quality"><i aria-hidden="true">✨</i><span>Качество</span></button>
+          <button type="button" role="tab" data-tab="extra"><i aria-hidden="true">🧰</i><span>Ещё</span></button>
+          <button type="button" role="tab" data-tab="export"><i aria-hidden="true">💾</i><span>Экспорт</span></button>
+        </nav>
+        <section class="card" id="cardScope" hidden>
+          <div class="card-title">🎛️ Настройки для</div>
+          <div class="seg" id="scopeSeg" role="group" aria-label="Для каких фото настройки">
+            <button type="button" data-s="all">Всех фото</button>
+            <button type="button" data-s="one">Только этого</button>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button type="button" class="btn btn-tonal btn-sm" id="cropBtn">✂️ Обрезка и поворот</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="applyAllBtn" hidden>⭐ Сделать общими для всех</button>
+          </div>
+          <p class="note" id="scopeNote"></p>
+        </section>
+
+        <section class="card" id="cardPresets" data-tab="extra">
+          <div class="card-title">⭐ Мои наборы</div>
+          <div class="chips" id="myPresets"></div>
+          <p class="note" id="presetsEmpty" style="margin-top:0">Настрой всё как нужно, дай название и сохрани — потом набор применяется одним нажатием.</p>
+          <div class="row" style="margin-top:12px">
+            <input class="text-input" id="presetName" maxlength="30" placeholder="Например: Мои Stories" aria-label="Название набора" style="flex:1;min-width:150px">
+            <button type="button" class="btn btn-tonal btn-sm" id="savePreset">Сохранить</button>
+          </div>
+        </section>
+
+        <section class="card" data-tab="frame">
+          <div class="card-title">🎯 Формат кадра</div>
+          <div class="seg" data-group="sizeMode" role="group" aria-label="Тип размера">
+            <button type="button" data-val="auto">По фото</button>
+            <button type="button" data-val="fixed">Точный размер</button>
+          </div>
+
+          <div class="panel" id="panelAuto">
+            <div class="chips" id="ratioChips"></div>
+            <div class="custom-ratio">
+              <input class="num" type="number" inputmode="decimal" data-key="ratioW" data-num min="1" max="99" step="0.1" aria-label="Ширина соотношения">
+              <span class="sep">:</span>
+              <input class="num" type="number" inputmode="decimal" data-key="ratioH" data-num min="1" max="99" step="0.1" aria-label="Высота соотношения">
+              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту">⇄</button>
+            </div>
+            <p class="note">Разрешение результата берётся из фото — без потери качества.</p>
+          </div>
+
+          <div class="panel" id="panelFixed" hidden>
+            <div class="chips" id="presetChips"></div>
+            <div class="custom-ratio">
+              <input class="num" type="number" inputmode="numeric" data-key="outW" data-num min="16" max="16384" step="1" aria-label="Ширина, px">
+              <span class="sep">×</span>
+              <input class="num" type="number" inputmode="numeric" data-key="outH" data-num min="16" max="16384" step="1" aria-label="Высота, px">
+              <span class="sep">px</span>
+              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту">⇄</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" data-tab="frame">
+          <div class="card-title">🖼️ Как вписать фото</div>
+          <div class="seg" data-group="fit" role="group" aria-label="Режим кадра">
+            <button type="button" data-val="fit">Вписать (с полями)</button>
+            <button type="button" data-val="fill">Заполнить (обрезка)</button>
+          </div>
+          <div class="row" id="alignRow">
+            <div>
+              <span class="field-label">Положение фото</span>
+              <div class="seg" data-group="align" role="group" aria-label="Положение">
+                <button type="button" data-val="start">Начало</button>
+                <button type="button" data-val="center">Центр</button>
+                <button type="button" data-val="end">Конец</button>
+              </div>
+            </div>
+          </div>
+          <div class="stack" id="zoomRow" hidden style="margin-top:14px">
+            <div>
+              <span class="field-label">Масштаб кадра</span>
+              <div class="range-row"><input type="range" id="zoom" min="100" max="300" value="100" aria-label="Масштаб"><output id="zoomOut">100%</output></div>
+            </div>
+            <div class="row" style="margin:0">
+              <button type="button" class="btn btn-tonal btn-sm" id="resetFocus">↺ Сбросить кадр</button>
+            </div>
+            <p class="note" style="margin:0">Двигай кадр пальцем или мышью прямо в предпросмотре («Результат»). Для каждого фото — свой кадр.</p>
+          </div>
+        </section>
+
+        <section class="card" id="bgFillNote" data-tab="bg" hidden>
+          <div class="card-title">🎨 Поля</div>
+          <p class="note" style="margin:0">В режиме «Заполнить» фото закрывает весь кадр, полей и фона нет. Выбери «Вписать» на вкладке «Кадр», чтобы настроить фон.</p>
+        </section>
+
+        <section class="card" id="cardMargins" data-tab="bg">
+          <div class="card-title">🎨 Поля</div>
+          <div class="chips" data-group="bg" role="group" aria-label="Тип фона">
+            <button type="button" class="chip" data-val="blur">✨ Размытие</button>
+            <button type="button" class="chip" data-val="edge">🌅 Градиент из фото</button>
+            <button type="button" class="chip" data-val="dominant">🎯 Цвет из фото</button>
+            <button type="button" class="chip" data-val="gradient">🌈 Градиент</button>
+            <button type="button" class="chip" data-val="color">⬛ Цвет</button>
+            <button type="button" class="chip" data-val="transparent">🔲 Прозрачный</button>
+          </div>
+
+          <div class="panel" data-bgpanel="blur">
+            <div class="stack">
+              <div><span class="field-label">Сила размытия</span><div class="range-row"><input type="range" data-key="blur" data-num min="5" max="100" aria-label="Сила размытия"><output data-out="blur"></output></div></div>
+              <div><span class="field-label">Затемнение фона</span><div class="range-row"><input type="range" data-key="dim" data-num min="0" max="70" aria-label="Затемнение"><output data-out="dim" data-unit="%"></output></div></div>
+            </div>
+            <p class="note">Фон — увеличенная размытая копия самого фото. Формат Reels / Stories.</p>
+          </div>
+          <div class="panel" data-bgpanel="edge" hidden>
+            <p class="note" style="margin:0">Градиент строится по цветам краёв фото (сверху/снизу или слева/справа), поэтому стык почти незаметен.</p>
+          </div>
+          <div class="panel" data-bgpanel="dominant" hidden>
+            <p class="note" style="margin:0">Однотонная заливка доминирующим цветом фотографии.</p>
+          </div>
+          <div class="panel" data-bgpanel="gradient" hidden>
+            <div class="row">
+              <input type="color" data-key="grad1" aria-label="Цвет градиента 1">
+              <span class="sep">→</span>
+              <input type="color" data-key="grad2" aria-label="Цвет градиента 2">
+              <div class="seg" data-group="gradAngle" role="group" aria-label="Направление">
+                <button type="button" data-val="v">↕</button>
+                <button type="button" data-val="h">↔</button>
+                <button type="button" data-val="d">↘</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel" data-bgpanel="color" hidden>
+            <div class="swatches" id="swatches">
+              <button type="button" class="swatch" data-color="#000000" style="background:#000" aria-label="Чёрный"></button>
+              <button type="button" class="swatch" data-color="#ffffff" style="background:#fff" aria-label="Белый"></button>
+              <button type="button" class="swatch" data-color="#1a1a1a" style="background:#1a1a1a" aria-label="Тёмно-серый"></button>
+              <input type="color" data-key="color" aria-label="Свой цвет">
+            </div>
+          </div>
+          <div class="panel" data-bgpanel="transparent" hidden>
+            <p class="note" style="margin:0">Прозрачность сохранится в PNG и WebP. В JPG прозрачные поля станут чёрными.</p>
+          </div>
+        </section>
+
+        <section class="card" data-tab="extra">
+          <div class="card-title">💧 Водяной знак</div>
+          <label class="switch"><input type="checkbox" data-key="wmOn"><span class="track"></span><span>Добавить водяной знак</span></label>
+          <div class="stack" id="wmFields" style="margin-top:14px" hidden>
+            <div>
+              <span class="field-label">Текст</span>
+              <input class="text-input" type="text" data-key="wmText" maxlength="60" placeholder="@username" aria-label="Текст водяного знака">
+            </div>
+            <div class="row" style="margin:0">
+              <button type="button" class="btn btn-tonal btn-sm" id="wmLogoBtn">🖼️ Свой логотип</button>
+              <button type="button" class="btn btn-outlined btn-sm" id="wmLogoClear" hidden>✕ Убрать</button>
+              <span class="count-pill" id="wmLogoName"></span>
+              <input type="file" id="wmLogoInput" accept="image/*" hidden>
+            </div>
+            <div class="row" style="margin:0;align-items:flex-start;gap:20px">
+              <div>
+                <span class="field-label">Положение</span>
+                <div class="pos-grid" data-group="wmPos" role="group" aria-label="Положение знака">
+                  <button type="button" data-val="tl" aria-label="Слева сверху"></button><button type="button" data-val="tc" aria-label="Сверху по центру"></button><button type="button" data-val="tr" aria-label="Справа сверху"></button>
+                  <button type="button" data-val="cl" aria-label="Слева по центру"></button><button type="button" data-val="c" aria-label="По центру"></button><button type="button" data-val="cr" aria-label="Справа по центру"></button>
+                  <button type="button" data-val="bl" aria-label="Слева снизу"></button><button type="button" data-val="bc" aria-label="Снизу по центру"></button><button type="button" data-val="br" aria-label="Справа снизу"></button>
+                </div>
+              </div>
+              <div class="stack" style="flex:1;min-width:150px">
+                <div><span class="field-label">Размер</span><div class="range-row"><input type="range" data-key="wmSize" data-num min="5" max="60" aria-label="Размер знака"><output data-out="wmSize" data-unit="%"></output></div></div>
+                <div><span class="field-label">Прозрачность</span><div class="range-row"><input type="range" data-key="wmOpacity" data-num min="10" max="100" aria-label="Непрозрачность знака"><output data-out="wmOpacity" data-unit="%"></output></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="cardEnhance" data-tab="quality">
+          <div class="card-title">✨ Улучшение качества</div>
+          <label class="switch"><input type="checkbox" data-key="enhOn"><span class="track"></span><span>Улучшить результат в конце</span></label>
+          <div class="stack" id="enhFields" style="margin-top:14px" hidden>
+            <div>
+              <span class="field-label">Увеличение</span>
+              <div class="seg" data-group="enhScale" role="group" aria-label="Увеличение">
+                <button type="button" data-val="1">×1</button>
+                <button type="button" data-val="2">×2</button>
+                <button type="button" data-val="3">×3</button>
+                <button type="button" data-val="4">×4</button>
+              </div>
+              <p class="note" id="enhSizeNote"></p>
+            </div>
+            <div>
+              <span class="field-label">Уровень</span>
+              <div class="seg" data-group="enhLevel" role="group" aria-label="Уровень улучшения">
+                <button type="button" data-val="low">Лёгкий</button>
+                <button type="button" data-val="mid">Средний</button>
+                <button type="button" data-val="high">Сильный</button>
+              </div>
+            </div>
+            <div><span class="field-label">Резкость</span><div class="range-row"><input type="range" data-key="sharp" data-num min="0" max="100" aria-label="Резкость"><output data-out="sharp" data-unit="%"></output></div></div>
+            <div><span class="field-label">Шумоподавление</span><div class="range-row"><input type="range" data-key="denoise" data-num min="0" max="100" aria-label="Шумоподавление"><output data-out="denoise" data-unit="%"></output></div></div>
+            <label class="switch"><input type="checkbox" data-key="smart"><span class="track"></span><span>Умная резкость: не усиливать шум в плоских местах (небо, стены)</span></label>
+            <div class="row" style="margin:0"><button type="button" class="btn btn-tonal btn-sm" id="inspectBtn">🔍 Проверить на 100%</button></div>
+            <p class="note" style="margin:0">Классическое увеличение (Lanczos) с шумоподавлением и резкостью: заметно чище обычного растягивания, но детали, которых нет в фото, не «дорисовывает» (как нейросети). Для ×3–×4 подними «Макс. сторону» в «Экспорт».</p>
+          </div>
+        </section>
+
+        <section class="card" data-tab="extra">
+          <div class="card-title">🌈 Акцентный цвет</div>
+          <div class="accent-row" id="accentRow" role="group" aria-label="Акцентный цвет интерфейса"></div>
+        </section>
+
+        <section class="card" data-tab="export">
+          <div class="card-title">💾 Экспорт</div>
+          <div class="seg" data-group="format" role="group" aria-label="Формат файла">
+            <button type="button" data-val="png">PNG</button>
+            <button type="button" data-val="jpg">JPG</button>
+            <button type="button" data-val="webp">WebP</button>
+          </div>
+          <div class="stack" style="margin-top:14px">
+            <div id="qualityRow">
+              <span class="field-label">Качество</span>
+              <div class="range-row"><input type="range" id="quality" data-key="quality" data-num min="50" max="100" aria-label="Качество"><output data-out="quality" data-unit="%"></output></div>
+            </div>
+            <div id="targetRow">
+              <label class="switch"><input type="checkbox" data-key="targetOn"><span class="track"></span><span>Уложиться в размер файла (JPG / WebP)</span></label>
+              <div class="row" id="targetFields" style="margin-top:10px;align-items:center;gap:8px">
+                <span class="field-label" style="margin:0">Не больше</span>
+                <input class="num" type="number" inputmode="numeric" data-key="targetKB" data-num min="20" max="20000" step="10" aria-label="Максимальный размер файла, КБ" style="max-width:110px">
+                <span class="field-label" style="margin:0">КБ</span>
+              </div>
+              <p class="note" id="targetNote">Сначала снижается качество (не ниже 35%), если не хватает — картинка уменьшается. Для PNG не работает.</p>
+            </div>
+            <div>
+              <span class="field-label">Макс. сторона результата</span>
+              <select data-key="maxSide" data-num aria-label="Максимальная сторона">
+                <option value="2048">2048 px (быстро)</option>
+                <option value="4096">4096 px</option>
+                <option value="8192">8192 px (тяжело)</option>
+              </select>
+              <p class="note">Защита от зависаний на огромных фото. Большие снимки уменьшатся пропорционально.</p>
+            </div>
+            <label class="switch"><input type="checkbox" data-key="wide"><span class="track"></span><span>Сохранять широкий цвет (Display P3), если он есть в фото</span></label>
+            <label class="switch"><input type="checkbox" data-key="keepMeta"><span class="track"></span><span>Сохранять дату и камеру в JPG</span></label>
+            <p class="note" style="margin:0">Геолокация, серийные номера и миниатюры никогда не копируются. Без этой опции все метаданные удаляются.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      Всё обрабатывается локально — фото никуда не загружаются.<br>
+      <kbd>D</kbd> скачать · <kbd>Shift</kbd>+<kbd>D</kbd> ZIP · <kbd>C</kbd> копировать · <kbd>S</kbd> поделиться · <kbd>T</kbd> тема · <kbd>Z</kbd> проверить 100% · <kbd>V</kbd> вид · <kbd>F</kbd> вписать/заполнить · <kbd>←</kbd><kbd>→</kbd> фото
+    </footer>
+  </div>
+
+  <!-- Плавающая панель действий -->
+  <div class="toolbar" id="toolbar" role="toolbar" aria-label="Действия">
+    <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)">⬇️ <span>Скачать</span></button>
+    <button class="tb-btn" id="btnZip" type="button" title="Скачать всё ZIP (Shift+D)" hidden>📦 <span class="lbl" id="zipLabel">ZIP</span></button>
+    <button class="tb-btn" id="btnShare" type="button" title="Поделиться (S)" hidden>📤 <span class="lbl">Поделиться</span></button>
+    <button class="tb-btn" id="btnCopy" type="button" title="Копировать (C)">📋 <span class="lbl">Копировать</span></button>
+  </div>
+
+  <div class="progress-sheet" id="progress" role="status" aria-live="polite">
+    <div class="progress-top"><span id="progressTitle">Обработка…</span><button class="btn btn-outlined btn-sm" id="progressCancel" type="button">Отмена</button></div>
+    <div class="wavy"><div class="wavy-fill" id="progressFill"></div></div>
+    <div class="progress-name" id="progressName"></div>
+  </div>
+
+  <div class="cropper" id="cropper" role="dialog" aria-modal="true" aria-label="Обрезка и поворот">
+    <div class="inspect-bar">
+      <button type="button" class="icon-btn" id="cpRotL" aria-label="Повернуть влево" title="Повернуть влево">↺</button>
+      <button type="button" class="icon-btn" id="cpRotR" aria-label="Повернуть вправо" title="Повернуть вправо">↻</button>
+      <button type="button" class="icon-btn" id="cpFlipH" aria-label="Отразить по горизонтали" title="Отразить по горизонтали">⇋</button>
+      <button type="button" class="icon-btn" id="cpFlipV" aria-label="Отразить по вертикали" title="Отразить по вертикали">⇅</button>
+      <div class="seg" id="cpRatio" role="group" aria-label="Пропорции рамки">
+        <button type="button" data-r="free" class="active">Свободно</button>
+        <button type="button" data-r="1:1">1:1</button>
+        <button type="button" data-r="4:5">4:5</button>
+        <button type="button" data-r="16:9">16:9</button>
+        <button type="button" data-r="9:16">9:16</button>
+        <button type="button" data-r="frame">Как кадр</button>
+      </div>
+    </div>
+    <div class="crop-wrap" id="cpWrap">
+      <div class="crop-stage" id="cpStage">
+        <canvas id="cpCanvas"></canvas>
+        <div class="crop-box" id="cpBox"><i data-h="nw"></i><i data-h="n"></i><i data-h="ne"></i><i data-h="e"></i><i data-h="se"></i><i data-h="s"></i><i data-h="sw"></i><i data-h="w"></i></div>
+      </div>
+    </div>
+    <div class="inspect-bar">
+      <button type="button" class="btn btn-outlined btn-sm" id="cpReset">↺ Сбросить</button>
+      <span class="count-pill" id="cpInfo" style="flex:1;text-align:center"></span>
+      <button type="button" class="btn btn-outlined btn-sm" id="cpCancel">Отмена</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="cpDone">✔ Готово</button>
+    </div>
+  </div>
+
+  <div class="inspect" id="inspect" role="dialog" aria-modal="true" aria-label="Просмотр результата в масштабе 100%">
+    <div class="inspect-bar">
+      <div class="seg" id="inspSeg" role="group" aria-label="Версия">
+        <button type="button" data-m="on" class="active">С улучшением</button>
+        <button type="button" data-m="off">Без улучшения</button>
+      </div>
+      <span class="count-pill" id="inspInfo"></span>
+      <button type="button" class="icon-btn" id="inspClose" aria-label="Закрыть" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="inspect-scroll" id="inspScroll"></div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/core.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
