@@ -90,7 +90,7 @@ function restoreFocus(el) {
 }
 addEventListener('keydown', e => {
   if (e.key !== 'Tab') return;
-  const dlg = [cpEl, inspEl].find(el => el && el.classList.contains('show'));
+  const dlg = [cpEl, inspEl, $('#review')].find(el => el && el.classList.contains('show'));
   if (!dlg) return;
   const f = [...dlg.querySelectorAll('button, [href], input, select, [tabindex]:not([tabindex="-1"])')].filter(n => !n.disabled && n.offsetParent !== null);
   if (!f.length) { e.preventDefault(); return; }
@@ -139,6 +139,7 @@ function syncScope() {
   if (!it) return;
   $$('#scopeSeg button').forEach(b => { const on = (b.dataset.s === 'one') === !!it.ov; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
   $('#applyAllBtn').hidden = !it.ov;
+  $('#copyToSel').hidden = items.length < 2;
   $('#scopeNote').textContent = it.ov
     ? 'Формат, поля, улучшение и масштаб кадра — только для этого фото. Формат файла и водяной знак общие.'
     : (items.length > 1 ? 'Изменения применяются ко всем фото. Нужно иначе для одного — выбери «Только этого».' : '');
@@ -402,3 +403,160 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   let t = 'frame'; try { t = localStorage.getItem(KEY) || 'frame'; } catch (e) {}
   setTab(t);
 })();
+
+/* ===================================================================
+   Порядок фото: сдвиг, сортировка, перетаскивание
+   =================================================================== */
+function setOrder(newItems, label) {
+  const before = items.slice(), current = cur();
+  items = newItems; idx = Math.max(0, items.indexOf(current));
+  beforeImg.dataset.id = '';
+  updateChrome(); schedule();
+  if (label) toast(label, false, { action: { label: 'Отменить', fn: () => { const c = cur(); items = before; idx = Math.max(0, items.indexOf(c)); beforeImg.dataset.id = ''; updateChrome(); schedule(); } }, ms: 7000 });
+}
+function moveItem(from, to) {
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
+  const arr = items.slice(), [m] = arr.splice(from, 1); arr.splice(to, 0, m);
+  const current = cur(); items = arr; idx = items.indexOf(current);
+  updateChrome();
+}
+$('#moveL').addEventListener('click', () => { if (idx > 0) { const c = cur(); moveItem(idx, idx - 1); idx = items.indexOf(c); updateChrome(); } });
+$('#moveR').addEventListener('click', () => { if (idx < items.length - 1) { const c = cur(); moveItem(idx, idx + 1); idx = items.indexOf(c); updateChrome(); } });
+$('#sortSel').addEventListener('change', e => {
+  const m = e.target.value; e.target.value = '';
+  if (!m || items.length < 2) return;
+  const arr = items.slice();
+  const nat = (a, b) => a.name.localeCompare(b.name, 'ru', { numeric: true, sensitivity: 'base' });
+  if (m === 'name') arr.sort(nat);
+  else if (m === 'date') arr.sort((a, b) => (a.file.lastModified || 0) - (b.file.lastModified || 0) || nat(a, b));
+  else if (m === 'size') arr.sort((a, b) => (a.file.size || 0) - (b.file.size || 0) || nat(a, b));
+  else if (m === 'rev') arr.reverse();
+  setOrder(arr, { name: 'Отсортировано по имени', date: 'Отсортировано по дате', size: 'Отсортировано по размеру', rev: 'Порядок развёрнут' }[m]);
+});
+// Перетаскивание миниатюр (мышь; на телефоне — кнопки ◀ ▶)
+let dragFrom = -1;
+thumbsEl.addEventListener('dragstart', e => {
+  const t = e.target.closest && e.target.closest('.thumb'); if (!t) return;
+  dragFrom = Array.from(thumbsEl.children).indexOf(t); t.classList.add('dragging');
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragFrom)); } catch (_) {}
+});
+thumbsEl.addEventListener('dragend', () => { dragFrom = -1; $$('.thumb', thumbsEl).forEach(t => t.classList.remove('dragging', 'drag-over')); });
+thumbsEl.addEventListener('dragover', e => {
+  if (dragFrom < 0) return;
+  e.preventDefault();
+  const t = e.target.closest('.thumb'); $$('.thumb', thumbsEl).forEach(x => x.classList.toggle('drag-over', x === t));
+});
+thumbsEl.addEventListener('drop', e => {
+  if (dragFrom < 0) return;
+  e.preventDefault(); e.stopPropagation();
+  const t = e.target.closest('.thumb'); const to = t ? Array.from(thumbsEl.children).indexOf(t) : -1;
+  const from = dragFrom; dragFrom = -1;
+  if (to >= 0) moveItem(from, to);
+});
+
+/* ===================================================================
+   Копирование настроек на отмеченные ✓
+   =================================================================== */
+$('#copyToSel').addEventListener('click', () => {
+  const src = cur(); if (!src || busy) return;
+  const E = cfgFor(src), pick = {};
+  OV_KEYS.forEach(k => { pick[k] = E[k]; });
+  const targets = items.filter(i => i !== src && !i.skip);
+  if (!targets.length) { toast('Отметь ✓ на миниатюрах другие фото', true); return; }
+  const prev = targets.map(t => [t, t.ov ? { ...t.ov } : null]);
+  targets.forEach(t => { t.ov = { ...pick }; });
+  renderThumbs(); syncUI(); schedule();
+  toast(`Настройки применены к ${targets.length} фото`, false, { action: { label: 'Отменить', fn: () => { prev.forEach(([t, o]) => { t.ov = o; }); renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
+});
+
+/* ===================================================================
+   Окно «Какими получатся файлы»: итоговый размер и вес каждого фото
+   =================================================================== */
+const rvEl = $('#review'), rvGrid = $('#rvGrid'), rvInfo = $('#rvInfo'), rvTotal = $('#rvTotal');
+const rv = { token: 0, res: new Map(), cells: new Map(), locked: false };
+function rvLock(on) {
+  rv.locked = on; busy = on; exporting = on;
+  $('.layout').classList.toggle('locked', on); setToolbarBusy(on);
+}
+function rvSummary() {
+  let n = 0, bytes = 0, bad = 0;
+  items.forEach(it => { if (it.skip) return; const r = rv.res.get(it.id); if (!r) return; if (r.err) bad++; else { n++; bytes += r.size; } });
+  const sel = items.filter(i => !i.skip).length;
+  rvTotal.textContent = sel ? `В ZIP: ${sel} из ${items.length} · ≈ ${fmtSize(bytes)}${n < sel ? ' (считаю…)' : ''}${bad ? ` · ошибок: ${bad}` : ''}` : 'Ничего не отмечено';
+  $('#rvZip').disabled = !sel || rv.locked;
+}
+function rvPaint(it) {
+  const c = rv.cells.get(it.id); if (!c) return;
+  const r = rv.res.get(it.id);
+  c.classList.toggle('skip', !!it.skip);
+  c.setAttribute('aria-pressed', String(!it.skip));
+  const meta = c.querySelector('.rv-meta');
+  const name = `<span>${it.name.replace(/[<>&]/g, '')}</span>`;
+  if (!r) meta.innerHTML = `<b>${it.skip ? 'Не входит в ZIP' : 'Считаю…'}</b>${name}`;
+  else if (r.err) meta.innerHTML = `<b class="bad">Ошибка</b>${name}`;
+  else meta.innerHTML = `<b>${r.w}×${r.h}</b>${fmtSize(r.size)}${r.fit && !r.fit.met ? ' <i class="warn">больше лимита</i>' : ''}<br>${name}`;
+}
+function rvBuild() {
+  rvGrid.replaceChildren(); rv.cells.clear();
+  items.forEach(it => {
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'rv-cell';
+    c.innerHTML = '<span class="rv-tick">✓</span><div class="rv-pic"></div><div class="rv-meta"></div>';
+    const img = new Image(); img.src = it.thumb; img.alt = ''; c.querySelector('.rv-pic').append(img);
+    c.addEventListener('click', () => {
+      it.skip = !it.skip; it.status = ''; rvPaint(it); renderThumbs(); updateZipLabel(); rvSummary();
+      if (!it.skip && !rv.res.has(it.id) && !rv.locked) rvCompute();
+    });
+    rv.cells.set(it.id, c); rvGrid.append(c); rvPaint(it);
+  });
+}
+async function rvCompute() {
+  const token = ++rv.token;
+  const todo = items.filter(it => !it.skip && !rv.res.has(it.id));
+  if (!todo.length) { rvInfo.textContent = 'Готово. Нажми на фото, чтобы включить или исключить его из ZIP.'; rvSummary(); return; }
+  rvLock(true);
+  try {
+    for (let i = 0; i < todo.length; i++) {
+      if (token !== rv.token) break;
+      const it = todo[i]; rvInfo.textContent = `Считаю ${i + 1} из ${todo.length}…`;
+      await yieldUI();
+      let bmp, out;
+      try {
+        bmp = await loadBitmap(it);
+        const r = await exportBlob(it, bmp);
+        const res = { w: r.w, h: r.h, size: r.blob.size, fit: r.fit };
+        try {
+          out = await createImageBitmap(r.blob);
+          const k = Math.min(1, 280 / Math.max(out.width, out.height)), cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(out.width * k)); cv.height = Math.max(1, Math.round(out.height * k));
+          cv.getContext('2d').drawImage(out, 0, 0, cv.width, cv.height);
+          const pic = rv.cells.get(it.id) && rv.cells.get(it.id).querySelector('.rv-pic'); if (pic) pic.replaceChildren(cv);
+        } catch (e) {}
+        rv.res.set(it.id, res);
+      } catch (e) {
+        if (e && e.name === 'AbortError') break;
+        console.error(e); rv.res.set(it.id, { err: true });
+      } finally { closeBmp(bmp); if (out && out.close) out.close(); }
+      rvPaint(it); rvSummary();
+    }
+  } finally {
+    if (token === rv.token) { rvLock(false); rvInfo.textContent = 'Готово. Нажми на фото, чтобы включить или исключить его из ZIP.'; rvSummary(); }
+  }
+}
+function openReview() {
+  if (busy || !items.length) return;
+  rv.res.clear(); rv.token++;
+  rememberFocus(rvEl); rvBuild(); rvEl.classList.add('show'); rvSummary();
+  $('#rvClose').focus();
+  rvCompute();
+}
+function closeReview() {
+  rv.token++; exWork.cancel();
+  if (rv.locked) rvLock(false);
+  rvEl.classList.remove('show'); restoreFocus(rvEl);
+  rvGrid.replaceChildren(); rv.cells.clear(); renderThumbs(); updateZipLabel();
+}
+$('#reviewBtn').addEventListener('click', openReview);
+$('#rvClose').addEventListener('click', closeReview);
+$('#rvRecalc').addEventListener('click', () => { if (rv.locked) { rv.token++; exWork.cancel(); rvLock(false); } rv.res.clear(); items.forEach(rvPaint); rvGrid.querySelectorAll('.rv-pic').forEach((p, i) => { const it = items[i]; const img = new Image(); img.src = it.thumb; img.alt = ''; p.replaceChildren(img); }); rvSummary(); rvCompute(); });
+$('#rvZip').addEventListener('click', () => { closeReview(); exportAll(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && rvEl.classList.contains('show')) closeReview(); });

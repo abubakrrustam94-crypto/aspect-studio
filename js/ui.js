@@ -72,6 +72,7 @@ function syncUI() {
   $('#targetRow').classList.toggle('disabled', E.format === 'png');
   $$('#targetRow input').forEach(x => { x.disabled = E.format === 'png'; });
   $('#targetFields').hidden = !S.targetOn;
+  updateNameExample();
 
   $$('#ratioChips .chip').forEach(c => c.classList.toggle('active', +c.dataset.w === E.ratioW && +c.dataset.h === E.ratioH));
   $$('#presetChips .chip').forEach(c => c.classList.toggle('active', c.dataset.id === E.presetId));
@@ -151,7 +152,7 @@ $('#wmLogoClear').addEventListener('click', () => {
 function renderThumbs() {
   thumbsEl.replaceChildren();
   items.forEach((it, i) => {
-    const w = document.createElement('div'); w.className = 'thumb' + (i === idx ? ' active' : '') + (it.ov ? ' has-ov' : '') + (xformInfo(it).same ? '' : ' has-xf');
+    const w = document.createElement('div'); w.draggable = true; w.className = 'thumb' + (i === idx ? ' active' : '') + (it.ov ? ' has-ov' : '') + (xformInfo(it).same ? '' : ' has-xf');
     const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb-main';
     b.title = it.name; b.setAttribute('aria-label', `Фото ${i + 1}: ${it.name}`);
     const img = new Image(); img.src = it.thumb; img.alt = ''; b.append(img);
@@ -193,6 +194,9 @@ function updateChrome() {
   $('#navLabel').textContent = `${idx + 1} / ${n}`;
   $('#prevBtn').disabled = idx <= 0; $('#nextBtn').disabled = idx >= n - 1;
   $('#navGroup').hidden = n < 2;
+  $('#orderRow').hidden = !has;
+  $('#moveL').hidden = $('#moveR').hidden = $('#sortSel').hidden = n < 2;
+  $('#moveL').disabled = idx <= 0; $('#moveR').disabled = idx >= n - 1;
   renderThumbs(); syncUI(); applyView();
   if (!has) { lastDims = null; infoRow.replaceChildren(); }
 }
@@ -217,3 +221,19 @@ addEventListener('paste', e => {
   const files = Array.from((e.clipboardData && e.clipboardData.files) || []).filter(f => f.type.startsWith('image/'));
   if (files.length) { e.preventDefault(); addFiles(files); }
 });
+
+/* ---------- Шаблон имени файла: подсказка-пример и кнопки токенов ---------- */
+function updateNameExample() {
+  const it = cur(), ex = $('#nameExample');
+  if (!ex) return;
+  const ext = ({ png: 'png', jpg: 'jpg', webp: 'webp' })[S.format] || 'png';
+  const sample = it || { name: 'photo.jpg' };
+  const w = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outW : it.w) : 1920, h = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outH : it.h) : 1080;
+  ex.textContent = 'Пример: ' + makeName(sample, w, h, ext);
+}
+$$('#nameTokens .chip').forEach(b => b.addEventListener('click', () => {
+  const inp = $('#nameRow input'), v = inp.value, a = inp.selectionStart == null ? v.length : inp.selectionStart, z = inp.selectionEnd == null ? v.length : inp.selectionEnd;
+  inp.value = v.slice(0, a) + b.dataset.t + v.slice(z);
+  const pos = a + b.dataset.t.length; inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) {}
+  set('nameTpl', inp.value);
+}));

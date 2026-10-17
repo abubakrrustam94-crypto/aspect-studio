@@ -5,6 +5,16 @@
    =================================================================== */
 const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+/* Имя файла по шаблону: {name} {n} {w} {h} {date} */
+function makeName(item, w, h, ext) {
+  const total = items.length, pos = Math.max(0, items.indexOf(item)) + 1;
+  const pad = Math.max(2, String(total).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
+  const vals = { name: baseName(item.name), n: String(pos).padStart(pad, '0'), w, h, date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
+  const tpl = (S.nameTpl || '').trim() || DEFAULTS.nameTpl;
+  let s = tpl.replace(/\{(name|n|w|h|date)\}/g, (m, k) => vals[k]);
+  s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim().replace(/^\.+/, '').slice(0, 120) || 'image';
+  return `${s}.${ext}`;
+}
 const baseName = n => (n.replace(/\.[^.]+$/, '') || 'image').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80);
 const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
 
@@ -149,7 +159,7 @@ async function exportBlob(item, bmp, formatOverride) {
     try { const tiff = await buildSafeExif(item.file); if (tiff) blob = await injectExif(blob, tiff); } catch (e) { console.warn('exif', e); }
   }
   const ext = EXT[blob.type] || fmt;
-  return { blob, w: outW, h: outH, fit, name: `${baseName(item.name)}_${outW}x${outH}.${ext}`, fellBack: blob.type !== mime };
+  return { blob, w: outW, h: outH, fit, name: makeName(item, outW, outH, ext), fellBack: blob.type !== mime };
 }
 
 function saveBlob(blob, name) {

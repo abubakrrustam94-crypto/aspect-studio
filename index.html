@@ -39,6 +39,18 @@
             </div>
             <input type="file" id="fileInput" accept="image/*" multiple>
           </div>
+          <div class="order-row" id="orderRow" hidden>
+            <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево">◀</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо">▶</button>
+            <select class="sel-sm" id="sortSel" aria-label="Сортировка фото">
+              <option value="">↕ Сортировка…</option>
+              <option value="name">По имени (1, 2, 10)</option>
+              <option value="date">По дате съёмки/файла</option>
+              <option value="size">По размеру файла</option>
+              <option value="rev">Развернуть порядок</option>
+            </select>
+            <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы">🔍 Результаты</button>
+          </div>
           <div class="thumbs-row" id="thumbsRow" hidden>
             <div class="thumbs" id="thumbs"></div>
             <div class="row" style="flex-direction:column;align-items:flex-end;gap:6px">
@@ -97,6 +109,7 @@
           <div class="row" style="margin-top:12px">
             <button type="button" class="btn btn-tonal btn-sm" id="cropBtn">✂️ Обрезка и поворот</button>
             <button type="button" class="btn btn-outlined btn-sm" id="applyAllBtn" hidden>⭐ Сделать общими для всех</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="copyToSel" hidden title="Перенести настройки этого фото на другие отмеченные ✓">📋 На отмеченные ✓</button>
           </div>
           <p class="note" id="scopeNote"></p>
         </section>
@@ -301,6 +314,18 @@
               <span class="field-label">Качество</span>
               <div class="range-row"><input type="range" id="quality" data-key="quality" data-num min="50" max="100" aria-label="Качество"><output data-out="quality" data-unit="%"></output></div>
             </div>
+            <div id="nameRow">
+              <span class="field-label">Имя файла</span>
+              <input class="text-input" type="text" data-key="nameTpl" maxlength="80" spellcheck="false" autocapitalize="off" aria-label="Шаблон имени файла">
+              <div class="chips" id="nameTokens" style="margin-top:8px">
+                <button type="button" class="chip" data-t="{name}">{name}<small>исходное имя</small></button>
+                <button type="button" class="chip" data-t="{n}">{n}<small>номер 01, 02…</small></button>
+                <button type="button" class="chip" data-t="{w}">{w}<small>ширина</small></button>
+                <button type="button" class="chip" data-t="{h}">{h}<small>высота</small></button>
+                <button type="button" class="chip" data-t="{date}">{date}<small>дата</small></button>
+              </div>
+              <p class="note" id="nameExample"></p>
+            </div>
             <div id="targetRow">
               <label class="switch"><input type="checkbox" data-key="targetOn"><span class="track"></span><span>Уложиться в размер файла (JPG / WebP)</span></label>
               <div class="row" id="targetFields" style="margin-top:10px;align-items:center;gap:8px">
@@ -386,6 +411,20 @@
       <button type="button" class="icon-btn" id="inspClose" aria-label="Закрыть" title="Закрыть (Esc)">✕</button>
     </div>
     <div class="inspect-scroll" id="inspScroll"></div>
+  </div>
+
+  <div class="review" id="review" role="dialog" aria-modal="true" aria-label="Просмотр результатов">
+    <div class="inspect-bar">
+      <strong class="rv-title">🔍 Какими получатся файлы</strong>
+      <button type="button" class="btn btn-outlined btn-sm" id="rvClose">Закрыть</button>
+    </div>
+    <div class="rv-info" id="rvInfo"></div>
+    <div class="rv-grid" id="rvGrid"></div>
+    <div class="inspect-bar rv-foot">
+      <span class="count-pill" id="rvTotal"></span>
+      <button type="button" class="btn btn-outlined btn-sm" id="rvRecalc">↻ Пересчитать</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="rvZip">📦 Скачать ZIP</button>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

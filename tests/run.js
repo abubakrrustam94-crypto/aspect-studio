@@ -53,6 +53,20 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
     return Object.entries(res).every(([t, v]) => v.length && v.every(x => x === t));
   });
   ok(tabsOk, 'вкладки показывают только свои карточки');
+  // пакет: имя по шаблону, порядок, окно результатов
+  await p.evaluate(() => { S.format = 'jpg'; S.sizeMode = 'fixed'; S.outW = 800; S.outH = 600; S.enhOn = false; S.targetOn = false; set('nameTpl', '{n}_{name}-{w}x{h}'); });
+  ok(await p.evaluate(async () => (await exportBlob(items[0], await loadBitmap(items[0]))).name) === '01_quad-800x600.jpg', 'шаблон имени: 01_quad-800x600.jpg');
+  await p.evaluate(() => set('nameTpl', '{name}_{w}x{h}'));
+  await p.evaluate(() => { const c = items[0]; items.push({ ...c, id: 9001, name: 'b.png' }); moveItem(1, 0); });
+  ok(await p.evaluate(() => items[0].name) === 'b.png', 'перемещение фото в списке');
+  await p.evaluate(() => { items.shift(); idx = 0; updateChrome(); });
+  await p.evaluate(() => { items.forEach(i => { i.skip = false; }); });
+  await p.$eval('#reviewBtn', e => e.click());
+  await p.waitForFunction(() => !document.querySelector('.layout').classList.contains('locked'), null, { timeout: 30000 });
+  const same = await p.evaluate(async () => { const it = items[0], r = await exportBlob(it, await loadBitmap(it)), x = rv.res.get(it.id); return x && x.size === r.blob.size && x.w === r.w; });
+  ok(same, 'окно результатов: размер совпадает с реальным экспортом');
+  await p.keyboard.press('Escape');
+  ok(await p.evaluate(() => !busy), 'после закрытия окна результатов экран разблокирован');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
 })();

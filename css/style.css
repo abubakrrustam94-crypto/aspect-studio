@@ -473,3 +473,32 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .cropper .seg button { color: #d6d6e0; }
 .cropper .seg button.active { color: var(--md-sys-color-on-primary-container); }
 .cp-foot .btn-outlined { color: #e4e4ec; border-color: #5a5a68; }
+
+/* ========== Порядок фото, результаты, шаблон имени ========== */
+.order-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.sel-sm { font: inherit; font-size: .85rem; font-weight: 600; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface); max-width: 100%; }
+.thumb[draggable="true"] { cursor: grab; }
+.thumb.drag-over .thumb-main { outline: 3px dashed var(--md-sys-color-primary); outline-offset: 2px; }
+.thumb.dragging { opacity: .4; }
+.review { position: fixed; inset: 0; z-index: 215; display: none; flex-direction: column; background: #08080c; color: #eee; }
+.review.show { display: flex; }
+.rv-title { flex: 1; color: #fff; font-size: 1rem; min-width: 0; }
+.rv-info { padding: 0 14px 8px; font-size: .85rem; color: #b9b9c6; }
+.rv-grid { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 4px 12px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
+.rv-cell { position: relative; background: #17171e; border-radius: 16px; padding: 8px; border: 2px solid transparent; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+.rv-cell.skip { opacity: .45; }
+.rv-cell:focus-visible { border-color: var(--md-sys-color-primary); }
+.rv-pic { height: 130px; display: grid; place-items: center; border-radius: 10px; overflow: hidden; background: repeating-conic-gradient(#222 0 25%, #1a1a1a 0 50%) 0 0 / 14px 14px; }
+.rv-pic img, .rv-pic canvas { max-width: 100%; max-height: 100%; display: block; }
+.rv-pic img { opacity: .35; filter: blur(2px); }
+.rv-meta { margin-top: 6px; font-size: .78rem; line-height: 1.35; }
+.rv-meta b { display: block; font-size: .82rem; color: #fff; }
+.rv-meta span { color: #b9b9c6; word-break: break-all; }
+.rv-meta .bad { color: var(--md-sys-color-error); }
+.rv-meta .warn { color: #fbbf24; }
+.rv-tick { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); display: grid; place-items: center; font-weight: 800; font-size: 13px; box-shadow: var(--elevation-2); }
+.rv-cell.skip .rv-tick { background: #2c2c36; color: transparent; border: 2px solid #777; }
+.rv-foot { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.rv-foot .count-pill { flex: 1 1 100%; text-align: center; color: #ddd; }
+.rv-foot .btn { flex: 1; justify-content: center; }
+.review .btn-outlined { color: #e4e4ec; border-color: #5a5a68; }
