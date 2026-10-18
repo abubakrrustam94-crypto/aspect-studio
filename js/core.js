@@ -6,7 +6,26 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+/* ---------- Локальный журнал ошибок: хранится только в этом браузере, никуда не отправляется ---------- */
+const ERRLOG_KEY = 'aspect-studio-errlog', ERRLOG_MAX = 30;
+const errLog = (() => { try { const a = JSON.parse(localStorage.getItem(ERRLOG_KEY) || '[]'); return Array.isArray(a) ? a.slice(-ERRLOG_MAX) : []; } catch (e) { return []; } })();
+function logError(err, where) {
+  try {
+    const msg = String(err && err.stack ? err.stack : (err && err.message) || err).slice(0, 600);
+    const last = errLog[errLog.length - 1];
+    if (last && last.m === msg) { last.n = (last.n || 1) + 1; last.t = Date.now(); }
+    else errLog.push({ t: Date.now(), w: where || '', m: msg, n: 1 });
+    while (errLog.length > ERRLOG_MAX) errLog.shift();
+    localStorage.setItem(ERRLOG_KEY, JSON.stringify(errLog));
+    if (typeof renderErrLog === 'function') renderErrLog();
+  } catch (e) {}
+}
+window.addEventListener('error', ev => logError(ev.error || ev.message, 'error'));
+window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise'));
+(() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
+
 /* ---------- Константы ---------- */
+const APP_VERSION = '2.7.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
