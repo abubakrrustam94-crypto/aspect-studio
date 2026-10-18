@@ -199,7 +199,7 @@ $('#savePreset').addEventListener('click', () => {
   Object.keys(DEFAULTS).forEach(k => { if (!PRESET_SKIP.includes(k)) cfg[k] = E[k]; });
   const ex = myPresets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
   if (ex >= 0) myPresets[ex] = { name, cfg }; else myPresets.push({ name, cfg });
-  myPresets = myPresets.slice(-12);
+  myPresets = myPresets.slice(-30);
   savePresets(); renderPresets(); inp.value = ''; toast(`Набор «${name}» сохранён`);
 });
 $('#presetName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#savePreset').click(); });
@@ -636,3 +636,52 @@ $('#anTuneAll').addEventListener('click', async () => {
   toast('Настройки подобраны для каждого фото', false, { action: { label: 'Отменить', fn: () => { prev.forEach(([i, o]) => { i.ov = o; }); renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
 });
 $('#recenter').addEventListener('click', () => { const it = cur(); if (!it) return; it.manual = false; syncUI(); schedule(); });
+
+/* ---------- Экспорт / импорт наборов, сброс, «О программе» ---------- */
+function cleanPresetCfg(cfg) {
+  const out = {};
+  Object.keys(cfg || {}).forEach(k => { if (k in DEFAULTS && !PRESET_SKIP.includes(k) && typeof cfg[k] === typeof DEFAULTS[k]) out[k] = cfg[k]; });
+  return out;
+}
+function parsePresetsFile(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { return null; }
+  const list = Array.isArray(d) ? d : (d && d.app === 'aspect-studio' && Array.isArray(d.presets) ? d.presets : null);
+  if (!list) return null;
+  return list.filter(p => p && typeof p.name === 'string' && p.name.trim() && p.cfg && typeof p.cfg === 'object')
+    .map(p => ({ name: p.name.trim().slice(0, 30), cfg: cleanPresetCfg(p.cfg) })).filter(p => Object.keys(p.cfg).length);
+}
+function mergePresets(list) {
+  let added = 0, replaced = 0;
+  list.forEach(p => {
+    const ex = myPresets.findIndex(m => m.name.toLowerCase() === p.name.toLowerCase());
+    if (ex >= 0) { myPresets[ex] = p; replaced++; } else { myPresets.push(p); added++; }
+  });
+  myPresets = myPresets.slice(-30); savePresets(); renderPresets();
+  return { added, replaced };
+}
+$('#presetsExport').addEventListener('click', () => {
+  if (!myPresets.length) { toast('Нет сохранённых наборов', true); return; }
+  const data = { app: 'aspect-studio', version: APP_VERSION, presets: myPresets };
+  saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'aspect-studio-presets.json');
+  toast(`Экспортировано наборов: ${myPresets.length}`);
+});
+$('#presetsImport').addEventListener('click', () => $('#presetsFile').click());
+$('#presetsFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  if (file.size > 1e6) { toast('Файл слишком большой для набора', true); return; }
+  const list = parsePresetsFile(await file.text());
+  if (!list || !list.length) { toast('Это не файл наборов Aspect Studio', true); return; }
+  const r = mergePresets(list);
+  toast(`Импортировано: ${r.added} новых, ${r.replaced} обновлено`);
+});
+$('#appVersion').textContent = 'v' + APP_VERSION;
+(function () {
+  const btn = $('#resetAll'), note = $('#resetNote'); let armed = 0;
+  const disarm = () => { armed = 0; btn.textContent = 'Сбросить все настройки'; btn.classList.remove('armed'); note.hidden = true; };
+  btn.addEventListener('click', async () => {
+    if (!armed) { armed = setTimeout(disarm, 6000); btn.textContent = 'Точно сбросить?'; btn.classList.add('armed'); note.hidden = false; return; }
+    clearTimeout(armed);
+    try { Object.keys(localStorage).filter(k => k.startsWith('aspect-studio')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+    location.reload();
+  });
+})();

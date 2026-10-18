@@ -555,3 +555,10 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
   .layout { grid-template-columns: minmax(0, 1fr) 560px; }
 }
 @media (hover: none) and (pointer: coarse) { .nav-group button, .icon-btn { min-width: 44px; min-height: 44px; } }
+
+.ic.rot180 { transform: rotate(180deg); }
+.about-line { margin: 0; display: flex; gap: 8px; align-items: baseline; }
+.ver { font-size: .8rem; color: var(--md-sys-color-on-surface-variant); }
+a.btn { text-decoration: none; }
+.btn.danger { color: var(--md-sys-color-error); border-color: color-mix(in srgb, var(--md-sys-color-error) 55%, transparent); }
+.btn.danger.armed { background: var(--md-sys-color-error); color: var(--md-sys-color-surface); border-color: var(--md-sys-color-error); }
