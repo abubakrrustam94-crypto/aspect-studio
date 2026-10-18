@@ -83,6 +83,11 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   ok(an.sharp > an.soft * 1.5, `резкость: чёткое ${an.sharp.toFixed(2)} против размытого ${an.soft.toFixed(2)}`);
   ok(an.noise1 > an.noise0 + 2, `шум: ${an.noise0.toFixed(1)} → ${an.noise1.toFixed(1)}`);
   ok(await p.evaluate(() => S.autoCenter === true), 'умная центровка включена по умолчанию');
+  // оставшееся время
+  const durs = await p.evaluate(() => [fmtDur(4000), fmtDur(75000), fmtDur(3720000)]);
+  ok(durs.join('|') === '4 с|1 мин 15 с|1 ч 2 мин', 'формат оставшегося времени: ' + durs.join(' | '));
+  const etaOk = await p.evaluate(() => { etaStart(); eta.lastT -= 4000; const t = etaText(2, 10); return /осталось ~16 с/.test(t); });
+  ok(etaOk, 'оценка времени: 2 из 10 за 4 с → осталось ~16 с');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
 })();

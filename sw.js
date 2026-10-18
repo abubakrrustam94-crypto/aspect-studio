@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v9';
+const VERSION = 'aspect-studio-v10';
 const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/render.js', './js/analyze.js', './js/preview.js', './js/ui.js', './js/export.js', './js/features.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

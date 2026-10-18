@@ -512,12 +512,13 @@ function rvBuild() {
 async function rvCompute() {
   const token = ++rv.token;
   const todo = items.filter(it => !it.skip && !rv.res.has(it.id));
+  etaStart();
   if (!todo.length) { rvInfo.textContent = 'Готово. Нажми на фото, чтобы включить или исключить его из ZIP.'; rvSummary(); return; }
   rvLock(true);
   try {
     for (let i = 0; i < todo.length; i++) {
       if (token !== rv.token) break;
-      const it = todo[i]; rvInfo.textContent = `Считаю ${i + 1} из ${todo.length}…`;
+      const it = todo[i]; const e = etaText(i, todo.length); rvInfo.textContent = `Считаю ${i + 1} из ${todo.length}…${e ? ' ' + e : ''}`;
       await yieldUI();
       let bmp, out;
       try {

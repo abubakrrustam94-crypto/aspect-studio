@@ -75,6 +75,8 @@ function syncUI() {
   $$('#targetRow input').forEach(x => { x.disabled = E.format === 'png'; });
   $('#targetFields').hidden = !S.targetOn;
   updateNameExample();
+  $('#diskRow input').disabled = !OPFS_OK;
+  if (!OPFS_OK) $('#diskNote').textContent = 'Этот браузер не умеет писать файлы на диск из страницы: ZIP собирается в памяти.';
 
   $$('#ratioChips .chip').forEach(c => c.classList.toggle('active', +c.dataset.w === E.ratioW && +c.dataset.h === E.ratioH));
   $$('#presetChips .chip').forEach(c => c.classList.toggle('active', c.dataset.id === E.presetId));

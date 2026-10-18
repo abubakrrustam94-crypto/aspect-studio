@@ -48,7 +48,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
-  format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true,
+  format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75,
   view: 'slider', pin: true,
   enhOn: true, enhScale: 1, enhLevel: 'mid', sharp: 45, denoise: 20, smart: true,
@@ -133,7 +133,27 @@ function toast(msg, isError = false, opt = null) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), (opt && opt.ms) || (isError ? 5000 : 2800));
 }
+/* Оценка оставшегося времени: скользящее среднее по времени на один файл */
+const eta = { t0: 0, lastDone: 0, lastT: 0, avg: 0 };
+function etaStart() { eta.t0 = eta.lastT = performance.now(); eta.lastDone = 0; eta.avg = 0; }
+function fmtDur(ms) {
+  const s = Math.max(1, Math.round(ms / 1000));
+  if (s < 60) return `${s} с`;
+  const m = Math.floor(s / 60), r = s % 60;
+  return m < 60 ? `${m} мин${r ? ` ${r} с` : ''}` : `${Math.floor(m / 60)} ч ${m % 60} мин`;
+}
+function etaText(done, total) {
+  const now = performance.now();
+  if (done > eta.lastDone) {
+    const per = (now - eta.lastT) / (done - eta.lastDone);
+    eta.avg = eta.avg ? 0.6 * eta.avg + 0.4 * per : per;
+    eta.lastDone = done; eta.lastT = now;
+  }
+  if (!eta.avg || done >= total) return '';
+  return `осталось ~${fmtDur(eta.avg * (total - done))}`;
+}
 function showProgress(title) {
+  etaStart();
   $('#progressTitle').textContent = title;
   progressFill.style.width = '0%';
   progressEl.classList.add('show');
@@ -141,7 +161,8 @@ function showProgress(title) {
 function setProgress(done, total, name) {
   progressFill.style.width = (total ? (done / total) * 100 : 0) + '%';
   $('#progressTitle').textContent = `Обработка: ${done} / ${total}`;
-  $('#progressName').textContent = name || '';
+  const e = etaText(done, total);
+  $('#progressName').textContent = (name || '') + (e ? (name ? ' · ' : '') + e : '');
 }
 function hideProgress() { progressEl.classList.remove('show'); }
 $('#progressCancel').addEventListener('click', () => { cancelFlag = true; exWork.cancel(); });

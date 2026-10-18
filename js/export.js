@@ -210,36 +210,89 @@ const copyCurrent = () => withCurrent(async (item, bmp) => {
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = CRC_T[(c ^ buf[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
 
+/* Заголовки одной записи ZIP (без сжатия) */
+function zipEntry(name, data, offset) {
+  const enc = new TextEncoder().encode(name), d = new Date();
+  const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const crc = crc32(data), size = data.length;
+  const lh = new DataView(new ArrayBuffer(30));
+  lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+  lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true);
+  lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, enc.length, true); lh.setUint16(28, 0, true);
+  const ch = new DataView(new ArrayBuffer(46));
+  ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+  ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, crc, true);
+  ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, enc.length, true);
+  ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true);
+  ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+  return { local: [lh.buffer, enc, data], central: [ch.buffer, enc], size: 30 + enc.length + size };
+}
+function zipEnd(count, cdSize, offset) {
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(4, 0, true); end.setUint16(6, 0, true);
+  end.setUint16(8, count, true); end.setUint16(10, count, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true); end.setUint16(20, 0, true);
+  return end.buffer;
+}
+
+/* ZIP в памяти */
 class ZipWriter {
-  constructor() { this.parts = []; this.central = []; this.offset = 0; this.count = 0; }
-  add(name, data) {
-    const enc = new TextEncoder().encode(name);
-    const d = new Date();
-    const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
-    const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
-    const crc = crc32(data), size = data.length;
-    const lh = new DataView(new ArrayBuffer(30));
-    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
-    lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true);
-    lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, enc.length, true); lh.setUint16(28, 0, true);
-    this.parts.push(lh.buffer, enc, data);
-    const ch = new DataView(new ArrayBuffer(46));
-    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
-    ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, crc, true);
-    ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, enc.length, true);
-    ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true);
-    ch.setUint32(38, 0, true); ch.setUint32(42, this.offset, true);
-    this.central.push(ch.buffer, enc);
-    this.offset += 30 + enc.length + size; this.count++;
+  constructor() { this.parts = []; this.central = []; this.offset = 0; this.count = 0; this.disk = false; }
+  async add(name, data) {
+    const e = zipEntry(name, data, this.offset);
+    this.parts.push(...e.local); this.central.push(...e.central);
+    this.offset += e.size; this.count++;
   }
-  finish() {
+  async finish() {
     let cdSize = 0; for (const p of this.central) cdSize += p.byteLength;
-    const end = new DataView(new ArrayBuffer(22));
-    end.setUint32(0, 0x06054b50, true); end.setUint16(4, 0, true); end.setUint16(6, 0, true);
-    end.setUint16(8, this.count, true); end.setUint16(10, this.count, true);
-    end.setUint32(12, cdSize, true); end.setUint32(16, this.offset, true); end.setUint16(20, 0, true);
-    return new Blob([...this.parts, ...this.central, end.buffer], { type: 'application/zip' });
+    return new Blob([...this.parts, ...this.central, zipEnd(this.count, cdSize, this.offset)], { type: 'application/zip' });
   }
+  async abort() { this.parts = []; this.central = []; }
+}
+
+/* ZIP на диске: пишется потоком во временный файл приватной файловой системы браузера (OPFS),
+   в памяти держится только текущая фотография. В конце файл отдаётся на скачивание. */
+const OPFS_OK = !!(navigator.storage && navigator.storage.getDirectory && window.FileSystemFileHandle && FileSystemFileHandle.prototype.createWritable);
+const OPFS_PREFIX = 'as-tmp-';
+const ZIP_PART_DISK = 2 * 1024 ** 3;   // ZIP без Zip64 не больше 4 ГБ — режем с запасом
+class DiskZip {
+  constructor(root, fh, w, fname) { this.root = root; this.fh = fh; this.w = w; this.fname = fname; this.central = []; this.offset = 0; this.count = 0; this.disk = true; }
+  static async create() {
+    const root = await navigator.storage.getDirectory();
+    const fname = `${OPFS_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}.zip`;
+    const fh = await root.getFileHandle(fname, { create: true });
+    return new DiskZip(root, fh, await fh.createWritable(), fname);
+  }
+  async add(name, data) {
+    const e = zipEntry(name, data, this.offset);
+    for (const p of e.local) await this.w.write(p);
+    this.central.push(...e.central); this.offset += e.size; this.count++;
+  }
+  async finish() {
+    let cdSize = 0; for (const p of this.central) { await this.w.write(p); cdSize += p.byteLength; }
+    await this.w.write(zipEnd(this.count, cdSize, this.offset));
+    await this.w.close();
+    return await this.fh.getFile();      // файл на диске, не в памяти
+  }
+  async abort() { try { await this.w.abort(); } catch (e) {} this.remove(); }
+  remove() { return this.root.removeEntry(this.fname).catch(() => {}); }
+}
+async function newZip(useDisk) {
+  if (useDisk) { try { return await DiskZip.create(); } catch (e) { console.warn('OPFS недоступна, ZIP пойдёт через память', e); } }
+  return new ZipWriter();
+}
+// временные файлы удаляем с запасом по времени: браузер может ещё читать их при скачивании
+async function cleanStaleTmp(maxAgeMs) {
+  if (!OPFS_OK) return;
+  try {
+    const root = await navigator.storage.getDirectory();
+    for await (const [name] of root.entries()) {
+      if (!name.startsWith(OPFS_PREFIX)) continue;
+      const t = Number(name.slice(OPFS_PREFIX.length).split('-')[0]) || 0;
+      if (Date.now() - t > maxAgeMs) await root.removeEntry(name).catch(() => {});
+    }
+  } catch (e) {}
 }
 
 async function exportAll() {
@@ -249,12 +302,15 @@ async function exportAll() {
   if (!total) { busy = false; setToolbarBusy(false); toast('Отметь хотя бы одно фото для ZIP', true); return; }
   exporting = true; $('.layout').classList.add('locked');
   items.forEach(i => { i.status = ''; });
-  let zip = new ZipWriter(), parts = 0, ok = 0, unmet = 0;
-  const flush = isFinal => {
-    if (!zip.count) return;
+  const useDisk = S.diskZip && OPFS_OK;
+  let zip = await newZip(useDisk), parts = 0, ok = 0, unmet = 0, diskFull = false;
+  const flush = async isFinal => {
+    const z = zip;
+    if (!z.count) { await z.abort(); return; }
     const multi = !isFinal || parts > 0;
     const name = multi ? `aspect-studio_part${++parts}.zip` : `aspect-studio_${ok}-photos.zip`;
-    saveBlob(zip.finish(), name);
+    saveBlob(await z.finish(), name);
+    if (z.disk) setTimeout(() => z.remove(), 10 * 60 * 1000);   // файл нужен браузеру, пока идёт скачивание
   };
   showProgress('Обработка…');
   try {
@@ -271,28 +327,30 @@ async function exportAll() {
         while (used.has(name)) name = r.name.replace(/(\.[^.]+)$/, `_${n++}$1`);
         used.add(name);
         const data = new Uint8Array(await r.blob.arrayBuffer());
-        if (zip.count && zip.offset + data.length > ZIP_PART) {   // часть заполнена — отдаём и освобождаем память
-          flush(false); zip = new ZipWriter(); await sleep(400);
+        if (zip.count && zip.offset + data.length > (zip.disk ? ZIP_PART_DISK : ZIP_PART)) {   // часть заполнена — отдаём и освобождаем память
+          await flush(false); zip = await newZip(useDisk); await sleep(400);
         }
-        zip.add(name, data); ok++; item.status = 'ok';
+        await zip.add(name, data); ok++; item.status = 'ok';
         if (r.fit && !r.fit.met) unmet++;
       } catch (e) {
         if (e && e.name === 'AbortError') break;
         console.error(e); failed.push(item.name); item.status = 'bad';
+        if (e && e.name === 'QuotaExceededError') { diskFull = true; break; }
         if (e instanceof RangeError || /memory|alloc/i.test(String(e && e.message))) { failed.push('(мало памяти)'); break; }
       } finally { closeBmp(bmp); }
       setProgress(i + 1, total, item.name);
     }
-    if (cancelFlag) toast(parts ? `Отменено. Уже сохранено частей: ${parts}` : 'Отменено');
+    if (cancelFlag) { await zip.abort(); toast(parts ? `Отменено. Уже сохранено частей: ${parts}` : 'Отменено'); }
+    else if (diskFull) { await zip.abort(); toast('На устройстве не хватило места для архива. Освободи память и повтори.', true); }
     else if (ok) {
       await yieldUI();
-      flush(true);
+      await flush(true);
       const memFail = failed.includes('(мало памяти)'), nf = failed.filter(x => x !== '(мало памяти)').length;
       if (memFail) toast(`Остановлено: не хватило памяти. Сохранено ${ok} из ${total}. Уменьши увеличение.`, true);
       else if (nf) toast(`Готово: ${ok} из ${total}. Ошибки: ${nf}`, true);
       else if (unmet) toast(`Готово · ${ok} файлов. ${unmet} не уложились в ${S.targetKB} КБ`, true);
       else toast(parts > 1 ? `Готово · ${ok} файлов в ${parts} архивах` : `ZIP готов · ${ok} файлов`);
-    } else toast('Не удалось обработать файлы', true);
+    } else { await zip.abort(); toast('Не удалось обработать файлы', true); }
   } finally {
     busy = false; setToolbarBusy(false); exporting = false; $('.layout').classList.remove('locked');
     renderThumbs(); updateZipLabel();
