@@ -100,25 +100,6 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   await p2.reload(); await p2.waitForTimeout(800);
   ok(await p2.evaluate(() => document.getElementById('onboard').hidden), 'обучение не показывается повторно');
   await p2.click('#helpBtn'); ok(await p2.evaluate(() => !document.getElementById('onboard').hidden), 'кнопка «?» открывает обучение');
-  // наборы: экспорт / импорт / сброс
-  const p3 = await (await b.newContext({ viewport: { width: 1100, height: 800 }, acceptDownloads: true })).newPage(); const e3 = []; p3.on('pageerror', e => e3.push(e.message));
-  await p3.goto(url); await p3.evaluate(() => localStorage.setItem('aspect-studio-onboarded', '1')); await p3.reload(); await p3.waitForTimeout(500);
-  await p3.click('#settingsTabs [data-tab=extra]'); await p3.fill('#presetName', 'Тест'); await p3.click('#savePreset');
-  const [dl] = await Promise.all([p3.waitForEvent('download'), p3.click('#presetsExport')]);
-  const fs = require('fs'), os = require('os'), fp = path.join(os.tmpdir(), 'as-presets-test.json'); await dl.saveAs(fp);
-  const exp = JSON.parse(fs.readFileSync(fp, 'utf8'));
-  ok(exp.app === 'aspect-studio' && exp.presets.length === 1 && exp.presets[0].name === 'Тест', 'экспорт наборов в файл');
-  fs.writeFileSync(fp, JSON.stringify({ app: 'aspect-studio', presets: [{ name: 'Новый', cfg: { ratioW: 4, ratioH: 5, evil: 1, format: 42 } }, { name: 'Тест', cfg: { ratioW: 2 } }, { bad: 1 }] }));
-  await p3.setInputFiles('#presetsFile', fp); await p3.waitForTimeout(300);
-  const imp = await p3.evaluate(() => myPresets.map(p => p.name + ':' + Object.keys(p.cfg).join(',')));
-  ok(imp.join('|') === 'Тест:ratioW|Новый:ratioW,ratioH', 'импорт: слияние по имени, мусорные ключи отброшены (' + imp.join('|') + ')');
-  fs.writeFileSync(fp, '{"hello":1}'); await p3.setInputFiles('#presetsFile', fp); await p3.waitForTimeout(200);
-  ok(await p3.evaluate(() => myPresets.length) === 2, 'чужой файл не портит наборы');
-  ok(await p3.evaluate(() => /^v\d/.test(document.getElementById('appVersion').textContent)) && (await p3.getAttribute('#repoLink', 'href')).includes('github.com'), '«О программе»: версия и ссылка на репозиторий');
-  await p3.click('#resetAll'); ok(await p3.evaluate(() => localStorage.getItem('aspect-studio-presets') !== null), 'сброс требует второго нажатия');
-  await Promise.all([p3.waitForNavigation(), p3.click('#resetAll')]); await p3.waitForTimeout(500);
-  ok(await p3.evaluate(() => localStorage.getItem('aspect-studio-presets') === null && myPresets.length === 0), 'сброс удалил наборы');
-  ok(!e3.length, 'без ошибок JS в наборах/сбросе' + (e3.length ? ': ' + e3.join('; ') : ''));
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
 })();

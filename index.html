@@ -156,11 +156,6 @@
             <input class="text-input" id="presetName" maxlength="30" placeholder="Например: Мои Stories" aria-label="Название набора" style="flex:1;min-width:150px">
             <button type="button" class="btn btn-tonal btn-sm" id="savePreset">Сохранить</button>
           </div>
-          <div class="row" style="margin-top:10px">
-            <button type="button" class="btn btn-outlined btn-sm" id="presetsExport"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> Экспорт в файл</button>
-            <button type="button" class="btn btn-outlined btn-sm" id="presetsImport"><svg class="ic rot180" aria-hidden="true"><use href="#i-download"/></svg> Импорт из файла</button>
-            <input type="file" id="presetsFile" accept=".json,application/json" hidden>
-          </div>
         </section>
 
         <section class="card" data-tab="frame">
@@ -352,17 +347,6 @@
         <section class="card" data-tab="extra">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-droplet"/></svg> Акцентный цвет</div>
           <div class="accent-row" id="accentRow" role="group" aria-label="Акцентный цвет интерфейса"></div>
-        </section>
-
-        <section class="card" id="cardAbout" data-tab="extra">
-          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg> О программе</div>
-          <p class="about-line"><strong>Aspect Studio</strong> <span id="appVersion" class="ver"></span></p>
-          <p class="note" style="margin-top:4px">Всё работает на твоём устройстве: фото никуда не отправляются. Настройки и наборы хранятся только в этом браузере.</p>
-          <div class="row" style="margin-top:12px">
-            <a class="btn btn-outlined btn-sm" id="repoLink" href="https://github.com/abubakrrustam94-crypto/aspect-studio" target="_blank" rel="noopener noreferrer">Исходный код на GitHub</a>
-            <button type="button" class="btn btn-outlined btn-sm danger" id="resetAll">Сбросить все настройки</button>
-          </div>
-          <p class="note" id="resetNote" hidden>Будут удалены настройки, наборы, акцент и тема. Нажми ещё раз, чтобы подтвердить.</p>
         </section>
 
         <section class="card" data-tab="export">
