@@ -511,3 +511,47 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .an-stat.ok { border-left-color: var(--md-sys-color-success); }
 .an-stat.warn { border-left-color: #fbbf24; }
 .an-stat.bad { border-left-color: var(--md-sys-color-error); }
+
+/* ========== Иконки (SVG-спрайт) ========== */
+.ic { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; pointer-events: none; }
+.ic.rot90 { transform: rotate(90deg); }
+.brand-icon .ic { width: 26px; height: 26px; color: var(--md-sys-color-on-primary-container); }
+.upload-icon .ic { width: 1em; height: 1em; color: var(--md-sys-color-primary); stroke-width: 1.6; }
+.icon-btn .ic { width: 22px; height: 22px; }
+.tabs button i .ic { width: 1.1em; height: 1.1em; }
+.nav-group button .ic, .pin-btn .ic { width: 20px; height: 20px; }
+.thumb-sel .ic { width: 14px; height: 14px; stroke-width: 3; }
+.rv-tick .ic { width: 15px; height: 15px; stroke-width: 3; }
+.btn-main { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+
+/* ========== Мини-обучение ========== */
+.onb { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.55); backdrop-filter: blur(4px); }
+.onb[hidden] { display: none; }
+.onb-card { width: min(100%, 400px); background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); border-radius: 28px; padding: 28px 24px 20px; text-align: center; box-shadow: var(--elevation-3); }
+.onb-ic { width: 72px; height: 72px; margin: 0 auto 14px; display: grid; place-items: center; border-radius: 50%; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.onb-ic .ic { width: 34px; height: 34px; }
+.onb-card h2 { font-size: 1.25rem; margin: 0 0 8px; }
+.onb-card p { margin: 0 0 16px; line-height: 1.5; color: var(--md-sys-color-on-surface-variant); }
+.onb-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+.onb-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--md-sys-color-outline-variant); transition: all .3s var(--motion-spring); }
+.onb-dots i.on { width: 22px; border-radius: 6px; background: var(--md-sys-color-primary); }
+.onb-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.onb-actions .btn { justify-content: center; }
+#onbNext { min-width: 120px; }
+
+/* ========== Планшеты и широкие экраны ========== */
+@media (min-width: 700px) and (max-width: 899px) {
+  .app { max-width: 760px; }
+}
+@media (min-width: 900px) and (max-width: 1099px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
+}
+@media (min-width: 1400px) {
+  .app { max-width: 1480px; }
+  .layout { grid-template-columns: minmax(0, 1fr) 500px; gap: 24px; }
+}
+@media (min-width: 1800px) {
+  .app { max-width: 1680px; }
+  .layout { grid-template-columns: minmax(0, 1fr) 560px; }
+}
+@media (hover: none) and (pointer: coarse) { .nav-group button, .icon-btn { min-width: 44px; min-height: 44px; } }

@@ -88,6 +88,18 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   ok(durs.join('|') === '4 с|1 мин 15 с|1 ч 2 мин', 'формат оставшегося времени: ' + durs.join(' | '));
   const etaOk = await p.evaluate(() => { etaStart(); eta.lastT -= 4000; const t = etaText(2, 10); return /осталось ~16 с/.test(t); });
   ok(etaOk, 'оценка времени: 2 из 10 за 4 с → осталось ~16 с');
+  // контраст акцентов (WCAG ≥ 4.5) в светлой и тёмной темах
+  const bad = await p.evaluate(() => { const r = []; for (const [id, h] of ACCENTS) { const { lp, dc } = accentPalette(h); const W = [255, 255, 255];
+    if (contrast(hslRgb(h, 70, lp), W) < 4.5) r.push(id + ' light'); if (contrast(hslRgb(h, 65, dc), hslRgb(h, 100, 97)) < 4.5) r.push(id + ' dark'); } return r; });
+  ok(!bad.length, 'контраст всех акцентов ≥ 4.5:1' + (bad.length ? ': ' + bad.join(', ') : ''));
+  // обучение: показывается один раз
+  const p2 = await (await b.newContext({ viewport: { width: 400, height: 800 } })).newPage(); await p2.goto(url); await p2.waitForTimeout(800);
+  ok(await p2.evaluate(() => !document.getElementById('onboard').hidden), 'обучение показано при первом запуске');
+  await p2.click('#onbNext'); await p2.click('#onbNext'); await p2.click('#onbNext'); await p2.waitForTimeout(100);
+  ok(await p2.evaluate(() => document.getElementById('onboard').hidden && localStorage.getItem('aspect-studio-onboarded') === '1'), 'обучение закрыто и запомнено');
+  await p2.reload(); await p2.waitForTimeout(800);
+  ok(await p2.evaluate(() => document.getElementById('onboard').hidden), 'обучение не показывается повторно');
+  await p2.click('#helpBtn'); ok(await p2.evaluate(() => !document.getElementById('onboard').hidden), 'кнопка «?» открывает обучение');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
 })();

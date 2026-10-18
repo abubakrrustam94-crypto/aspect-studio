@@ -166,7 +166,7 @@ function renderThumbs() {
     x.addEventListener('click', ev => { ev.stopPropagation(); removeItem(i); });
     const sl = document.createElement('button'); sl.type = 'button';
     sl.className = 'thumb-sel' + (it.skip ? ' off' : '') + (it.status ? ' ' + it.status : '');
-    sl.textContent = it.status === 'bad' ? '!' : it.skip ? '' : '✓';
+    sl.innerHTML = it.status === 'bad' ? '!' : it.skip ? '' : '<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>';
     sl.setAttribute('role', 'checkbox'); sl.setAttribute('aria-checked', String(!it.skip));
     sl.setAttribute('aria-label', `Включить в ZIP: ${it.name}`);
     sl.title = it.status === 'bad' ? 'Ошибка при обработке' : it.skip ? 'Не входит в ZIP' : 'Входит в ZIP';

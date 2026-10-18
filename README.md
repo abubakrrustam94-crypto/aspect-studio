@@ -15,6 +15,7 @@ js/preview.js       предпросмотр и слайдер
 js/ui.js            настройки, миниатюры
 js/export.js        экспорт, ZIP
 js/features.js      горячие клавиши, просмотр 100%, обрезка, наборы, вкладки
+js/onboarding.js    мини-обучение при первом запуске (кнопка «?» открывает снова)
 js/main.js          старт
 fonts/              шрифт Roboto Flex (локально)
 sw.js, manifest.json, icon*.png   PWA и офлайн

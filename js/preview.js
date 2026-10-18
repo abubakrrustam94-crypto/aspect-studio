@@ -74,8 +74,8 @@ function updateInfo(item) {
     const crop = Math.max(0, Math.round((1 - (ex.cw * ex.ch) / (L.dw * L.dh)) * 100));
     pills.push(`Обрезка ${crop}%`);
   }
-  if (c.enhOn) pills.push(c.enhScale > 1 ? `✨ Улучшение ×${c.enhScale}` : '✨ Улучшение');
-  if (ex.limited) pills.push('⚠ Уменьшено до лимита');
+  if (c.enhOn) pills.push(c.enhScale > 1 ? `Улучшение ×${c.enhScale}` : 'Улучшение');
+  if (ex.limited) pills.push('Уменьшено до лимита');
   const note = $('#enhSizeNote');
   if (note) note.textContent = `Итог: ${ex.cw}×${ex.ch}` + (ex.limited ? ' — упёрлось в «Макс. сторону», подними её в «Экспорт»' : '');
   infoRow.replaceChildren(...pills.map(pill));

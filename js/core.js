@@ -100,7 +100,7 @@ const cur = () => items[idx];
    =================================================================== */
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
-  $('#themeToggle').textContent = t === 'dark' ? '🌙' : '☀️';
+  $('#themeToggle').innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-${t === 'dark' ? 'moon' : 'sun'}"/></svg>`;
   const m = $('meta[name="theme-color"]');
   if (m) m.content = t === 'dark' ? '#0f0f14' : '#faf8ff';
 }

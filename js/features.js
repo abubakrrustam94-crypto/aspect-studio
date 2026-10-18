@@ -52,11 +52,21 @@ async function inspShow(mode) {
 const ACCENT_KEY = 'aspect-studio-accent';
 const ACCENTS = [['violet', 262, 'Фиолетовый'], ['blue', 217, 'Синий'], ['teal', 174, 'Бирюзовый'], ['green', 142, 'Зелёный'], ['orange', 28, 'Оранжевый'], ['pink', 330, 'Розовый']];
 const accentStyle = document.head.appendChild(Object.assign(document.createElement('style'), { id: 'accentStyle' }));
+/* Контраст WCAG: подбираем яркость так, чтобы текст на цвете читался (≥ 4.5:1) в обеих темах */
+function hslRgb(h, s, l) { s /= 100; l /= 100; const a = s * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return [f(0), f(8), f(4)].map(x => x * 255); }
+function relLum(c) { const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; }
+function contrast(a, b) { const x = relLum(a), y = relLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+function accentPalette(h) {
+  const S_LIGHT = [250, 248, 255], S_DARK = [15, 15, 20], WHITE = [255, 255, 255];
+  let lp = 36; while (lp > 18 && (contrast(hslRgb(h, 70, lp), WHITE) < 4.8 || contrast(hslRgb(h, 70, lp), S_LIGHT) < 4.8)) lp--;
+  let dc = 36; const opcD = hslRgb(h, 100, 97); while (dc > 20 && contrast(hslRgb(h, 65, dc), opcD) < 5) dc--;
+  return { lp, dc };
+}
 function applyAccent(id) {
-  const a = ACCENTS.find(x => x[0] === id) || ACCENTS[0], h = a[1];
+  const a = ACCENTS.find(x => x[0] === id) || ACCENTS[0], h = a[1], { lp, dc } = accentPalette(h);
   accentStyle.textContent = a[0] === 'violet' ? '' : `
-    :root { --md-sys-color-primary: hsl(${h} 90% 82%); --md-sys-color-on-primary: hsl(${h} 70% 16%); --md-sys-color-primary-container: hsl(${h} 65% 36%); --md-sys-color-on-primary-container: hsl(${h} 100% 97%); }
-    [data-theme="light"] { --md-sys-color-primary: hsl(${h} 70% 36%); --md-sys-color-on-primary: #fff; --md-sys-color-primary-container: hsl(${h} 90% 93%); --md-sys-color-on-primary-container: hsl(${h} 70% 18%); }`;
+    :root { --md-sys-color-primary: hsl(${h} 90% 82%); --md-sys-color-on-primary: hsl(${h} 70% 16%); --md-sys-color-primary-container: hsl(${h} 65% ${dc}%); --md-sys-color-on-primary-container: hsl(${h} 100% 97%); }
+    [data-theme="light"] { --md-sys-color-primary: hsl(${h} 70% ${lp}%); --md-sys-color-on-primary: #fff; --md-sys-color-primary-container: hsl(${h} 90% 93%); --md-sys-color-on-primary-container: hsl(${h} 70% 18%); }`;
   $$('#accentRow .accent-dot').forEach(b => { const on = b.dataset.id === a[0]; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
   try { localStorage.setItem(ACCENT_KEY, a[0]); } catch (e) {}
 }
@@ -462,7 +472,7 @@ $('#copyToSel').addEventListener('click', () => {
   const E = cfgFor(src), pick = {};
   OV_KEYS.forEach(k => { pick[k] = E[k]; });
   const targets = items.filter(i => i !== src && !i.skip);
-  if (!targets.length) { toast('Отметь ✓ на миниатюрах другие фото', true); return; }
+  if (!targets.length) { toast('Отметь галочкой миниатюры другие фото', true); return; }
   const prev = targets.map(t => [t, t.ov ? { ...t.ov } : null]);
   targets.forEach(t => { t.ov = { ...pick }; });
   renderThumbs(); syncUI(); schedule();
@@ -500,7 +510,7 @@ function rvBuild() {
   rvGrid.replaceChildren(); rv.cells.clear();
   items.forEach(it => {
     const c = document.createElement('button'); c.type = 'button'; c.className = 'rv-cell';
-    c.innerHTML = '<span class="rv-tick">✓</span><div class="rv-pic"></div><div class="rv-meta"></div>';
+    c.innerHTML = '<span class="rv-tick"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><div class="rv-pic"></div><div class="rv-meta"></div>';
     const img = new Image(); img.src = it.thumb; img.alt = ''; c.querySelector('.rv-pic').append(img);
     c.addEventListener('click', () => {
       it.skip = !it.skip; it.status = ''; rvPaint(it); renderThumbs(); updateZipLabel(); rvSummary();

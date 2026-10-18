@@ -12,18 +12,52 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="no-toolbar">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-ratio" viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><rect width="20" height="12" x="2" y="6" rx="2"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-17.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></symbol>
+<symbol id="i-frame" viewBox="0 0 24 24"><line x1="22" x2="2" y1="6" y2="6"/><line x1="22" x2="2" y1="18" y2="18"/><line x1="6" x2="6" y1="2" y2="22"/><line x1="18" x2="18" y1="2" y2="22"/></symbol>
+<symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".6"/><circle cx="17.5" cy="10.5" r=".6"/><circle cx="8.5" cy="7.5" r=".6"/><circle cx="6.5" cy="12.5" r=".6"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol>
+<symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+<symbol id="i-droplets" viewBox="0 0 24 24"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></symbol>
+<symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+<symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
+<symbol id="i-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+<symbol id="i-cw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+<symbol id="i-flip-h" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 20v2M12 14v2M12 8v2M12 2v2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></symbol>
+</defs></svg>
+
   <div class="app">
     <header class="top-bar">
       <div class="brand">
-        <div class="brand-icon" aria-hidden="true">📐</div>
+        <div class="brand-icon" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-ratio"/></svg></div>
         <div class="brand-text">
           <h1>Aspect Studio</h1>
           <p>Смена формата без обрезки</p>
         </div>
       </div>
       <div class="top-actions">
-        <button class="icon-btn" id="installBtn" hidden title="Установить приложение" aria-label="Установить приложение">⬇️</button>
-        <button class="icon-btn" id="themeToggle" title="Сменить тему (T)" aria-label="Сменить тему">🌙</button>
+        <button class="icon-btn" id="helpBtn" title="Как пользоваться" aria-label="Как пользоваться"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
+        <button class="icon-btn" id="installBtn" hidden title="Установить приложение" aria-label="Установить приложение"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
+        <button class="icon-btn" id="themeToggle" title="Сменить тему (T)" aria-label="Сменить тему"></button>
       </div>
     </header>
 
@@ -32,7 +66,7 @@
       <div class="col-main">
         <section class="card" id="uploadCard">
           <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Выбрать фото">
-            <div class="upload-icon">📷</div>
+            <div class="upload-icon"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></div>
             <div>
               <div class="upload-title">Перетащи фото, нажми или вставь (Ctrl+V)</div>
               <div class="upload-hint">JPG · PNG · WEBP · AVIF · можно сразу много</div>
@@ -40,16 +74,16 @@
             <input type="file" id="fileInput" accept="image/*" multiple>
           </div>
           <div class="order-row" id="orderRow" hidden>
-            <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево">◀</button>
-            <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо">▶</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево"><svg class="ic" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+            <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо"><svg class="ic" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
             <select class="sel-sm" id="sortSel" aria-label="Сортировка фото">
-              <option value="">↕ Сортировка…</option>
+              <option value="">Сортировка…</option>
               <option value="name">По имени (1, 2, 10)</option>
               <option value="date">По дате съёмки/файла</option>
               <option value="size">По размеру файла</option>
               <option value="rev">Развернуть порядок</option>
             </select>
-            <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы">🔍 Результаты</button>
+            <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Результаты</button>
           </div>
           <div class="thumbs-row" id="thumbsRow" hidden>
             <div class="thumbs" id="thumbs"></div>
@@ -74,7 +108,7 @@
                 <span id="navLabel">1 / 1</span>
                 <button type="button" id="nextBtn" aria-label="Следующее фото">›</button>
               </div>
-              <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр">📌</button>
+              <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg></button>
             </div>
           </div>
           <div class="stage" id="stage">
@@ -94,28 +128,28 @@
       <!-- ============ Настройки ============ -->
       <div class="col-settings" id="colSettings" data-tab="frame">
         <nav class="tabs" id="settingsTabs" role="tablist" aria-label="Разделы настроек">
-          <button type="button" role="tab" data-tab="frame"><i aria-hidden="true">🎯</i><span>Кадр</span></button>
-          <button type="button" role="tab" data-tab="bg"><i aria-hidden="true">🎨</i><span>Фон</span></button>
-          <button type="button" role="tab" data-tab="quality"><i aria-hidden="true">✨</i><span>Качество</span></button>
-          <button type="button" role="tab" data-tab="extra"><i aria-hidden="true">🧰</i><span>Ещё</span></button>
-          <button type="button" role="tab" data-tab="export"><i aria-hidden="true">💾</i><span>Экспорт</span></button>
+          <button type="button" role="tab" data-tab="frame"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-frame"/></svg></i><span>Кадр</span></button>
+          <button type="button" role="tab" data-tab="bg"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg></i><span>Фон</span></button>
+          <button type="button" role="tab" data-tab="quality"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></i><span>Качество</span></button>
+          <button type="button" role="tab" data-tab="extra"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></i><span>Ещё</span></button>
+          <button type="button" role="tab" data-tab="export"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></i><span>Экспорт</span></button>
         </nav>
         <section class="card" id="cardScope" hidden>
-          <div class="card-title">🎛️ Настройки для</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Настройки для</div>
           <div class="seg" id="scopeSeg" role="group" aria-label="Для каких фото настройки">
             <button type="button" data-s="all">Всех фото</button>
             <button type="button" data-s="one">Только этого</button>
           </div>
           <div class="row" style="margin-top:12px">
-            <button type="button" class="btn btn-tonal btn-sm" id="cropBtn">✂️ Обрезка и поворот</button>
-            <button type="button" class="btn btn-outlined btn-sm" id="applyAllBtn" hidden>⭐ Сделать общими для всех</button>
-            <button type="button" class="btn btn-outlined btn-sm" id="copyToSel" hidden title="Перенести настройки этого фото на другие отмеченные ✓">📋 На отмеченные ✓</button>
+            <button type="button" class="btn btn-tonal btn-sm" id="cropBtn"><svg class="ic" aria-hidden="true"><use href="#i-crop"/></svg> Обрезка и поворот</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="applyAllBtn" hidden><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg> Сделать общими для всех</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="copyToSel" hidden title="Перенести настройки этого фото на другие отмеченные ✓"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> На отмеченные</button>
           </div>
           <p class="note" id="scopeNote"></p>
         </section>
 
         <section class="card" id="cardPresets" data-tab="extra">
-          <div class="card-title">⭐ Мои наборы</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg> Мои наборы</div>
           <div class="chips" id="myPresets"></div>
           <p class="note" id="presetsEmpty" style="margin-top:0">Настрой всё как нужно, дай название и сохрани — потом набор применяется одним нажатием.</p>
           <div class="row" style="margin-top:12px">
@@ -125,7 +159,7 @@
         </section>
 
         <section class="card" data-tab="frame">
-          <div class="card-title">🎯 Формат кадра</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg> Формат кадра</div>
           <div class="seg" data-group="sizeMode" role="group" aria-label="Тип размера">
             <button type="button" data-val="auto">По фото</button>
             <button type="button" data-val="fixed">Точный размер</button>
@@ -137,7 +171,7 @@
               <input class="num" type="number" inputmode="decimal" data-key="ratioW" data-num min="1" max="99" step="0.1" aria-label="Ширина соотношения">
               <span class="sep">:</span>
               <input class="num" type="number" inputmode="decimal" data-key="ratioH" data-num min="1" max="99" step="0.1" aria-label="Высота соотношения">
-              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту">⇄</button>
+              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту"><svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg></button>
             </div>
             <p class="note">Разрешение результата берётся из фото — без потери качества.</p>
           </div>
@@ -149,13 +183,13 @@
               <span class="sep">×</span>
               <input class="num" type="number" inputmode="numeric" data-key="outH" data-num min="16" max="16384" step="1" aria-label="Высота, px">
               <span class="sep">px</span>
-              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту">⇄</button>
+              <button type="button" class="chip js-swap" title="Поменять местами" aria-label="Поменять ширину и высоту"><svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg></button>
             </div>
           </div>
         </section>
 
         <section class="card" data-tab="frame">
-          <div class="card-title">🖼️ Как вписать фото</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Как вписать фото</div>
           <div class="seg" data-group="fit" role="group" aria-label="Режим кадра">
             <button type="button" data-val="fit">Вписать (с полями)</button>
             <button type="button" data-val="fill">Заполнить (обрезка)</button>
@@ -177,27 +211,27 @@
             </div>
             <label class="switch"><input type="checkbox" data-key="autoCenter"><span class="track"></span><span>Умная центровка: кадр сам смотрит на главный объект</span></label>
             <div class="row" style="margin:0">
-              <button type="button" class="btn btn-tonal btn-sm" id="resetFocus">↺ Сбросить кадр</button>
-              <button type="button" class="btn btn-outlined btn-sm" id="recenter" hidden>🎯 Центровать по объекту</button>
+              <button type="button" class="btn btn-tonal btn-sm" id="resetFocus"><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Сбросить кадр</button>
+              <button type="button" class="btn btn-outlined btn-sm" id="recenter" hidden><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg> Центровать по объекту</button>
             </div>
             <p class="note" style="margin:0">Двигай кадр пальцем или мышью прямо в предпросмотре («Результат»). Для каждого фото — свой кадр.</p>
           </div>
         </section>
 
         <section class="card" id="bgFillNote" data-tab="bg" hidden>
-          <div class="card-title">🎨 Поля</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg> Поля</div>
           <p class="note" style="margin:0">В режиме «Заполнить» фото закрывает весь кадр, полей и фона нет. Выбери «Вписать» на вкладке «Кадр», чтобы настроить фон.</p>
         </section>
 
         <section class="card" id="cardMargins" data-tab="bg">
-          <div class="card-title">🎨 Поля</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg> Поля</div>
           <div class="chips" data-group="bg" role="group" aria-label="Тип фона">
-            <button type="button" class="chip" data-val="blur">✨ Размытие</button>
-            <button type="button" class="chip" data-val="edge">🌅 Градиент из фото</button>
-            <button type="button" class="chip" data-val="dominant">🎯 Цвет из фото</button>
-            <button type="button" class="chip" data-val="gradient">🌈 Градиент</button>
-            <button type="button" class="chip" data-val="color">⬛ Цвет</button>
-            <button type="button" class="chip" data-val="transparent">🔲 Прозрачный</button>
+            <button type="button" class="chip" data-val="blur">Размытие</button>
+            <button type="button" class="chip" data-val="edge">Градиент из фото</button>
+            <button type="button" class="chip" data-val="dominant">Цвет из фото</button>
+            <button type="button" class="chip" data-val="gradient">Градиент</button>
+            <button type="button" class="chip" data-val="color">Цвет</button>
+            <button type="button" class="chip" data-val="transparent">Прозрачный</button>
           </div>
 
           <div class="panel" data-bgpanel="blur">
@@ -239,7 +273,7 @@
         </section>
 
         <section class="card" data-tab="extra">
-          <div class="card-title">💧 Водяной знак</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-droplets"/></svg> Водяной знак</div>
           <label class="switch"><input type="checkbox" data-key="wmOn"><span class="track"></span><span>Добавить водяной знак</span></label>
           <div class="stack" id="wmFields" style="margin-top:14px" hidden>
             <div>
@@ -247,7 +281,7 @@
               <input class="text-input" type="text" data-key="wmText" maxlength="60" placeholder="@username" aria-label="Текст водяного знака">
             </div>
             <div class="row" style="margin:0">
-              <button type="button" class="btn btn-tonal btn-sm" id="wmLogoBtn">🖼️ Свой логотип</button>
+              <button type="button" class="btn btn-tonal btn-sm" id="wmLogoBtn"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Свой логотип</button>
               <button type="button" class="btn btn-outlined btn-sm" id="wmLogoClear" hidden>✕ Убрать</button>
               <span class="count-pill" id="wmLogoName"></span>
               <input type="file" id="wmLogoInput" accept="image/*" hidden>
@@ -270,18 +304,18 @@
         </section>
 
         <section class="card" id="cardAnalysis" data-tab="quality">
-          <div class="card-title">🧠 Анализ фото</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg> Анализ фото</div>
           <div class="an-stats" id="anStats"></div>
           <p class="note" id="anAdvice" style="margin:10px 0 0"></p>
           <div class="row" style="margin-top:12px">
-            <button type="button" class="btn btn-tonal btn-sm" id="anTuneOne">✨ Подобрать для этого</button>
-            <button type="button" class="btn btn-outlined btn-sm" id="anTuneAll" hidden>✨ Для всех фото</button>
+            <button type="button" class="btn btn-tonal btn-sm" id="anTuneOne"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Подобрать для этого</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="anTuneAll" hidden><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Для всех фото</button>
           </div>
           <p class="note" style="margin:10px 0 0">Подбор включит или выключит улучшение, выберет увеличение, резкость, шумоподавление и тип фона по этому фото. Результат можно поправить вручную или отменить.</p>
         </section>
 
         <section class="card" id="cardEnhance" data-tab="quality">
-          <div class="card-title">✨ Улучшение качества</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшение качества</div>
           <label class="switch"><input type="checkbox" data-key="enhOn"><span class="track"></span><span>Улучшить результат в конце</span></label>
           <div class="stack" id="enhFields" style="margin-top:14px" hidden>
             <div>
@@ -305,18 +339,18 @@
             <div><span class="field-label">Резкость</span><div class="range-row"><input type="range" data-key="sharp" data-num min="0" max="100" aria-label="Резкость"><output data-out="sharp" data-unit="%"></output></div></div>
             <div><span class="field-label">Шумоподавление</span><div class="range-row"><input type="range" data-key="denoise" data-num min="0" max="100" aria-label="Шумоподавление"><output data-out="denoise" data-unit="%"></output></div></div>
             <label class="switch"><input type="checkbox" data-key="smart"><span class="track"></span><span>Умная резкость: не усиливать шум в плоских местах (небо, стены)</span></label>
-            <div class="row" style="margin:0"><button type="button" class="btn btn-tonal btn-sm" id="inspectBtn">🔍 Проверить на 100%</button></div>
+            <div class="row" style="margin:0"><button type="button" class="btn btn-tonal btn-sm" id="inspectBtn"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Проверить на 100%</button></div>
             <p class="note" style="margin:0">Классическое увеличение (Lanczos) с шумоподавлением и резкостью: заметно чище обычного растягивания, но детали, которых нет в фото, не «дорисовывает» (как нейросети). Для ×3–×4 подними «Макс. сторону» в «Экспорт».</p>
           </div>
         </section>
 
         <section class="card" data-tab="extra">
-          <div class="card-title">🌈 Акцентный цвет</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-droplet"/></svg> Акцентный цвет</div>
           <div class="accent-row" id="accentRow" role="group" aria-label="Акцентный цвет интерфейса"></div>
         </section>
 
         <section class="card" data-tab="export">
-          <div class="card-title">💾 Экспорт</div>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Экспорт</div>
           <div class="seg" data-group="format" role="group" aria-label="Формат файла">
             <button type="button" data-val="png">PNG</button>
             <button type="button" data-val="jpg">JPG</button>
@@ -377,10 +411,10 @@
 
   <!-- Плавающая панель действий -->
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Действия">
-    <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)">⬇️ <span>Скачать</span></button>
-    <button class="tb-btn" id="btnZip" type="button" title="Скачать всё ZIP (Shift+D)" hidden>📦 <span class="lbl" id="zipLabel">ZIP</span></button>
-    <button class="tb-btn" id="btnShare" type="button" title="Поделиться (S)" hidden>📤 <span class="lbl">Поделиться</span></button>
-    <button class="tb-btn" id="btnCopy" type="button" title="Копировать (C)">📋 <span class="lbl">Копировать</span></button>
+    <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> <span>Скачать</span></button>
+    <button class="tb-btn" id="btnZip" type="button" title="Скачать всё ZIP (Shift+D)" hidden><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> <span class="lbl" id="zipLabel">ZIP</span></button>
+    <button class="tb-btn" id="btnShare" type="button" title="Поделиться (S)" hidden><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg> <span class="lbl">Поделиться</span></button>
+    <button class="tb-btn" id="btnCopy" type="button" title="Копировать (C)"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> <span class="lbl">Копировать</span></button>
   </div>
 
   <div class="progress-sheet" id="progress" role="status" aria-live="polite">
@@ -391,10 +425,10 @@
 
   <div class="cropper" id="cropper" role="dialog" aria-modal="true" aria-label="Обрезка и поворот">
     <div class="inspect-bar cp-top">
-      <button type="button" class="icon-btn" id="cpRotL" aria-label="Повернуть влево" title="Повернуть влево">↺</button>
-      <button type="button" class="icon-btn" id="cpRotR" aria-label="Повернуть вправо" title="Повернуть вправо">↻</button>
-      <button type="button" class="icon-btn" id="cpFlipH" aria-label="Отразить по горизонтали" title="Отразить по горизонтали">⇋</button>
-      <button type="button" class="icon-btn" id="cpFlipV" aria-label="Отразить по вертикали" title="Отразить по вертикали">⇅</button>
+      <button type="button" class="icon-btn" id="cpRotL" aria-label="Повернуть влево" title="Повернуть влево"><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg></button>
+      <button type="button" class="icon-btn" id="cpRotR" aria-label="Повернуть вправо" title="Повернуть вправо"><svg class="ic" aria-hidden="true"><use href="#i-cw"/></svg></button>
+      <button type="button" class="icon-btn" id="cpFlipH" aria-label="Отразить по горизонтали" title="Отразить по горизонтали"><svg class="ic" aria-hidden="true"><use href="#i-flip-h"/></svg></button>
+      <button type="button" class="icon-btn" id="cpFlipV" aria-label="Отразить по вертикали" title="Отразить по вертикали"><svg class="ic rot90" aria-hidden="true"><use href="#i-flip-h"/></svg></button>
       <div class="seg" id="cpRatio" role="group" aria-label="Пропорции рамки">
         <button type="button" data-r="free" class="active">Свободно</button>
         <button type="button" data-r="1:1">1:1</button>
@@ -411,10 +445,10 @@
       </div>
     </div>
     <div class="inspect-bar cp-foot">
-      <button type="button" class="btn btn-outlined btn-sm" id="cpReset">↺ Сбросить</button>
+      <button type="button" class="btn btn-outlined btn-sm" id="cpReset"><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Сбросить</button>
       <span class="count-pill" id="cpInfo"></span>
       <button type="button" class="btn btn-outlined btn-sm" id="cpCancel">Отмена</button>
-      <button type="button" class="btn btn-tonal btn-sm" id="cpDone">✔ Готово</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="cpDone"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Готово</button>
     </div>
   </div>
 
@@ -432,27 +466,40 @@
 
   <div class="review" id="review" role="dialog" aria-modal="true" aria-label="Просмотр результатов">
     <div class="inspect-bar">
-      <strong class="rv-title">🔍 Какими получатся файлы</strong>
+      <strong class="rv-title"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Какими получатся файлы</strong>
       <button type="button" class="btn btn-outlined btn-sm" id="rvClose">Закрыть</button>
     </div>
     <div class="rv-info" id="rvInfo"></div>
     <div class="rv-grid" id="rvGrid"></div>
     <div class="inspect-bar rv-foot">
       <span class="count-pill" id="rvTotal"></span>
-      <button type="button" class="btn btn-outlined btn-sm" id="rvRecalc">↻ Пересчитать</button>
-      <button type="button" class="btn btn-tonal btn-sm" id="rvZip">📦 Скачать ZIP</button>
+      <button type="button" class="btn btn-outlined btn-sm" id="rvRecalc"><svg class="ic" aria-hidden="true"><use href="#i-cw"/></svg> Пересчитать</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="rvZip"><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> Скачать ZIP</button>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/core.js"></script>
+  <div class="modal onb" id="onboard" role="dialog" aria-modal="true" aria-labelledby="onbTitle" hidden>
+  <div class="onb-card">
+    <div class="onb-ic" id="onbIc"></div>
+    <h2 id="onbTitle"></h2>
+    <p id="onbText"></p>
+    <div class="onb-dots" id="onbDots" aria-hidden="true"></div>
+    <div class="onb-actions">
+      <button type="button" class="btn btn-outlined" id="onbSkip">Пропустить</button>
+      <button type="button" class="btn btn-main" id="onbNext">Далее</button>
+    </div>
+  </div>
+</div>
+<script src="js/core.js"></script>
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/onboarding.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
