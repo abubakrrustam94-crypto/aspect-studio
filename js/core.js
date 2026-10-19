@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.7.0';
+const APP_VERSION = '2.8.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -48,10 +48,10 @@ const PRESETS = [
   { g: 'Соцсети', id: 'vk',       name: 'VK пост',        note: '1:1',    w: 1080, h: 1080 },
   { g: 'Соцсети', id: 'tgava',    name: 'Telegram аватар',note: '1:1',    w: 640,  h: 640  },
   { g: 'Маркетплейсы', id: 'wb',  name: 'Wildberries',    note: '3:4',    w: 900,  h: 1200 },
-  { g: 'Маркетплейсы', id: 'ozon',name: 'Ozon',           note: '3:4',    w: 900,  h: 1200 },
+  { g: 'Маркетплейсы', id: 'ozon',name: 'Ozon',           note: '3:4',    w: 1200, h: 1600 },
   { g: 'Маркетплейсы', id: 'ozf', name: 'Ozon Fresh',     note: '1:1',    w: 1000, h: 1000 },
   { g: 'Маркетплейсы', id: 'ym',  name: 'Яндекс Маркет',  note: '3:4',    w: 900,  h: 1200 },
-  { g: 'Маркетплейсы', id: 'avito',name: 'Авито',         note: '4:3',    w: 1280, h: 960  },
+  { g: 'Маркетплейсы', id: 'avito',name: 'Авито',         note: '4:3',    w: 1600, h: 1200 },
   { g: 'Печать (300 dpi)', id: 'p10x15', name: '10×15 см',  note: '2:3',  w: 1181, h: 1772 },
   { g: 'Печать (300 dpi)', id: 'p13x18', name: '13×18 см',  note: '5:7',  w: 1535, h: 2126 },
   { g: 'Печать (300 dpi)', id: 'pa5',    name: 'A5',        note: '148×210 мм', w: 1748, h: 2480 },
@@ -258,21 +258,23 @@ async function makeItem(file) {
 }
 
 async function addFiles(list) {
-  const files = Array.from(list || []).filter(f => (f.type && f.type.startsWith('image/')) || /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i.test(f.name));
+  const files = Array.from(list || []).filter(isInputFile);
   if (!files.length) { toast('Выбери изображения', true); return; }
   const first = items.length;
-  const failed = [];
+  const failed = [], notes = [];
   for (let i = 0; i < files.length; i++) {
-    try { items.push(await makeItem(files[i])); }
-    catch (e) { failed.push(files[i].name); }
     if (files.length > 3) toast(`Загрузка ${i + 1} / ${files.length}…`);
+    try { items.push(await makeItem(await normalizeInput(files[i], notes))); }
+    catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: files[i].name, msg: e && e.userMsg }); }
   }
   if (items.length > first) { idx = first; updateChrome(); schedule(); }
-  const ok = items.length - first;
-  const heic = failed.filter(n => /\.hei[cf]$/i.test(n));
-  if (failed.length && heic.length === failed.length) toast('HEIC этот браузер не открывает — сохрани фото как JPG или открой сайт в Safari', true);
-  else if (failed.length) toast(`Не удалось открыть: ${failed.slice(0, 2).join(', ')}${failed.length > 2 ? '…' : ''}`, true);
-  else if (ok) toast(`Загружено: ${ok}`);
+  const ok = items.length - first, extra = notes.length ? ' · ' + notes.slice(0, 2).join('; ') + (notes.length > 2 ? '…' : '') : '';
+  if (failed.length) {
+    const f = failed[0], heic = /\.hei[cf]$/i.test(f.name);
+    const why = f.msg || (heic ? 'не удалось прочитать HEIC' : 'формат не распознан или файл повреждён');
+    toast(failed.length === 1 ? `${f.name}: ${why}` : `Не удалось открыть ${failed.length} из ${files.length}: ${failed.slice(0, 2).map(x => x.name).join(', ')}${failed.length > 2 ? '…' : ''}. ${why}`, true, { ms: 7000 });
+  }
+  else if (ok) toast(`Загружено: ${ok}${extra}`, false, { ms: notes.length ? 6000 : 0 });
 }
 
 let trash = null;   // последнее удаление, которое ещё можно отменить

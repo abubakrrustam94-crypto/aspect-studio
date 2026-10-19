@@ -69,9 +69,9 @@
             <div class="upload-icon"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></div>
             <div>
               <div class="upload-title">Перетащи фото, нажми или вставь (Ctrl+V)</div>
-              <div class="upload-hint">JPG · PNG · WEBP · AVIF · можно сразу много</div>
+              <div class="upload-hint">JPG, PNG, WebP, HEIC, TIFF, RAW, PSD и др. · можно сразу много</div>
             </div>
-            <input type="file" id="fileInput" accept="image/*" multiple>
+            <input type="file" id="fileInput" accept="image/*,.tif,.tiff,.heic,.heif,.jxl,.svg,.ai,.eps,.psd,.psb,.xcf,.exr,.hdr,.ico,.bmp,.gif,.cr2,.cr3,.nef,.nrw,.arw,.raf,.orf,.rw2,.dng,.pef,.rwl" multiple>
           </div>
           <div class="order-row" id="orderRow" hidden>
             <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево"><svg class="ic" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
@@ -515,6 +515,7 @@
   </div>
 </div>
 <script src="js/core.js"></script>
+  <script src="js/formats.js"></script>
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>
   <script src="js/preview.js"></script>

@@ -22,3 +22,5 @@ jobs:
         run: node tests/run.js
       - name: Тесты нагрузки (ZIP из 100 файлов, EXIF, крайние размеры)
         run: node tests/stress.js
+      - name: Тесты входных форматов (HEIC, TIFF, RAW, PSD, EXR, XCF и др.)
+        run: node tests/formats.js
