@@ -71,6 +71,8 @@ function syncUI() {
   $('#bgFillNote').hidden = E.fit !== 'fill';
   $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
   $('#wmFields').hidden = !E.wmOn;
+  $('#wmPosBox').hidden = E.wmMode === 'tile';
+  $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
   $('#qualityRow').classList.toggle('disabled', E.format === 'png');
   $('#quality').disabled = E.format === 'png';

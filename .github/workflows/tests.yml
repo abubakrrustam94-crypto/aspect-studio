@@ -26,3 +26,5 @@ jobs:
         run: node tests/formats.js
       - name: Тесты приватности и экспорта (метаданные, sRGB/P3, имена, папка)
         run: node tests/privacy.js
+      - name: Тесты водяного знака (мозаика, шаблоны)
+        run: node tests/watermark.js

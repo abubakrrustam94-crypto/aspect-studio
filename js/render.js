@@ -181,32 +181,48 @@ function drawWatermark(ctx, cw, ch) {
   if (!S.wmOn) return;
   const hasText = S.wmText.trim().length > 0;
   if (!wmLogo && !hasText) return;
-  const pad = Math.round(Math.min(cw, ch) * 0.03);
+  const tile = S.wmMode === 'tile';
+  const pad = tile ? 0 : Math.round(Math.min(cw, ch) * 0.03);
   const targetW = cw * S.wmSize / 100;
   ctx.save();
   ctx.globalAlpha = S.wmOpacity / 100;
-  let w, h;
   const ay = { t: 0, c: .5, b: 1 }[S.wmPos[0]] ?? 1;
   const ax = S.wmPos === 'c' ? .5 : ({ l: 0, c: .5, r: 1 }[S.wmPos[1]] ?? 1);
+  // Размер одного знака и функция его рисования в точке (x, y) — левый верхний угол
+  let w, h, paint;
   if (wmLogo) {
     const d = dimsOf(wmLogo);
     w = targetW; h = w * d.h / d.w;
     if (h > ch * .4) { h = ch * .4; w = h * d.w / d.h; }
-    const x = pad + (cw - 2 * pad - w) * ax, y = pad + (ch - 2 * pad - h) * ay;
-    ctx.drawImage(wmLogo, x, y, w, h);
+    paint = (x, y) => ctx.drawImage(wmLogo, x, y, w, h);
   } else {
     const font = px => `700 ${px}px "Roboto Flex", system-ui, sans-serif`;
     ctx.font = font(100);
     const mw = ctx.measureText(S.wmText).width || 1;
     let fs = 100 * targetW / mw;
-    fs = Math.max(8, Math.min(fs, ch * .12));
+    fs = Math.max(8, Math.min(fs, ch * (tile ? .2 : .12)));
     ctx.font = font(fs);
     w = ctx.measureText(S.wmText).width; h = fs;
-    const x = pad + (cw - 2 * pad - w) * ax, y = pad + (ch - 2 * pad - h) * ay;
     ctx.textBaseline = 'top';
     ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = fs * .18; ctx.shadowOffsetY = fs * .04;
     ctx.fillStyle = '#fff';
-    ctx.fillText(S.wmText, x, y);
+    paint = (x, y) => ctx.fillText(S.wmText, x, y);
+  }
+  if (!tile) {
+    paint(pad + (cw - 2 * pad - w) * ax, pad + (ch - 2 * pad - h) * ay);
+  } else {
+    // Мозаика: сетка со сдвигом чётных рядов на полшага, повёрнутая вокруг центра кадра
+    const gap = Math.max(0, S.wmGap) / 100;                 // шаг в долях размера знака
+    const stepX = w * (1 + gap), stepY = h * (1 + gap * 1.2);
+    const rad = S.wmAngle * Math.PI / 180;
+    const R = Math.hypot(cw, ch) / 2 + Math.max(w, h);      // радиус, покрывающий кадр при любом повороте
+    const rows = Math.min(400, Math.ceil(R / stepY)), cols = Math.min(400, Math.ceil(R / stepX));
+    if (rows * cols * 4 > 40000) { ctx.restore(); return; }  // защита от слишком мелкого шага
+    ctx.translate(cw / 2, ch / 2); ctx.rotate(rad);
+    for (let j = -rows; j <= rows; j++) {
+      const off = (j & 1) ? stepX / 2 : 0;
+      for (let i = -cols; i <= cols; i++) paint(i * stepX + off - w / 2, j * stepY - h / 2);
+    }
   }
   ctx.restore();
 }

@@ -13,7 +13,7 @@ const translit = s => s.replace(/[А-Яа-яЁёІіЇїЄєҐґҒғӢӣҚқӮӯ
   const lo = ch.toLowerCase(), t = TRANSLIT[lo]; if (t === undefined) return ch;
   return ch === lo ? t : (t.length > 1 ? t[0].toUpperCase() + t.slice(1) : t.toUpperCase());
 });
-function ratioLabel(c) {
+function ratioToken(c) {
   if (c.sizeMode === 'fixed') { const g = gcd(c.outW, c.outH) || 1; return `${c.outW / g}x${c.outH / g}`; }
   return `${c.ratioW}x${c.ratioH}`.replace(/\./g, '_');
 }
@@ -23,7 +23,7 @@ function makeName(item, w, h, ext) {
   const pad = Math.max(2, String(total + start - 1).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
   const c = cfgFor(item), key = groupKey(c);
   const k = 1 + items.slice(0, Math.max(0, i0)).filter(x => groupKey(cfgFor(x)) === key).length;
-  const vals = { name: baseName(item.name), n: String(pos - 1 + start).padStart(pad, '0'), k: String(k).padStart(2, '0'), w, h, ratio: ratioLabel(c), preset: c.presetId || 'custom', date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
+  const vals = { name: baseName(item.name), n: String(pos - 1 + start).padStart(pad, '0'), k: String(k).padStart(2, '0'), w, h, ratio: ratioToken(c), preset: c.presetId || 'custom', date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
   const tpl = (S.nameTpl || '').trim() || DEFAULTS.nameTpl;
   let s = tpl.replace(/\{(name|n|k|w|h|date|ratio|preset)\}/g, (m, t) => vals[t]);
   if (S.nameTranslit) s = translit(s);

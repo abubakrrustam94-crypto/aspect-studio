@@ -736,3 +736,61 @@ function updateFolderUI() {
   });
   updateFolderUI();
 })();
+
+
+/* ===================================================================
+   Шаблоны водяного знака (хранятся в браузере вместе с логотипом)
+   =================================================================== */
+const WMTPL_KEY = 'aspect-studio-wmtpl', WMTPL_KEYS = ['wmText', 'wmMode', 'wmPos', 'wmSize', 'wmOpacity', 'wmAngle', 'wmGap'];
+let wmTpls = [];
+try { wmTpls = JSON.parse(localStorage.getItem(WMTPL_KEY) || '[]'); if (!Array.isArray(wmTpls)) wmTpls = []; } catch (e) { wmTpls = []; }
+wmTpls = wmTpls.filter(t => t && typeof t.name === 'string' && t.cfg && typeof t.cfg === 'object');
+function wmTplStore() {
+  try { localStorage.setItem(WMTPL_KEY, JSON.stringify(wmTpls)); return true; }
+  catch (e) { toast('Не хватило места в браузере — удали лишние шаблоны', true); return false; }
+}
+function logoToDataURL(bmp) {            // логотип уменьшаем, чтобы шаблон занимал мало места
+  const d = dimsOf(bmp), k = Math.min(1, 480 / Math.max(d.w, d.h));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(d.w * k)); c.height = Math.max(1, Math.round(d.h * k));
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/png');
+}
+function renderWmTpls() {
+  const box = $('#wmTpls'); if (!box) return; box.replaceChildren();
+  wmTpls.forEach((t, i) => {
+    const w = document.createElement('span'); w.className = 'mp';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = (t.cfg.wmMode === 'tile' ? '▦ ' : '') + t.name; b.addEventListener('click', () => applyWmTpl(t));
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'mp-x'; x.textContent = '×'; x.setAttribute('aria-label', 'Удалить шаблон ' + t.name);
+    x.addEventListener('click', () => { wmTpls.splice(i, 1); wmTplStore(); renderWmTpls(); toast('Шаблон удалён'); });
+    w.append(b, x); box.append(w);
+  });
+  $('#wmTplNote').hidden = wmTpls.length > 0 ? true : false;
+}
+async function applyWmTpl(t) {
+  const ok = k => k in DEFAULTS && typeof t.cfg[k] === typeof DEFAULTS[k];
+  WMTPL_KEYS.forEach(k => { if (ok(k)) S[k] = t.cfg[k]; });
+  S.wmOn = true;
+  closeBmp(wmLogo); wmLogo = null; $('#wmLogoName').textContent = ''; $('#wmLogoClear').hidden = true;
+  if (t.logo) {
+    try {
+      const blob = await (await fetch(t.logo)).blob();
+      wmLogo = await createImageBitmap(blob);
+      $('#wmLogoName').textContent = 'из шаблона'; $('#wmLogoClear').hidden = false;
+    } catch (e) { toast('Логотип шаблона не открылся — применён только текст', true); }
+  }
+  save(); syncUI(); schedule(); toast(`Шаблон «${t.name}» применён`);
+}
+$('#wmTplSave').addEventListener('click', () => {
+  const inp = $('#wmTplName'), name = inp.value.trim().slice(0, 24);
+  if (!name) { toast('Введи название шаблона', true); inp.focus(); return; }
+  const cfg = {}; WMTPL_KEYS.forEach(k => { cfg[k] = S[k]; });
+  const t = { name, cfg, logo: wmLogo ? logoToDataURL(wmLogo) : null };
+  const ex = wmTpls.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+  const prev = wmTpls.slice();
+  if (ex >= 0) wmTpls[ex] = t; else wmTpls.push(t);
+  wmTpls = wmTpls.slice(-12);
+  if (!wmTplStore()) { wmTpls = prev; return; }
+  renderWmTpls(); inp.value = ''; toast(`Шаблон «${name}» сохранён`);
+});
+$('#wmTplName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wmTplSave').click(); });
+renderWmTpls();

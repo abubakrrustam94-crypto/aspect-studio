@@ -293,8 +293,23 @@
               <span class="count-pill" id="wmLogoName"></span>
               <input type="file" id="wmLogoInput" accept="image/*" hidden>
             </div>
+            <div>
+              <span class="field-label">Шаблоны знака</span>
+              <div class="chips" id="wmTpls"></div>
+              <div class="row" style="margin-top:8px">
+                <input class="text-input" id="wmTplName" maxlength="24" placeholder="Название шаблона" aria-label="Название шаблона знака" style="flex:1;min-width:130px">
+                <button type="button" class="btn btn-tonal btn-sm" id="wmTplSave">Сохранить</button>
+              </div>
+              <p class="note" id="wmTplNote" style="margin:6px 0 0">Шаблон запоминает текст, логотип, расположение, размер и прозрачность.</p>
+            </div>
+            <div>
+              <span class="field-label">Расположение</span>
+              <div class="seg" data-group="wmMode" role="group" aria-label="Расположение знака">
+                <button type="button" data-val="single">Один знак</button><button type="button" data-val="tile">Мозаика</button>
+              </div>
+            </div>
             <div class="row" style="margin:0;align-items:flex-start;gap:20px">
-              <div>
+              <div id="wmPosBox">
                 <span class="field-label">Положение</span>
                 <div class="pos-grid" data-group="wmPos" role="group" aria-label="Положение знака">
                   <button type="button" data-val="tl" aria-label="Слева сверху"></button><button type="button" data-val="tc" aria-label="Сверху по центру"></button><button type="button" data-val="tr" aria-label="Справа сверху"></button>
@@ -305,6 +320,10 @@
               <div class="stack" style="flex:1;min-width:150px">
                 <div><span class="field-label">Размер</span><div class="range-row"><input type="range" data-key="wmSize" data-num min="5" max="60" aria-label="Размер знака"><output data-out="wmSize" data-unit="%"></output></div></div>
                 <div><span class="field-label">Прозрачность</span><div class="range-row"><input type="range" data-key="wmOpacity" data-num min="10" max="100" aria-label="Непрозрачность знака"><output data-out="wmOpacity" data-unit="%"></output></div></div>
+                <div id="wmTileBox" hidden>
+                  <div><span class="field-label">Шаг между знаками</span><div class="range-row"><input type="range" data-key="wmGap" data-num min="0" max="300" step="10" aria-label="Шаг мозаики"><output data-out="wmGap" data-unit="%"></output></div></div>
+                  <div style="margin-top:12px"><span class="field-label">Наклон</span><div class="range-row"><input type="range" data-key="wmAngle" data-num min="-90" max="90" step="5" aria-label="Угол наклона знаков"><output data-out="wmAngle" data-unit="°"></output></div></div>
+                </div>
               </div>
             </div>
           </div>
