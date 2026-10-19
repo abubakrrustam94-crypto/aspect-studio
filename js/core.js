@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.8.0';
+const APP_VERSION = '2.9.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -71,11 +71,19 @@ const DEFAULTS = {
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75,
   view: 'slider', pin: true,
   enhOn: true, enhScale: 1, enhLevel: 'mid', sharp: 45, denoise: 20, smart: true,
-  wide: true, keepMeta: false,
+  meta: 'none', author: '', colorSpace: 'p3',
+  nameStart: 1, nameTranslit: false, nameSpaces: false, folderOn: false,
 };
 
 let S = { ...DEFAULTS };
 try { Object.assign(S, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) {}
+// Миграция со старых настроек (v2.7 и ниже): «wide» и «keepMeta» заменены на colorSpace и meta
+try {
+  const old = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+  if (old.colorSpace === undefined && old.wide === false) S.colorSpace = 'srgb';
+  if (old.meta === undefined && old.keepMeta === true) S.meta = 'basic';
+  delete S.wide; delete S.keepMeta;
+} catch (e) {}
 // Страховка от повреждённых значений
 for (const k of Object.keys(DEFAULTS)) if (typeof S[k] !== typeof DEFAULTS[k]) S[k] = DEFAULTS[k];
 

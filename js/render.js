@@ -100,7 +100,7 @@ const supportsP3 = (() => {
   catch (e) { return false; }
 })();
 const ctxCS = ctx => { try { return ctx.getContextAttributes().colorSpace || 'srgb'; } catch (e) { return 'srgb'; } };
-const wantP3 = item => !!(S.wide && supportsP3 && item && item.p3);
+const wantP3 = item => !!(S.colorSpace === 'p3' && supportsP3 && item && item.p3);
 const getPix = (ctx, x, y, w, h, cs) => cs === 'srgb' ? ctx.getImageData(x, y, w, h) : ctx.getImageData(x, y, w, h, { colorSpace: cs });
 const mkImageData = (arr, w, h, cs) => cs === 'srgb' ? new ImageData(arr, w, h) : new ImageData(arr, w, h, { colorSpace: cs });
 const P3_RE = /Display ?P3|Display-P3|DisplayP3/i, P3_RE16 = /\x00D\x00i\x00s\x00p\x00l\x00a\x00y\x00 \x00P\x003/;

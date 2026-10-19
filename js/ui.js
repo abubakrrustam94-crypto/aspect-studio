@@ -64,6 +64,9 @@ function syncUI() {
   $('#zoomRow').hidden = E.fit !== 'fill';
   $('#recenter').hidden = !(it0 && it0.manual && S.autoCenter);
   renderAnalysis();
+  if (typeof renderMetaInfo === 'function') renderMetaInfo();
+  if (typeof updateFolderUI === 'function') updateFolderUI();
+  updateZipLabel();
   $('#cardMargins').hidden = E.fit === 'fill';
   $('#bgFillNote').hidden = E.fit !== 'fill';
   $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
@@ -180,7 +183,9 @@ function renderThumbs() {
 
 function updateZipLabel() {
   const n = items.length, k = items.filter(i => !i.skip).length;
-  $('#zipLabel').textContent = k === n ? `ZIP · ${n}` : `ZIP · ${k} из ${n}`;
+  const dest = S.folderOn && FOLDER_OK ? 'В папку' : 'ZIP';
+  $('#zipLabel').textContent = k === n ? `${dest} · ${n}` : `${dest} · ${k} из ${n}`;
+  $('#btnZip').title = S.folderOn && FOLDER_OK ? 'Сохранить всё в папку (Shift+D)' : 'Скачать всё ZIP (Shift+D)';
   $('#btnZip').disabled = busy || !k;
   const all = $('#selAll'); if (all) all.textContent = k === n ? 'Снять все' : 'Выбрать все';
 }

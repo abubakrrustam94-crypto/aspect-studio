@@ -703,3 +703,36 @@ $('#errLogCopy').addEventListener('click', async () => {
 });
 $('#errLogClear').addEventListener('click', () => { errLog.length = 0; try { localStorage.removeItem(ERRLOG_KEY); } catch (e) {} renderErrLog(); toast('Журнал очищен'); });
 renderErrLog();
+
+/* ---------- Метаданные исходного фото и выбор папки ---------- */
+let metaTok = 0;
+async function renderMetaInfo() {
+  const el = $('#metaInfo'); if (!el) return;
+  const it = cur(), tok = ++metaTok;
+  const basic = S.meta === 'basic';
+  const tail = basic ? 'В результат попадут только камера и дата (в JPG). Геолокация не переносится никогда.' : 'В результат не попадёт ничего: ни геолокация, ни камера, ни дата.';
+  if (!it) { el.textContent = tail; return; }
+  if (it.metaInfo === undefined) it.metaInfo = await readExifBasics(it.file).catch(() => null);
+  if (tok !== metaTok) return;
+  const i = it.metaInfo;
+  const found = !i ? 'В этом фото нет EXIF (или это не JPG).' : `В исходном фото найдено: ${[i.gps ? 'геолокация' : '', i.make || i.model ? 'камера ' + [i.make, i.model].filter(Boolean).join(' ') : '', i.dto ? 'дата ' + i.dto.slice(0, 10).replace(/:/g, '-') : ''].filter(Boolean).join(', ') || 'ничего важного'}.`;
+  el.textContent = found + ' ' + tail;
+}
+function updateFolderUI() {
+  const row = $('#folderRow'); if (!row) return;
+  row.hidden = !FOLDER_OK;
+  if (!FOLDER_OK) return;
+  $('#folderName').textContent = dirHandle ? '«' + dirHandle.name + '»' : 'не выбрана';
+  $('#folderOnNote').hidden = !S.folderOn;
+}
+(function () {
+  if (!FOLDER_OK) { updateFolderUI(); return; }
+  idbGet('dir').then(h => { if (h && h.kind === 'directory') { dirHandle = h; updateFolderUI(); } }).catch(() => {});
+  $('#pickFolder').addEventListener('click', async () => { try { await pickFolder(); toast(`Папка: «${dirHandle.name}»`); } catch (e) { if (e && e.name !== 'AbortError') toast('Не удалось выбрать папку', true); } });
+  const cb = $('#folderRow input[data-key="folderOn"]');
+  cb.addEventListener('change', async () => {          // включили, а папки ещё нет — сразу предлагаем выбрать
+    if (cb.checked && !dirHandle) { try { await pickFolder(); } catch (e) { set('folderOn', false); } }
+    updateZipLabel(); updateFolderUI();
+  });
+  updateFolderUI();
+})();

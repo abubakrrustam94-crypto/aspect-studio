@@ -151,3 +151,33 @@ w('quad_dos.eps', struct.pack('<IIIIIII', 0xC6D3D0C5, 30, len(ps), 0, 0, 30 + le
 img.save(os.path.join(OUT, 'quad.ai'), 'PDF')
 w('noprev.eps', b'%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 10 10\n0 0 moveto 10 10 lineto stroke\nshowpage\n')
 print('готово:', sorted(os.listdir(OUT)))
+
+# --- JPEG с EXIF: камера, дата и геолокация (для проверки удаления метаданных) ---
+ex = Image.Exif()
+ex[0x010F] = 'TestCam'; ex[0x0110] = 'Model X'; ex[0x0131] = 'SecretSoftware 1.0'
+ex.get_ifd(0x8769)[0x9003] = '2024:05:01 10:20:30'
+ex.get_ifd(0x8825).update({1: 'N', 2: (55.0, 45.0, 0.0), 3: 'E', 4: (37.0, 37.0, 0.0)})
+img.save(os.path.join(OUT, 'exif_gps.jpg'), quality=95, exif=ex)
+
+# --- PNG/JPEG с профилем «Display P3» (вручную собранный ICC: матрица Display P3 для D50, гамма 2,2) ---
+def s15(v): return struct.pack('>i', int(round(v * 65536)))
+def xyz_tag(x, y, z): return b'XYZ \0\0\0\0' + s15(x) + s15(y) + s15(z)
+def text_tag(s): return b'text\0\0\0\0' + s.encode() + b'\0'
+def desc_tag(s): b = s.encode() + b'\0'; return b'desc\0\0\0\0' + struct.pack('>I', len(b)) + b + struct.pack('>IIHB', 0, 0, 0, 0) + b'\0' * 67
+curv = b'curv\0\0\0\0' + struct.pack('>IH', 1, 0x0233) + b'\0\0'
+tags = [(b'desc', desc_tag('Display P3')), (b'wtpt', xyz_tag(0.9642, 1.0, 0.8249)),
+        (b'rXYZ', xyz_tag(0.5151, 0.2412, -0.0011)), (b'gXYZ', xyz_tag(0.2920, 0.6922, 0.0419)), (b'bXYZ', xyz_tag(0.1571, 0.0666, 0.7841)),
+        (b'rTRC', curv), (b'gTRC', curv), (b'bTRC', curv), (b'cprt', text_tag('test'))]
+off = 128 + 4 + 12 * len(tags); body = b''; table = b''
+for sig, data in tags:
+    pad = (-len(data)) % 4; table += sig + struct.pack('>II', off + len(body), len(data)); body += data + b'\0' * pad
+hdr = bytearray(128)
+struct.pack_into('>I', hdr, 8, 0x02100000); hdr[12:16] = b'mntr'; hdr[16:20] = b'RGB '; hdr[20:24] = b'XYZ '; hdr[36:40] = b'acsp'
+hdr[68:80] = s15(0.9642) + s15(1.0) + s15(0.8249)
+icc = bytes(hdr[:0]) + bytes(hdr)
+prof = struct.pack('>I', len(tags)) + table + body
+icc = bytearray(hdr + prof); struct.pack_into('>I', icc, 0, len(icc)); icc = bytes(icc)
+p3 = np.zeros((H, W, 3), np.uint8); p3[:] = (204, 102, 51)
+Image.fromarray(p3).save(os.path.join(OUT, 'p3_orange.png'), icc_profile=icc)
+Image.fromarray(p3).save(os.path.join(OUT, 'p3_orange.jpg'), quality=100, icc_profile=icc, subsampling=0)
+print('exif/p3 ок')

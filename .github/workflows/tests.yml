@@ -24,3 +24,5 @@ jobs:
         run: node tests/stress.js
       - name: Тесты входных форматов (HEIC, TIFF, RAW, PSD, EXR, XCF и др.)
         run: node tests/formats.js
+      - name: Тесты приватности и экспорта (метаданные, sRGB/P3, имена, папка)
+        run: node tests/privacy.js

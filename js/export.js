@@ -6,16 +6,32 @@
 const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 /* Имя файла по шаблону: {name} {n} {w} {h} {date} */
+/* ---------- Имя файла: шаблон, счётчики, транслитерация ---------- */
+const TRANSLIT = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+  і: 'i', ї: 'yi', є: 'ye', ґ: 'g', ғ: 'g', ӣ: 'i', қ: 'k', ӯ: 'u', ҳ: 'h', ҷ: 'j' };
+const translit = s => s.replace(/[А-Яа-яЁёІіЇїЄєҐґҒғӢӣҚқӮӯҲҳҶҷ]/g, ch => {
+  const lo = ch.toLowerCase(), t = TRANSLIT[lo]; if (t === undefined) return ch;
+  return ch === lo ? t : (t.length > 1 ? t[0].toUpperCase() + t.slice(1) : t.toUpperCase());
+});
+function ratioLabel(c) {
+  if (c.sizeMode === 'fixed') { const g = gcd(c.outW, c.outH) || 1; return `${c.outW / g}x${c.outH / g}`; }
+  return `${c.ratioW}x${c.ratioH}`.replace(/\./g, '_');
+}
+const groupKey = c => c.sizeMode === 'fixed' ? `${c.outW}x${c.outH}` : `${c.ratioW}:${c.ratioH}`;
 function makeName(item, w, h, ext) {
-  const total = items.length, pos = Math.max(0, items.indexOf(item)) + 1;
-  const pad = Math.max(2, String(total).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
-  const vals = { name: baseName(item.name), n: String(pos).padStart(pad, '0'), w, h, date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
+  const total = items.length, i0 = items.indexOf(item), pos = Math.max(0, i0) + 1, start = Number.isFinite(+S.nameStart) ? Math.max(0, Math.floor(+S.nameStart)) : 1;
+  const pad = Math.max(2, String(total + start - 1).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
+  const c = cfgFor(item), key = groupKey(c);
+  const k = 1 + items.slice(0, Math.max(0, i0)).filter(x => groupKey(cfgFor(x)) === key).length;
+  const vals = { name: baseName(item.name), n: String(pos - 1 + start).padStart(pad, '0'), k: String(k).padStart(2, '0'), w, h, ratio: ratioLabel(c), preset: c.presetId || 'custom', date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
   const tpl = (S.nameTpl || '').trim() || DEFAULTS.nameTpl;
-  let s = tpl.replace(/\{(name|n|w|h|date)\}/g, (m, k) => vals[k]);
+  let s = tpl.replace(/\{(name|n|k|w|h|date|ratio|preset)\}/g, (m, t) => vals[t]);
+  if (S.nameTranslit) s = translit(s);
+  if (S.nameSpaces) s = s.replace(/\s+/g, '_');
   s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim().replace(/^\.+/, '').slice(0, 120) || 'image';
   return `${s}.${ext}`;
 }
-const baseName = n => (n.replace(/\.[^.]+$/, '') || 'image').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80);
+const baseName = n => { const b = (n.replace(/\.[^.]+$/, '') || 'image').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 80); return b; };
 const fmtSize = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
 
 /* ---------- Метаданные: безопасный минимум (дата съёмки и камера). Геолокация, серийные номера и миниатюры не копируются никогда ---------- */
@@ -48,22 +64,24 @@ async function readExifBasics(file) {
         }
         return out;
       };
-      const ifd0 = readIFD(u32(4), { 0x010F: 1, 0x0110: 1, 0x8769: 1 });
+      const ifd0 = readIFD(u32(4), { 0x010F: 1, 0x0110: 1, 0x8769: 1, 0x8825: 1 });
       let dto = '';
       if (ifd0[0x8769]) { try { dto = readIFD(ifd0[0x8769], { 0x9003: 1 })[0x9003] || ''; } catch (e) {} }
-      return { make: ifd0[0x010F] || '', model: ifd0[0x0110] || '', dto };
+      return { make: ifd0[0x010F] || '', model: ifd0[0x0110] || '', dto, gps: ifd0[0x8825] !== undefined };
     }
     p += 2 + len;
   }
   return null;
 }
 
-function buildExifTiff({ make, model, dto }) {
-  const enc = str => { const a = new Uint8Array(str.length + 1); for (let i = 0; i < str.length; i++) a[i] = str.charCodeAt(i); return a; };
+function buildExifTiff({ make, model, dto, artist, copyright }) {
+  const enc = str => { const b = new TextEncoder().encode(str), a = new Uint8Array(b.length + 1); a.set(b); return a; };
   const items = [];
   if (make) items.push({ tag: 0x010F, type: 2, data: enc(make) });
   if (model) items.push({ tag: 0x0110, type: 2, data: enc(model) });
   items.push({ tag: 0x0112, type: 3, value: 1 });            // Orientation = 1: поворот уже применён к пикселям
+  if (artist) items.push({ tag: 0x013B, type: 2, data: enc(artist) });
+  if (copyright) items.push({ tag: 0x8298, type: 2, data: enc(copyright) });
   if (dto) items.push({ tag: 0x8769, type: 4, value: 0 });   // смещение Exif IFD подставим ниже
   const n0 = items.length, hasExif = !!dto;
   const dataStart = 8 + (2 + n0 * 12 + 4) + (hasExif ? 2 + 12 + 4 : 0);
@@ -87,14 +105,15 @@ function buildExifTiff({ make, model, dto }) {
   return out;
 }
 
-async function buildSafeExif(file) {
-  const info = await readExifBasics(file).catch(() => null);
-  if (!info) return null;
+async function buildSafeExif(file, withCamera = true) {
+  const info = withCamera ? await readExifBasics(file).catch(() => null) : null;
   const clean = str => (str || '').replace(/[^\x20-\x7E]/g, '').trim().slice(0, 64);
-  const make = clean(info.make), model = clean(info.model);
-  const dto = /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(info.dto || '') ? info.dto : '';
-  if (!make && !model && !dto) return null;
-  return buildExifTiff({ make, model, dto });
+  const make = clean(info && info.make), model = clean(info && info.model);
+  const dto = info && /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(info.dto || '') ? info.dto : '';
+  const artist = (S.author || '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 80);
+  const copyright = artist ? '© ' + artist : '';
+  if (!make && !model && !dto && !artist) return null;
+  return buildExifTiff({ make, model, dto, artist, copyright });
 }
 
 async function injectExif(blob, tiff) {
@@ -150,16 +169,47 @@ async function exportBlob(item, bmp, formatOverride) {
   const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item) });
   let blob, outW = cw, outH = ch, fit = null;
   if (S.targetOn && fmt !== 'png') {
-    fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (S.keepMeta && fmt === 'jpg' ? 1500 : 0));
+    fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && (S.meta === 'basic' || S.author) ? 1500 : 0));
     blob = fit.blob; outW = fit.w; outH = fit.h;
   } else blob = await new Promise(r => c.toBlob(r, mime, S.quality / 100));
   c.width = c.height = 0;
   if (!blob) throw new Error('Не удалось создать файл (слишком большой холст?)');
-  if (S.keepMeta && blob.type === 'image/jpeg') {
-    try { const tiff = await buildSafeExif(item.file); if (tiff) blob = await injectExif(blob, tiff); } catch (e) { console.warn('exif', e); }
+  if ((S.meta === 'basic' || S.author) && blob.type === 'image/jpeg') {
+    try { const tiff = await buildSafeExif(item.file, S.meta === 'basic'); if (tiff) blob = await injectExif(blob, tiff); } catch (e) { console.warn('exif', e); }
   }
   const ext = EXT[blob.type] || fmt;
   return { blob, w: outW, h: outH, fit, name: makeName(item, outW, outH, ext), fellBack: blob.type !== mime };
+}
+
+
+/* ---------- Сохранение в выбранную папку (File System Access API: Chrome / Edge на компьютере) ---------- */
+const FOLDER_OK = typeof window.showDirectoryPicker === 'function';
+let dirHandle = null;
+const idbOpen = () => new Promise((res, rej) => { const r = indexedDB.open('aspect-studio-fs', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function idbGet(k) { const db = await idbOpen(); return new Promise((res, rej) => { const q = db.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+async function idbSet(k, v) { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction('h', 'readwrite'); t.objectStore('h').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+async function pickFolder() {
+  dirHandle = await window.showDirectoryPicker({ id: 'aspect-studio', mode: 'readwrite' });
+  try { await idbSet('dir', dirHandle); } catch (e) {}
+  if (typeof updateFolderUI === 'function') updateFolderUI();
+}
+async function ensureFolder() {            // вызывается в начале действия, пока «жив» жест пользователя
+  if (!S.folderOn || !FOLDER_OK) return false;
+  if (!dirHandle) await pickFolder();
+  let p = await dirHandle.queryPermission({ mode: 'readwrite' });
+  if (p !== 'granted') p = await dirHandle.requestPermission({ mode: 'readwrite' });
+  if (p !== 'granted') { toast('Нет доступа к папке — выбери её заново', true); throw Object.assign(new Error('perm'), { name: 'NotAllowedError' }); }
+  return true;
+}
+async function writeToFolder(blob, name) {  // не затираем существующие файлы: добавляем _2, _3…
+  let n = name, i = 2;
+  for (;;) {
+    try { await dirHandle.getFileHandle(n); n = name.replace(/(\.[^.]+)$/, `_${i++}$1`); }
+    catch (e) { if (e && e.name === 'NotFoundError') break; throw e; }
+  }
+  const w = await (await dirHandle.getFileHandle(n, { create: true })).createWritable();
+  await w.write(blob); await w.close();
+  return n;
 }
 
 function saveBlob(blob, name) {
@@ -185,12 +235,18 @@ async function withCurrent(fn) {
   finally { busy = false; setToolbarBusy(false); if (heavy) hideProgress(); }
 }
 
-const downloadCurrent = () => withCurrent(async (item, bmp) => {
-  const r = await exportBlob(item, bmp);
-  saveBlob(r.blob, r.name);
-  if (r.fit && !r.fit.met) { toast(`Не удалось уложиться в ${S.targetKB} КБ: получилось ${fmtSize(r.blob.size)}`, true); return; }
-  toast(r.fit ? `Сохранено · ${r.w}×${r.h} · ${fmtSize(r.blob.size)} · качество ${Math.round(r.fit.q * 100)}%` : r.fellBack ? `Браузер не умеет ${S.format.toUpperCase()} — сохранён ${r.name.split('.').pop().toUpperCase()}` : `Сохранено · ${r.w}×${r.h} · ${fmtSize(r.blob.size)}`);
-});
+const downloadCurrent = async () => {
+  let useFolder = false;
+  try { useFolder = await ensureFolder(); } catch (e) { if (e && e.name !== 'AbortError') console.error(e); return; }
+  return withCurrent(async (item, bmp) => {
+    const r = await exportBlob(item, bmp);
+    let saved = r.name;
+    if (useFolder) saved = await writeToFolder(r.blob, r.name); else saveBlob(r.blob, r.name);
+    const where = useFolder ? ` в папку «${dirHandle.name}»` : '';
+    if (r.fit && !r.fit.met) { toast(`Не удалось уложиться в ${S.targetKB} КБ: получилось ${fmtSize(r.blob.size)}`, true); return; }
+    toast(r.fit ? `Сохранено${where} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)} · качество ${Math.round(r.fit.q * 100)}%` : r.fellBack ? `Браузер не умеет ${S.format.toUpperCase()} — сохранён ${saved.split('.').pop().toUpperCase()}${where}` : `Сохранено${where} · ${saved} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)}`);
+  });
+};
 
 const shareCurrent = () => withCurrent(async (item, bmp) => {
   const r = await exportBlob(item, bmp);
@@ -295,8 +351,46 @@ async function cleanStaleTmp(maxAgeMs) {
   } catch (e) {}
 }
 
+async function exportToFolder() {
+  const list = items.filter(i => !i.skip), total = list.length;
+  if (!total) { toast('Отметь хотя бы одно фото', true); return; }
+  busy = true; cancelFlag = false; setToolbarBusy(true); exporting = true; $('.layout').classList.add('locked');
+  items.forEach(i => { i.status = ''; });
+  let ok = 0, unmet = 0, diskFull = false; const failed = [];
+  showProgress('Сохранение в папку…');
+  try {
+    for (let i = 0; i < total; i++) {
+      if (cancelFlag) break;
+      const item = list[i]; setProgress(i, total, item.name); await yieldUI();
+      let bmp;
+      try {
+        bmp = await loadBitmap(item); const r = await exportBlob(item, bmp);
+        await writeToFolder(r.blob, r.name); ok++; item.status = 'ok'; if (r.fit && !r.fit.met) unmet++;
+      } catch (e) {
+        console.error(e); failed.push(item.name); item.status = 'bad';
+        if (e && e.name === 'QuotaExceededError') { diskFull = true; break; }
+        if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) { failed.push('(нет доступа)'); break; }
+      } finally { closeBmp(bmp); }
+      setProgress(i + 1, total, item.name);
+    }
+    const nf = failed.filter(x => !x.startsWith('(')).length, name = dirHandle ? dirHandle.name : '';
+    if (cancelFlag) toast(`Отменено. Сохранено файлов: ${ok}`);
+    else if (diskFull) toast(`На диске не хватило места. Сохранено файлов: ${ok}`, true);
+    else if (failed.includes('(нет доступа)')) toast(`Нет доступа к папке. Сохранено файлов: ${ok}`, true);
+    else if (nf) toast(`Готово: ${ok} из ${total} в «${name}». Ошибки: ${nf}`, true);
+    else if (unmet) toast(`Готово · ${ok} файлов в «${name}». ${unmet} не уложились в ${S.targetKB} КБ`, true);
+    else toast(`Сохранено в «${name}»: ${ok} файлов`);
+  } finally {
+    busy = false; setToolbarBusy(false); exporting = false; $('.layout').classList.remove('locked');
+    renderThumbs(); updateZipLabel(); hideProgress();
+  }
+}
+
 async function exportAll() {
   if (busy || !items.length) return;
+  let useFolder = false;
+  try { useFolder = await ensureFolder(); } catch (e) { if (e && e.name !== 'AbortError') console.error(e); return; }
+  if (useFolder) return exportToFolder();
   busy = true; cancelFlag = false; setToolbarBusy(true);
   const list = items.filter(i => !i.skip), total = list.length, used = new Set(), failed = [];
   if (!total) { busy = false; setToolbarBusy(false); toast('Отметь хотя бы одно фото для ZIP', true); return; }
