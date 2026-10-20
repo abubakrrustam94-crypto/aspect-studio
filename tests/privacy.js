@@ -18,7 +18,7 @@ function p3ToSrgb([r, g, b]) {       // та же матрица, что в те
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 900 }, acceptDownloads: true });
   await ctx.addInitScript(() => {          // «папка»: подменяем выбор каталога на каталог в OPFS (в тесте нельзя нажать системный диалог)
     window.showDirectoryPicker = async () => { const root = await navigator.storage.getDirectory(); const h = await root.getDirectoryHandle('out', { create: true }); h.queryPermission = async () => 'granted'; h.requestPermission = async () => 'granted'; return h; };
-    localStorage.setItem('aspect-studio-onboarded', '1');
+    { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); };
   });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(url); await p.waitForTimeout(500);

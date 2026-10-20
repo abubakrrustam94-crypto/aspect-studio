@@ -32,7 +32,7 @@ function checkZip(buf) {
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 800 }, acceptDownloads: true });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(url); await p.evaluate(() => localStorage.setItem('aspect-studio-onboarded', '1')); await p.reload(); await p.waitForTimeout(400);
+  await p.goto(url); await p.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p.reload(); await p.waitForTimeout(400);
 
   // 1) ZIP из 100 файлов
   await p.setInputFiles('#fileInput', Array(100).fill(img)); await p.waitForFunction(() => items.length === 100, null, { timeout: 60000 });
@@ -51,7 +51,7 @@ function checkZip(buf) {
   const jpg = await p.evaluate(async () => { const c = document.createElement('canvas'); c.width = 200; c.height = 100; const x = c.getContext('2d'); x.fillStyle = '#f00'; x.fillRect(0, 0, 100, 100); x.fillStyle = '#00f'; x.fillRect(100, 0, 100, 100); const bl = await new Promise(r => c.toBlob(r, 'image/jpeg', .95)); return Array.from(new Uint8Array(await bl.arrayBuffer())); });
   const buf = withOrientation(Buffer.from(jpg), 6);
   const p2 = await (await b.newContext({ viewport: { width: 1100, height: 800 } })).newPage(); p2.on('pageerror', e => errs.push(e.message));
-  await p2.goto(url); await p2.evaluate(() => localStorage.setItem('aspect-studio-onboarded', '1')); await p2.reload(); await p2.waitForTimeout(400);
+  await p2.goto(url); await p2.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p2.reload(); await p2.waitForTimeout(400);
   await p2.setInputFiles('#fileInput', [{ name: 'exif6.jpg', mimeType: 'image/jpeg', buffer: buf }]); await p2.waitForFunction(() => items.length === 1, null, { timeout: 10000 }); await p2.waitForTimeout(500);
   const dims = await p2.evaluate(() => [items[0].w, items[0].h]);
   ok(dims.join('x') === '100x200', 'EXIF Orientation=6: размеры после поворота ' + dims.join('×'));

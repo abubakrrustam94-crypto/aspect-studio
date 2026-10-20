@@ -67,7 +67,7 @@
       <!-- ============ Основная колонка ============ -->
       <div class="col-main">
         <section class="card" id="uploadCard">
-          <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Выбрать фото">
+          <div class="upload-zone" id="uploadZone" role="button" tabindex="0">
             <div class="upload-icon"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></div>
             <div>
               <div class="upload-title">Перетащи фото, нажми или вставь (Ctrl+V)</div>
@@ -381,6 +381,7 @@
           <p class="note" style="margin-top:4px">Всё работает на твоём устройстве: фото никуда не отправляются. Настройки и наборы хранятся только в этом браузере.</p>
           <div class="row" style="margin-top:12px">
             <a class="btn btn-outlined btn-sm" id="repoLink" href="https://github.com/abubakrrustam94-crypto/aspect-studio" target="_blank" rel="noopener noreferrer">Исходный код на GitHub</a>
+            <button type="button" class="btn btn-outlined btn-sm" id="wnOpenBtn"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Что нового</button>
             <button type="button" class="btn btn-outlined btn-sm danger" id="resetAll">Сбросить все настройки</button>
           </div>
           <details class="errlog" id="errLogBox">
@@ -490,7 +491,7 @@
   </div>
 
   <!-- Плавающая панель действий -->
-  <div class="toolbar" id="toolbar" role="toolbar" aria-label="Действия">
+  <div class="toolbar" id="toolbar" role="region" aria-label="Действия">
     <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> <span>Скачать</span></button>
     <button class="tb-btn" id="btnZip" type="button" title="Скачать всё ZIP (Shift+D)" hidden><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> <span class="lbl" id="zipLabel">ZIP</span></button>
     <button class="tb-btn" id="btnShare" type="button" title="Поделиться (S)" hidden><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg> <span class="lbl">Поделиться</span></button>
@@ -560,6 +561,14 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <div class="modal onb" id="whatsnew" role="dialog" aria-modal="true" aria-labelledby="wnTitle" hidden>
+  <div class="onb-card wn-card">
+    <h2 id="wnTitle">Что нового</h2>
+    <div class="wn-list" id="wnList" tabindex="0"></div>
+    <div class="onb-actions"><button type="button" class="btn btn-main" id="wnClose">Понятно</button></div>
+  </div>
+</div>
+
   <div class="modal onb" id="onboard" role="dialog" aria-modal="true" aria-labelledby="onbTitle" hidden>
   <div class="onb-card">
     <div class="onb-ic" id="onbIc"></div>
@@ -581,6 +590,7 @@
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
   <script src="js/onboarding.js"></script>
+  <script src="js/changelog.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -74,9 +74,9 @@ function syncUI() {
   $('#wmPosBox').hidden = E.wmMode === 'tile';
   $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
-  $('#qualityRow').classList.toggle('disabled', E.format === 'png');
+  $('#qualityRow').classList.toggle('disabled', E.format === 'png'); $('#qualityRow').setAttribute('aria-disabled', E.format === 'png');
   $('#quality').disabled = E.format === 'png';
-  $('#targetRow').classList.toggle('disabled', E.format === 'png');
+  $('#targetRow').classList.toggle('disabled', E.format === 'png'); $('#targetRow').setAttribute('aria-disabled', E.format === 'png');
   $$('#targetRow input').forEach(x => { x.disabled = E.format === 'png'; });
   $('#targetFields').hidden = !S.targetOn;
   updateNameExample();

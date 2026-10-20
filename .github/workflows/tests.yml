@@ -28,3 +28,9 @@ jobs:
         run: node tests/privacy.js
       - name: Тесты водяного знака (мозаика, шаблоны)
         run: node tests/watermark.js
+      - name: Тесты больших фото (авто-уменьшение при загрузке)
+        run: node tests/large.js
+      - name: Тесты «Что нового»
+        run: node tests/whatsnew.js
+      - name: Проверка доступности (axe)
+        run: node tests/a11y.js

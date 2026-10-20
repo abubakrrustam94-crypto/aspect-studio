@@ -1,12 +1,13 @@
 {
   "name": "aspect-studio",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "private": true,
   "description": "Смена формата фото без обрезки — работает полностью в браузере",
   "scripts": {
-    "test": "node tests/run.js && node tests/stress.js && node tests/formats.js && node tests/privacy.js && node tests/watermark.js"
+    "test": "node tests/run.js && node tests/stress.js && node tests/formats.js && node tests/privacy.js && node tests/watermark.js && node tests/large.js && node tests/whatsnew.js && node tests/a11y.js"
   },
   "devDependencies": {
-    "playwright": "^1.48.0"
+    "playwright": "^1.48.0",
+    "axe-core": "^4.10.0"
   }
 }

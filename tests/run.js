@@ -102,7 +102,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   await p2.click('#helpBtn'); ok(await p2.evaluate(() => !document.getElementById('onboard').hidden), 'кнопка «?» открывает обучение');
   // наборы: экспорт / импорт / сброс
   const p3 = await (await b.newContext({ viewport: { width: 1100, height: 800 }, acceptDownloads: true })).newPage(); const e3 = []; p3.on('pageerror', e => e3.push(e.message));
-  await p3.goto(url); await p3.evaluate(() => localStorage.setItem('aspect-studio-onboarded', '1')); await p3.reload(); await p3.waitForTimeout(500);
+  await p3.goto(url); await p3.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p3.reload(); await p3.waitForTimeout(500);
   await p3.click('#settingsTabs [data-tab=extra]'); await p3.fill('#presetName', 'Тест'); await p3.click('#savePreset');
   const [dl] = await Promise.all([p3.waitForEvent('download'), p3.click('#presetsExport')]);
   const fs = require('fs'), os = require('os'), fp = path.join(os.tmpdir(), 'as-presets-test.json'); await dl.saveAs(fp);

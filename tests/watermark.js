@@ -8,7 +8,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
 (async () => {
   await new Promise(r => server.listen(8768, r));
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
-  await ctx.addInitScript(() => localStorage.setItem('aspect-studio-onboarded', '1'));
+  await ctx.addInitScript(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   const open = async () => { await p.goto('http://localhost:8768/'); await p.waitForTimeout(500); };
   await open();

@@ -37,7 +37,7 @@ const box = (t, d) => { const b = Buffer.alloc(8); b.writeUInt32BE(8 + d.length)
   await new Promise(r => server.listen(8766, r)); const base = 'http://localhost:8766/';
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 800 } });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(base); await p.evaluate(() => localStorage.setItem('aspect-studio-onboarded', '1')); await p.reload(); await p.waitForTimeout(500);
+  await p.goto(base); await p.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p.reload(); await p.waitForTimeout(500);
   const load = async (f, nm) => {
     await p.evaluate(() => { items.length = 0; idx = 0; const t = document.querySelector('.toast'); t.className = 'toast'; t.textContent = ''; });
     await p.setInputFiles('#fileInput', typeof f === 'string' ? f : { name: nm, mimeType: 'application/octet-stream', buffer: f });

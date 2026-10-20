@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.10.0';
+const APP_VERSION = '2.11.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -199,8 +199,36 @@ const yieldUI = () => new Promise(r => setTimeout(r, 0));
 /* ===================================================================
    Загрузка изображений (с учётом EXIF-ориентации)
    =================================================================== */
+// Размер файла без полной расшифровки: <img> сообщает размеры (с учётом EXIF-ориентации) сразу после чтения заголовка
+function probeSize(src) {
+  return new Promise(res => {
+    const img = new Image(); let done = false;
+    const end = v => { if (done) return; done = true; img.onload = img.onerror = null; img.removeAttribute('src'); res(v); };
+    img.onload = () => end(img.naturalWidth && img.naturalHeight ? { w: img.naturalWidth, h: img.naturalHeight } : null);
+    img.onerror = () => end(null);
+    setTimeout(() => end(null), 8000);
+    img.src = src.url;
+  });
+}
+// Больше этой площади фото целиком не держим в памяти: результат всё равно не выйдет за MAX_AREA
+const LOAD_AREA = MAX_AREA * 2.5;
+function loadTarget(w, h) {
+  if (w * h <= LOAD_AREA) return null;
+  const k = Math.sqrt(LOAD_AREA / (w * h));
+  return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
+}
 async function decodeBitmap(src) {
-  const f = src.file;
+  const f = src.file, L = src.load;
+  if (L) {                                  // большое фото: декодируем сразу в уменьшенном виде, при нехватке памяти пробуем ещё меньше
+    const ladder = src.laddering ? [1, .75, .55, .4, .28] : [1];
+    let lastErr;
+    for (const k of ladder) {
+      const rw = Math.max(1, Math.round(L.w * k)), rh = Math.max(1, Math.round(L.h * k));
+      try { return await createImageBitmap(f, { imageOrientation: 'from-image', resizeWidth: rw, resizeHeight: rh, resizeQuality: 'high' }); }
+      catch (e) { lastErr = e; }
+    }
+    throw lastErr;
+  }
   try { return await createImageBitmap(f, { imageOrientation: 'from-image' }); } catch (e) {}
   try { return await createImageBitmap(f); } catch (e) {}
   const img = new Image();
@@ -253,26 +281,36 @@ async function makeItem(file) {
   const url = URL.createObjectURL(file);
   let bmp;
   try {
-    bmp = await loadBitmap({ file, url });
+    const pr = await probeSize({ url });
+    const load = pr ? loadTarget(pr.w, pr.h) : null;
+    bmp = await loadBitmap({ file, url, load, laddering: !!load });
     const { w, h } = dimsOf(bmp);
     if (!w || !h) throw new Error('empty');
+    const reduced = load ? { from: pr, to: { w, h } } : null;       // что было в файле и до чего уменьшили
     const thumb = await makeThumb(bmp, w, h);
     const p3 = await detectP3(file);
-    return { id: ++uid, name: file.name || `image-${uid}`, file, url, thumb, w, h, ow: w, oh: h, rot: 0, flipH: false, flipV: false, crop: null, view: null, ov: null, focus: { x: .5, y: .5 }, zoom: 1, sample: null, dom: null, p3 };
+    return { id: ++uid, name: file.name || `image-${uid}`, file, url, thumb, w, h, ow: w, oh: h, rot: 0, flipH: false, flipV: false, crop: null, view: null, ov: null, focus: { x: .5, y: .5 }, zoom: 1, sample: null, dom: null, p3, load: load ? { w, h } : null, reduced };
   } catch (e) {
     URL.revokeObjectURL(url);
     throw e;
   } finally { closeBmp(bmp); }
 }
 
+const mpOf = d => (d.w * d.h / 1e6).toFixed(d.w * d.h >= 1e7 ? 0 : 1);
+function bigPhotoMsg(list) {
+  const f = list[0].reduced;
+  const one = `${list[0].name}: ${mpOf(f.from)} МП (${f.from.w}×${f.from.h}) — для скорости открыто в уменьшенном виде ${f.to.w}×${f.to.h}`;
+  const tail = '. Для результата этого хватает; если нужна полная детализация (например, сильная обрезка), разрежь фото или уменьши заранее.';
+  return list.length === 1 ? one + tail : `${list.length} больших фото открыты в уменьшенном виде (${one.split(' — ')[0]} и др.)` + tail;
+}
 async function addFiles(list) {
   const files = Array.from(list || []).filter(isInputFile);
   if (!files.length) { toast('Выбери изображения', true); return; }
   const first = items.length;
-  const failed = [], notes = [];
+  const failed = [], notes = [], bigNotes = [];
   for (let i = 0; i < files.length; i++) {
     if (files.length > 3) toast(`Загрузка ${i + 1} / ${files.length}…`);
-    try { items.push(await makeItem(await normalizeInput(files[i], notes))); }
+    try { const it = await makeItem(await normalizeInput(files[i], notes)); items.push(it); if (it.reduced) bigNotes.push(it); }
     catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: files[i].name, msg: e && e.userMsg }); }
   }
   if (items.length > first) { idx = first; updateChrome(); schedule(); }
@@ -283,6 +321,7 @@ async function addFiles(list) {
     toast(failed.length === 1 ? `${f.name}: ${why}` : `Не удалось открыть ${failed.length} из ${files.length}: ${failed.slice(0, 2).map(x => x.name).join(', ')}${failed.length > 2 ? '…' : ''}. ${why}`, true, { ms: 7000 });
   }
   else if (ok) toast(`Загружено: ${ok}${extra}`, false, { ms: notes.length ? 6000 : 0 });
+  if (bigNotes.length) setTimeout(() => toast(bigPhotoMsg(bigNotes), false, { ms: 9000 }), 900);
 }
 
 let trash = null;   // последнее удаление, которое ещё можно отменить

@@ -76,6 +76,7 @@ function updateInfo(item) {
   }
   if (c.enhOn) pills.push(c.enhScale > 1 ? `Улучшение ×${c.enhScale}` : 'Улучшение');
   if (ex.limited) pills.push('Уменьшено до лимита');
+  if (item.reduced) pills.push(`Исходник ${mpOf(item.reduced.from)} МП открыт уменьшенным`);
   const note = $('#enhSizeNote');
   if (note) note.textContent = `Итог: ${ex.cw}×${ex.ch}` + (ex.limited ? ' — упёрлось в «Макс. сторону», подними её в «Экспорт»' : '');
   infoRow.replaceChildren(...pills.map(pill));
