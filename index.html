@@ -562,9 +562,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <div class="modal onb" id="whatsnew" role="dialog" aria-modal="true" aria-labelledby="wnTitle" hidden>
-  <div class="onb-card wn-card">
-    <h2 id="wnTitle">Что нового</h2>
-    <div class="wn-list" id="wnList" tabindex="0"></div>
+  <div class="onb-card wn-card" style="text-align:left;max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;width:min(100%,460px)">
+    <h2 id="wnTitle" style="text-align:center">Что нового</h2>
+    <div class="wn-list" id="wnList" tabindex="0" style="overflow:auto;min-height:0;flex:1 1 auto"></div>
     <div class="onb-actions"><button type="button" class="btn btn-main" id="wnClose">Понятно</button></div>
   </div>
 </div>

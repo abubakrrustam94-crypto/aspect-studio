@@ -15,17 +15,26 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   p = await mk({ 'aspect-studio-onboarded': '1', 'aspect-studio-seen': '2.0.0' });
   ok(await p.evaluate(() => !document.getElementById('whatsnew').hidden), 'после обновления окно открывается само');
   const txt = await p.textContent('#wnList');
-  ok(txt.includes('v' + ver) && txt.includes('мозаик'), 'в окне есть список изменений с текущей версией');
+  ok(txt.includes('v' + ver) && txt.includes('Большие фото'), 'в окне есть список изменений с текущей версией');
   ok(await p.evaluate(() => document.activeElement.id === 'wnClose'), 'фокус на кнопке «Понятно»');
   await p.keyboard.press('Escape'); await p.waitForTimeout(200);
   ok(await p.evaluate(v => document.getElementById('whatsnew').hidden && localStorage.getItem('aspect-studio-seen') === v, ver), 'Esc закрывает и запоминает версию');
   await p.reload(); await p.waitForTimeout(1500);
   ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'после перезагрузки окно не повторяется');
+  await p.evaluate(() => wnOpen()); await p.mouse.click(5, 5); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'тап по затемнению закрывает окно');
   // 3. кнопка в «О программе»
   await p.click('#settingsTabs [data-tab=extra]'); await p.click('#wnOpenBtn'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => !document.getElementById('whatsnew').hidden && document.querySelectorAll('#wnList h3').length >= 5), 'кнопка «Что нового» открывает полный список');
   await p.click('#wnClose'); ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'кнопка «Понятно» закрывает окно');
   ok(!p.errs.length, 'нет ошибок JS');
+  // 3б. устаревший CSS (без правил .wn-*) не должен прятать кнопку закрытия на узком экране
+  const q = await b.newContext({ viewport: { width: 420, height: 700 } }); const sp = await q.newPage();
+  await sp.route('**/css/style.css', r => { const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8').split('/* Что нового */')[0]; r.fulfill({ contentType: 'text/css', body: css }); });
+  await sp.goto(url); await sp.waitForTimeout(500); await sp.evaluate(() => wnOpen());
+  await sp.waitForTimeout(300);
+  ok(await sp.evaluate(() => { const r = document.getElementById('wnClose').getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.height > 0; }), 'кнопка «Понятно» видна на экране 420×700 даже со старым CSS');
+  await q.close();
   // 4. более новая сохранённая версия (откат) окно не открывает
   p = await mk({ 'aspect-studio-onboarded': '1', 'aspect-studio-seen': '99.0.0' });
   ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'при откате на старую версию окно не показывается');

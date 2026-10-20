@@ -2,6 +2,14 @@
 const SEEN_KEY = 'aspect-studio-seen';
 const CHANGELOG = [
   {
+    "v": "2.11.1",
+    "t": "Исправления",
+    "items": [
+      "Окно «Что нового» всегда можно закрыть: кнопка видна на любом экране, закрывает и тап по затемнению",
+      "Обновление подтягивает свежие стили и скрипты сразу, а не со второго открытия"
+    ]
+  },
+  {
     "v": "2.11.0",
     "t": "Большие фото, доступность, «Что нового»",
     "items": [
@@ -85,6 +93,7 @@ function wnClose() {
   if (wnOpener && wnOpener.focus) wnOpener.focus();
 }
 $('#wnClose').addEventListener('click', wnClose);
+$('#whatsnew').addEventListener('click', e => { if (e.target.id === 'whatsnew') wnClose(); });          // тап по затемнению тоже закрывает
 $('#wnOpenBtn').addEventListener('click', wnOpen);
 $('#whatsnew').addEventListener('keydown', e => {
   if (e.key === 'Escape') { e.stopPropagation(); wnClose(); }
