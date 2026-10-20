@@ -22,6 +22,17 @@ function focusOf(item, dw, dh, cw, ch) {
   const an = item.an;
   if (!S.autoCenter || item.manual || !an || !an.subject) return item.focus;
   const fx = dw - cw, fy = dh - ch, cl = v => Math.max(0, Math.min(1, v));
+  const U = an.faces && an.faceBox;
+  if (U) {          // лица: стараемся, чтобы все они остались в кадре, с запасом; по вертикали лицо чуть выше центра
+    const axis = (u0, u1, size, full, bias) => {
+      if (full < .5) return .5;
+      const a = u0 * (size + full), b = u1 * (size + full), m = Math.min(size * .08, (b - a) * .25 + size * .02);
+      let t = (a + b) / 2 - size * bias;                                  // желаемое начало окна
+      if (b - a + 2 * m <= size) t = Math.max(b + m - size, Math.min(a - m, t));      // вписываем всю рамку лиц
+      return cl(t / full);
+    };
+    return { x: axis(U.x0, U.x1, cw, fx, .5), y: axis(U.y0, U.y1, ch, fy, .42) };
+  }
   return { x: fx > .5 ? cl((an.subject.x * dw - cw / 2) / fx) : .5, y: fy > .5 ? cl((an.subject.y * dh - ch / 2) / fy) : .5 };
 }
 

@@ -181,3 +181,18 @@ p3 = np.zeros((H, W, 3), np.uint8); p3[:] = (204, 102, 51)
 Image.fromarray(p3).save(os.path.join(OUT, 'p3_orange.png'), icc_profile=icc)
 Image.fromarray(p3).save(os.path.join(OUT, 'p3_orange.jpg'), quality=100, icc_profile=icc, subsampling=0)
 print('exif/p3 ок')
+
+
+# --- фото для проверки лиц (нужен scikit-image: pip install scikit-image) ---
+try:
+    import skimage.data as skd
+    from PIL import Image as _I
+    _a = _I.fromarray(skd.astronaut()); _a.save(os.path.join(OUT, 'face_astronaut.jpg'), quality=88)
+    _I.fromarray(skd.coffee()).save(os.path.join(OUT, 'noface_coffee.jpg'), quality=88)
+    _I.fromarray(skd.rocket()).save(os.path.join(OUT, 'noface_rocket.jpg'), quality=88)
+    _face = _a.crop((150, 0, 400, 260))
+    _bg = _I.fromarray(skd.coffee()).resize((1200, 800)); _bg.paste(_face.resize((300, 312)), (150, 200)); _bg.paste(_face.resize((200, 208)), (800, 300)); _bg.save(os.path.join(OUT, 'face_two.jpg'), quality=88)
+    _bg2 = _I.fromarray(skd.coffee()).resize((1600, 1000)); _bg2.paste(_face.resize((150, 156)), (1100, 150)); _bg2.save(os.path.join(OUT, 'face_small.jpg'), quality=88)
+    print('faces ок')
+except ImportError:
+    print('scikit-image нет: фикстуры лиц пропущены')

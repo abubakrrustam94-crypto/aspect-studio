@@ -34,3 +34,5 @@ jobs:
         run: node tests/whatsnew.js
       - name: Проверка доступности (axe)
         run: node tests/a11y.js
+      - name: Тесты определения лиц (BlazeFace, офлайн)
+        run: node tests/faces.js

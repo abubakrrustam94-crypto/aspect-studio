@@ -32,6 +32,7 @@ function set(key, val) {
   if (typeof DEFAULTS[key] === 'number' && typeof val === 'string') val = Number(val);
   const t = (it && it.ov && OV_KEYS.includes(key)) ? it.ov : S;
   t[key] = val;
+  if (key === 'faceAI') items.forEach(i => { i.an = undefined; });     // перезапустить анализ с новой настройкой
   if (key === 'outW' || key === 'outH') t.presetId = null;
   if (key === 'enhLevel' && LEVELS[val]) Object.assign(t, LEVELS[val]);
   if (key === 'sharp' || key === 'denoise') t.enhLevel = 'custom';

@@ -337,6 +337,8 @@
             <button type="button" class="btn btn-tonal btn-sm" id="anTuneOne"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Подобрать для этого</button>
             <button type="button" class="btn btn-outlined btn-sm" id="anTuneAll" hidden><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Для всех фото</button>
           </div>
+          <label class="switch" style="margin-top:14px"><input type="checkbox" data-key="faceAI"><span class="track"></span><span>Искать лица</span></label>
+          <p class="note" id="faceNote" style="margin:6px 0 0">Кадр при «Заполнить» будет смотреть на лица. Лёгкая модель (около 1,5 МБ) скачивается один раз при первом анализе, потом работает без сети. Фото никуда не уходят.</p>
           <p class="note" style="margin:10px 0 0">Подбор включит или выключит улучшение, выберет увеличение, резкость, шумоподавление и тип фона по этому фото. Результат можно поправить вручную или отменить.</p>
         </section>
 
@@ -585,6 +587,7 @@
   <script src="js/formats.js"></script>
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>
+  <script src="js/faces.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>

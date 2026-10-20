@@ -77,24 +77,37 @@ function anSubject(g, w, h) {
   return { x: 0.75 * (wx / ws) + 0.25 * 0.5, y: 0.75 * (wy / ws) + 0.25 * 0.5 };
 }
 
+/* Лица: BlazeFace (если не отключено в настройках), иначе встроенный FaceDetector браузера (если он есть).
+   Возвращает { boxes: [{x0,y0,x1,y1}] в долях кадра, fail } либо null, если лиц нет */
 async function anFaces(canvas) {
-  if (!('FaceDetector' in window)) return null;
-  try {
-    const faces = await new FaceDetector({ fastMode: true, maxDetectedFaces: 6 }).detect(canvas);
-    if (!faces.length) return null;
-    let sx = 0, sy = 0, sw = 0;
-    faces.forEach(f => { const b = f.boundingBox, a = b.width * b.height; sx += (b.x + b.width / 2) * a; sy += (b.y + b.height * .45) * a; sw += a; });
-    return { x: sx / sw / canvas.width, y: sy / sw / canvas.height, n: faces.length };
-  } catch (e) { return null; }
+  let boxes = null, fail = false;
+  if (S.faceAI && typeof detectFacesBF === 'function') {
+    try { boxes = await detectFacesBF(canvas); } catch (e) { fail = true; console.warn('faces', e); }
+  }
+  if (!boxes && 'FaceDetector' in window) {
+    try {
+      const fs = await new FaceDetector({ fastMode: true, maxDetectedFaces: 6 }).detect(canvas);
+      boxes = fs.map(f => { const b = f.boundingBox; return { x0: b.x / canvas.width, y0: b.y / canvas.height, x1: (b.x + b.width) / canvas.width, y1: (b.y + b.height) / canvas.height }; });
+    } catch (e) {}
+  }
+  if (!boxes || !boxes.length) return fail ? { boxes: [], fail: true } : null;
+  return { boxes: boxes.map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })), fail: false };
+}
+// Общая рамка всех лиц и точка, на которую смотрит кадр
+function anFaceUnion(boxes) {
+  const u = { x0: 1, y0: 1, x1: 0, y1: 0 };
+  boxes.forEach(b => { u.x0 = Math.min(u.x0, b.x0); u.y0 = Math.min(u.y0, b.y0); u.x1 = Math.max(u.x1, b.x1); u.y1 = Math.max(u.y1, b.y1); });
+  return u;
 }
 
 async function analyzePhoto(bmp) {
   const { g, w, h, canvas } = anGray(bmp);
   const m = anMetrics(g, w, h), edgeStd = anEdgeStd(g, w, h);
-  const f = await anFaces(canvas);
-  const subject = f ? { x: f.x, y: f.y } : anSubject(g, w, h);
+  const f = await anFaces(canvas), has = f && f.boxes.length > 0;
+  const union = has ? anFaceUnion(f.boxes) : null;
+  const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : anSubject(g, w, h);
   canvas.width = canvas.height = 0;
-  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: f ? f.n : 0 };
+  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail) };
 }
 
 const anSharpLabel = r => r < 0.22 ? ['Очень мягкое', 'bad'] : r < 0.36 ? ['Мягковатое', 'warn'] : r < 0.65 ? ['Нормальное', 'ok'] : ['Чёткое', 'ok'];
