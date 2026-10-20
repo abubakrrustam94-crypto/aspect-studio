@@ -11,7 +11,9 @@
 | `jxl/` | JPEG XL (если браузер не открывает сам) | [@jsquash/jxl](https://github.com/jamsinclair/jSquash) 1.3.0 (libjxl в WebAssembly) | Apache-2.0 |
 | `pdfjs/` | AI (PDF-совместимые) | [pdf.js](https://github.com/mozilla/pdf.js) 6.4.299, legacy-сборка | Apache-2.0 |
 
-| `blazeface/` | Определение лиц (грузится при первом анализе фото) | [BlazeFace](https://github.com/google-ai-edge/mediapipe) (MediaPipe, веса в формате tfjs из [human-models](https://github.com/vladmandic/human-models)), [TensorFlow.js](https://github.com/tensorflow/tfjs) core + cpu + wasm + converter 4.22.0, собрано esbuild в `runtime.js` | Apache-2.0 / MIT |
+| `tfjs/` | Общий рантайм для лиц и удаления фона | [TensorFlow.js](https://github.com/tensorflow/tfjs) core + cpu + wasm + converter 4.22.0, собрано esbuild в `runtime.js`, плюс `tfjs-backend-wasm*.wasm` | Apache-2.0 |
+| `blazeface/` | Определение лиц (грузится при первом анализе фото) | [BlazeFace](https://github.com/google-ai-edge/mediapipe) (MediaPipe), веса в формате tfjs из [human-models](https://github.com/vladmandic/human-models) | Apache-2.0 / MIT |
+| `cutout/` | Удаление фона (грузится при первом включении) | [U²-Net-P](https://github.com/xuebinqin/U-2-Net) (`u2netp.onnx` из rembg), упрощён и переведён в float16 скриптом `tools/build_u2netp.py` | Apache-2.0 |
 
 Остальные форматы (RAW, PSD/PSB, HDR, SVG, EPS, XCF) разбираются собственным кодом в `js/formats.js`.
 
@@ -26,13 +28,13 @@ npx esbuild jxl-entry.js --bundle --minify --format=iife --define:import.meta.ur
 где `exr-entry.js`: `import parseExr from 'parse-exr'; globalThis.parseExr = parseExr;`,
 а `jxl-entry.js`: `import decode, { init } from '@jsquash/jxl/decode.js'; globalThis.jxlDecoder = { decode, init };`.
 
-## Модель лиц (blazeface/)
+## Рантайм и модель лиц (tfjs/, blazeface/)
 
-Файлы: `runtime.js` (tfjs, собран в один файл), `blazeface-back.json/.bin` (веса, вход 256×256), `tfjs-backend-wasm*.wasm`. Воркер `js/faces-worker.js` подключает их, разбор результатов (якоря SSD, взвешенный NMS) написан вручную.
+Файлы: `tfjs/runtime.js` (tfjs, собран в один файл), `tfjs/tfjs-backend-wasm*.wasm`, `blazeface/blazeface-back.json/.bin` (веса, вход 256×256). Воркер `js/faces-worker.js` подключает их, разбор результатов (якоря SSD, взвешенный NMS) написан вручную.
 Пересборка рантайма:
 ```
 npm i @tensorflow/tfjs-core @tensorflow/tfjs-converter @tensorflow/tfjs-backend-cpu @tensorflow/tfjs-backend-wasm @vladmandic/human-models esbuild
-npx esbuild bf-entry.js --bundle --minify --format=iife --outfile=vendor/blazeface/runtime.js
+npx esbuild bf-entry.js --bundle --minify --format=iife --outfile=vendor/tfjs/runtime.js
 ```
 где `bf-entry.js`:
 ```
@@ -43,3 +45,13 @@ import { loadGraphModel } from '@tensorflow/tfjs-converter';
 self.BlazeFaceLib = { tf, loadGraphModel, setWasmPaths };
 ```
 Веса: `node_modules/@vladmandic/human-models/models/blazeface-back.{json,bin}`, wasm: `node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm{,-simd}.wasm`.
+
+## Модель удаления фона (cutout/)
+
+`u2netp.json` — граф (365 операций: Conv, Relu, MaxPool, Resize, Concat, Add, Sigmoid) без динамических форм, `u2netp.f16.bin` — веса float16 (2,2 МБ). Граф исполняет `js/cutout-worker.js` на операциях tfjs; результат совпадает с onnxruntime (среднее отличие маски меньше 0,3 из 255).
+Пересборка:
+```
+pip install onnx onnxsim numpy
+curl -L -o u2netp.onnx https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx
+python3 tools/build_u2netp.py u2netp.onnx vendor/cutout
+```

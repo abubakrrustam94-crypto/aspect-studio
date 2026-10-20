@@ -36,3 +36,5 @@ jobs:
         run: node tests/a11y.js
       - name: Тесты определения лиц (BlazeFace, офлайн)
         run: node tests/faces.js
+      - name: Тесты удаления фона (U²-Net-P, офлайн)
+        run: node tests/cutout.js

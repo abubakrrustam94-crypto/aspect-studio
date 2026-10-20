@@ -55,7 +55,7 @@ const box = (t, d) => { const b = Buffer.alloc(8); b.writeUInt32BE(8 + d.length)
   });
   const near = (a, b, t) => a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) <= t);
 
-  const vendorReq = []; p.on('request', r => { if (/\/vendor\/(?!blazeface)/.test(r.url())) vendorReq.push(r.url()); });
+  const vendorReq = []; p.on('request', r => { if (/\/vendor\/(?!blazeface|tfjs)/.test(r.url())) vendorReq.push(r.url()); });
   { const r = await load(path.join(FX, 'quad.jpg')); ok(r.ok && !vendorReq.length, 'обычный JPG не подгружает внешние декодеры'); }
   for (const c of CASES.filter(c => !process.env.ONLY || new RegExp(process.env.ONLY).test(c.f))) {
     const r = await load(path.join(FX, c.f));

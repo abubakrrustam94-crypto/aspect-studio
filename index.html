@@ -230,6 +230,26 @@
           <p class="note" style="margin:0">В режиме «Заполнить» фото закрывает весь кадр, полей и фона нет. Выбери «Вписать» на вкладке «Кадр», чтобы настроить фон.</p>
         </section>
 
+        <section class="card" id="cardCutout" data-tab="bg">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Удалить фон</div>
+          <label class="switch"><input type="checkbox" data-key="cutOn"><span class="track"></span><span>Вырезать объект</span></label>
+          <div class="stack" id="cutFields" style="margin-top:14px" hidden>
+            <div>
+              <span class="field-label">Новый фон</span>
+              <div class="seg" data-group="cutBg" role="group" aria-label="Новый фон">
+                <button type="button" data-val="white">Белый</button><button type="button" data-val="color">Цвет</button><button type="button" data-val="transparent">Прозрачный</button>
+              </div>
+            </div>
+            <div id="cutColorRow" hidden>
+              <span class="field-label">Цвет фона</span>
+              <input type="color" data-key="cutColor" aria-label="Цвет нового фона">
+            </div>
+            <p class="note" id="cutAlphaNote" style="margin:0" hidden>Прозрачность сохранится в PNG и WebP. В JPG фон станет белым.</p>
+            <div><span class="field-label">Край</span><div class="range-row"><input type="range" data-key="cutEdge" data-num min="0" max="100" step="5" aria-label="Мягкость края"><output data-out="cutEdge" data-unit="%"></output></div><p class="note" style="margin:4px 0 0">Меньше — резче, больше — мягче.</p></div>
+          </div>
+          <p class="note" style="margin:10px 0 0">Работает для любых объектов: товаров, людей, животных. Лёгкая модель (около 3 МБ) скачивается один раз при первом включении, дальше работает без сети. Фото никуда не уходят. Новый фон заменяет и поля вокруг фото.</p>
+        </section>
+
         <section class="card" id="cardMargins" data-tab="bg">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg> Поля</div>
           <div class="chips" data-group="bg" role="group" aria-label="Тип фона">
@@ -588,6 +608,7 @@
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>
   <script src="js/faces.js"></script>
+  <script src="js/cutout.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>

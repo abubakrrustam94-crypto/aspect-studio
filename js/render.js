@@ -463,9 +463,22 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
   if (!ctx) throw new RangeError('canvas');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const L = layout(item.w, item.h, cw, ch, item, c);
-  if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
-  else paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
-  await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c);
+  if (c.cutOn && typeof ensureMask === 'function') await ensureMask(item, bmp);
+  const cut = !!(c.cutOn && item.mask && !item.maskFail && item.mask.sig === coSig(item));
+  if (cut) {                                       // фон удалён: вместо исходного фона и полей — выбранный
+    if (c.cutBg === 'transparent' && !opaque) ctx.clearRect(0, 0, cw, ch);
+    else { ctx.fillStyle = c.cutBg === 'color' ? c.cutColor : '#fff'; ctx.fillRect(0, 0, cw, ch); }
+    const tmp = mkCanvas(cw, ch), tctx = tmp.getContext('2d', p3 ? { colorSpace: 'display-p3' } : undefined);
+    tctx.imageSmoothingEnabled = true; tctx.imageSmoothingQuality = 'high';
+    await drawPhoto(tctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c);
+    tctx.globalCompositeOperation = 'destination-in';          // оставляем только объект
+    tctx.drawImage(maskCanvas(item, c.cutEdge), L.dx, L.dy, L.dw, L.dh);
+    ctx.drawImage(tmp, 0, 0); tmp.width = tmp.height = 0;
+  } else {
+    if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
+    else paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
+    await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c);
+  }
   drawWatermark(ctx, cw, ch);
   return { cw, ch, L };
 }

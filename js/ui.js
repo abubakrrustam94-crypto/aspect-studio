@@ -71,6 +71,10 @@ function syncUI() {
   $('#cardMargins').hidden = E.fit === 'fill';
   $('#bgFillNote').hidden = E.fit !== 'fill';
   $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
+  $('#cutFields').hidden = !E.cutOn;
+  $('#cutColorRow').hidden = E.cutBg !== 'color';
+  $('#cutAlphaNote').hidden = E.cutBg !== 'transparent';
+  afterCanvas.classList.toggle('checker', !!((E.cutOn && E.cutBg === 'transparent') || (E.fit === 'fit' && E.bg === 'transparent')));
   $('#wmFields').hidden = !E.wmOn;
   $('#wmPosBox').hidden = E.wmMode === 'tile';
   $('#wmTileBox').hidden = E.wmMode !== 'tile';

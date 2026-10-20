@@ -1,7 +1,7 @@
 'use strict';
 /* Воркер определения лиц: BlazeFace на tfjs (WASM, при неудаче — CPU). Работает вне основного потока, интерфейс не подвисает. */
-const DIR = new URL('../vendor/blazeface/', self.location.href).href;
-importScripts(DIR + 'runtime.js');
+const DIR = new URL('../vendor/blazeface/', self.location.href).href, TF = new URL('../vendor/tfjs/', self.location.href).href;
+importScripts(TF + 'runtime.js');
 const { tf, loadGraphModel, setWasmPaths } = self.BlazeFaceLib;
 const SIZE = 256;                                    // модель «back»: вход 256×256
 let model = null, anchors = null, backend = '';
@@ -16,7 +16,7 @@ function makeAnchors() {
   return out;
 }
 async function init() {
-  setWasmPaths(DIR);
+  setWasmPaths(TF);
   try { await tf.setBackend('wasm'); } catch (e) { await tf.setBackend('cpu'); }
   await tf.ready(); backend = tf.getBackend();
   model = await loadGraphModel(DIR + 'blazeface-back.json');

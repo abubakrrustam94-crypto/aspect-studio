@@ -25,6 +25,7 @@ const SHOW = process.argv.includes('-v');
   for (const tab of ['frame', 'bg', 'quality', 'extra', 'export']) {
     await p.click(`#settingsTabs [data-tab=${tab}]`); await p.waitForTimeout(250);
     if (tab === 'extra') await p.evaluate(() => set('wmOn', true));
+    if (tab === 'bg') await p.evaluate(() => { set('cutOn', true); set('cutBg', 'color'); });
     if (tab === 'export') await p.evaluate(() => { set('targetOn', true); });
     await scan('вкладка «' + tab + '», светлая тема');
   }
