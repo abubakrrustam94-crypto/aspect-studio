@@ -73,6 +73,30 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   await p.click('#compNone'); await p.waitForFunction(() => COMPONENTS.every(c => !compFiles[c.id]), null, { timeout: 30000 });
   ok(await p.evaluate(async () => (await (await caches.open(COMP_CACHE)).keys()).length === 0), '«Удалить всё»: кэш компонентов пуст');
   r = await tryAdd('quad.heic'); ok(r.n === 0 && /«HEIC \/ HEIF»/.test(r.toast), 'после удаления HEIC снова требует скачать компонент');
+  // ---------- целостность ----------
+  await p.click('#compList .comp[data-id=heif] button'); await p.waitForFunction(() => compInstalled('heif'), null, { timeout: 30000 });
+  await p.evaluate(async () => { const c = await caches.open(COMP_CACHE), u = compUrl('vendor/heif/libheif-bundle.js'); await c.put(u, new Response('битый', { headers: { 'Content-Type': 'text/javascript', 'Content-Length': '5' } })); await compRefresh(); });
+  ok(await p.evaluate(() => !compInstalled('heif') && compBad.heif === true), 'файл с неверным размером в кэше: компонент считается повреждённым');
+  ok(await p.evaluate(() => { const r = document.querySelector('#compList .comp[data-id=heif]'); return r.querySelector('.comp-state').textContent === 'Повреждён' && r.querySelector('button').textContent === 'Скачать заново'; }) && /повреждён/.test(await p.textContent('#toast')), 'вкладка показывает «Повреждён», кнопка «Скачать заново», есть предупреждение');
+  r = await tryAdd('quad.heic'); ok(r.n === 0 && /«HEIC \/ HEIF»/.test(r.toast), 'HEIC с повреждённым компонентом не пытается декодироваться, просит скачать заново');
+  await p.click('#compList .comp[data-id=heif] button'); await p.waitForFunction(() => compInstalled('heif'), null, { timeout: 30000 });
+  ok(await p.evaluate(() => compBad.heif === false), '«Скачать заново» чинит компонент');
+  await p.evaluate(async () => { await (await caches.open(COMP_CACHE)).delete(compUrl('vendor/heif/libheif-bundle.js')); document.dispatchEvent(new Event('visibilitychange')); });
+  await p.waitForFunction(() => !compInstalled('heif')); ok(true, 'файл пропал из кэша (Android почистил память): состояние обновилось при возвращении на страницу');
+  // усечённая загрузка без сетевой ошибки
+  await p.route('**/vendor/exr/**', async rt => { const resp = await rt.fetch(); const body = await resp.body(); await rt.fulfill({ response: resp, body: body.subarray(0, Math.floor(body.length / 2)) }); });
+  await p.click('#compList .comp[data-id=exr] button'); await p.waitForTimeout(1500);
+  ok(await p.evaluate(async () => !compInstalled('exr') && (await (await caches.open(COMP_CACHE)).keys()).every(k => !/exr/.test(k.url))), 'урезанный файл отвергнут по размеру и не сохранён');
+  await p.unroute('**/vendor/exr/**');
+  // защита от очистки
+  await p.evaluate(async () => { Object.defineProperty(navigator.storage, 'persisted', { value: async () => false, configurable: true }); Object.defineProperty(navigator.storage, 'persist', { value: async () => false, configurable: true }); await compInstall('heif'); await compRefresh(); });
+  ok(await p.evaluate(() => !document.getElementById('compPersist').hidden), 'если браузер не обещает хранить файлы, во вкладке есть подсказка с кнопкой защиты');
+  await p.evaluate(() => { Object.defineProperty(navigator.storage, 'persist', { value: async () => true, configurable: true }); }); await p.click('#compPersistBtn'); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => document.getElementById('compPersist').hidden), 'после разрешения подсказка скрывается');
+  // отчёт
+  const rep = await p.evaluate(() => errLogText()); ok(/Компоненты: .*heif:да/.test(rep) && /Экран \d+×\d+/.test(rep), 'отчёт об ошибке содержит версию, экран и состояние компонентов');
+  await p.evaluate(() => { navigator.share = undefined; navigator.clipboard.writeText = async t => { window.__copied = t; }; }); await p.evaluate(() => document.getElementById('errLogShare').click()); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => /Aspect Studio v/.test(window.__copied || '')), '«Отправить отчёт» без системного «Поделиться» копирует текст');
   // ---------- обрыв скачивания ----------
   await p.route('**/vendor/exr/**', rt => rt.abort());
   await p.click('#settingsTabs [data-tab=components]'); await p.click('#compList .comp[data-id=exr] button'); await p.waitForTimeout(2500);

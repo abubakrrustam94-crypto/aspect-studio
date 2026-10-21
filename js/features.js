@@ -693,7 +693,8 @@ $('#appVersion').textContent = 'v' + APP_VERSION;
 
 /* ---------- Журнал ошибок в интерфейсе ---------- */
 function errLogText() {
-  return `Aspect Studio v${APP_VERSION}\n${navigator.userAgent}\n\n` + (errLog.length ? errLog.map(e => `[${new Date(e.t).toLocaleString('ru-RU')}] ${e.w}${e.n > 1 ? ' ×' + e.n : ''}\n${e.m}`).join('\n\n') : 'Ошибок нет');
+  const comps = typeof COMPONENTS !== 'undefined' ? COMPONENTS.map(c => c.id + ':' + (compFiles[c.id] ? 'да' : compBad[c.id] ? 'повреждён' : 'нет')).join(' ') : '';
+  return `Aspect Studio v${APP_VERSION}\n${navigator.userAgent}\nЭкран ${innerWidth}×${innerHeight}, память ${DEV_MEM} ГБ, формат ${S.format}, лица ${S.faceAI ? 'вкл' : 'выкл'}, фон ${S.cutOn ? 'вкл' : 'выкл'}\nКомпоненты: ${comps}${typeof compPersisted !== 'undefined' && compPersisted !== null ? ', защита от очистки: ' + (compPersisted ? 'да' : 'нет') : ''}\n\n` + (errLog.length ? errLog.map(e => `[${new Date(e.t).toLocaleString('ru-RU')}] ${e.w}${e.n > 1 ? ' ×' + e.n : ''}\n${e.m}`).join('\n\n') : 'Ошибок нет');
 }
 function renderErrLog() {
   $('#errLogCount').textContent = errLog.length;
@@ -701,6 +702,11 @@ function renderErrLog() {
 }
 $('#errLogCopy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(errLogText()); toast('Журнал скопирован'); } catch (e) { toast('Не удалось скопировать — выдели текст вручную', true); }
+});
+$('#errLogShare').addEventListener('click', async () => {
+  const text = errLogText();
+  try { if (navigator.share) { await navigator.share({ title: 'Aspect Studio: отчёт об ошибке', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text); toast('Отчёт скопирован: вставь его в сообщение'); } catch (e) { toast('Не удалось отправить — выдели текст вручную', true); }
 });
 $('#errLogClear').addEventListener('click', () => { errLog.length = 0; try { localStorage.removeItem(ERRLOG_KEY); } catch (e) {} renderErrLog(); toast('Журнал очищен'); });
 renderErrLog();

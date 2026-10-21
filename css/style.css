@@ -589,6 +589,7 @@ canvas.checker { background-color: #fff; background-image: linear-gradient(45deg
 .comp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .comp-state { font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
 .comp-state.on { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.comp-state.bad { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
 .comp-state.busy { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .comp-bar { height: 6px; border-radius: 99px; margin-top: 8px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
 .comp-bar[hidden] { display: none; }

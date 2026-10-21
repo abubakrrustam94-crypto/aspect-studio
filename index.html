@@ -257,6 +257,7 @@
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg> Компоненты</div>
           <p class="note" style="margin-top:0">Тяжёлые модули скачиваются только здесь и только по кнопке: сайт ничего не качает сам. Файлы сохраняются в браузере и дальше работают без интернета. Не скачал нужный компонент — приложение предупредит, какой именно.</p>
           <p class="note warn" id="compNoCache" hidden>В этом режиме браузер не даёт сохранять файлы (нужен https или localhost), поэтому компоненты загружаются при первом использовании, как обычно.</p>
+          <div class="note warn" id="compPersist" hidden><span>Браузер не обещает хранить скачанное: Android может очистить память при нехватке места. </span><button type="button" class="btn btn-tonal btn-sm" id="compPersistBtn">Защитить от очистки</button></div>
           <p class="comp-sum" id="compSummary" role="status" aria-live="polite"></p>
           <div class="row" style="margin:8px 0 4px">
             <button type="button" class="btn btn-tonal btn-sm" id="compAll">Скачать всё</button>
@@ -426,7 +427,7 @@
             <summary>Журнал ошибок (<span id="errLogCount">0</span>)</summary>
             <p class="note" style="margin-top:8px">Хранится только на этом устройстве и никуда не отправляется. Если что-то сломалось, скопируй и пришли разработчику.</p>
             <pre id="errLogText" tabindex="0"></pre>
-            <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="errLogCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Копировать</button><button type="button" class="btn btn-outlined btn-sm" id="errLogClear">Очистить</button></div>
+            <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="errLogCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Копировать</button><button type="button" class="btn btn-outlined btn-sm" id="errLogShare">Отправить отчёт</button><button type="button" class="btn btn-outlined btn-sm" id="errLogClear">Очистить</button></div>
           </details>
           <p class="note" id="resetNote" hidden>Будут удалены настройки, наборы, акцент и тема. Нажми ещё раз, чтобы подтвердить.</p>
         </section>

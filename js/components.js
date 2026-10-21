@@ -24,23 +24,45 @@ const compDependents = id => COMPONENTS.filter(c => (c.requires || []).includes(
 const compFmt = b => b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', ',') + ' МБ' : Math.max(1, Math.round(b / 1e3)) + ' КБ';
 
 const compFiles = {};                                           // id → файлы лежат в кэше
+const compBad = {};                                             // id → файлы есть, но неполные или повреждены
+let compPersisted = null;                                       // true/false после проверки, null — неизвестно
 const compBusy = {};                                            // id → идёт скачивание
 /* Установлен ли компонент (вместе с зависимостями). Синхронно: состояние читается из кэша при старте и после каждой операции */
 function compInstalled(id) {
   if (COMP_NOCACHE) return true;
   return compChain(id).every(x => compFiles[x] === true);
 }
+const compSizeOf = path => { for (const c of COMPONENTS) for (const f of c.files) if (f[0] === path) return f[1]; return -1; };
 async function compRefresh() {
+  const wasOn = { ...compFiles };
   if (!COMP_NOCACHE) {
     try {
       const cache = await caches.open(COMP_CACHE);
-      for (const c of COMPONENTS) compFiles[c.id] = (await Promise.all(c.files.map(f => cache.match(compUrl(f[0]))))).every(Boolean);
+      for (const c of COMPONENTS) {
+        let present = 0, good = 0;
+        for (const f of c.files) {
+          const r = await cache.match(compUrl(f[0]));
+          if (!r) continue;
+          present++;
+          const len = +(r.headers.get('content-length') || -1);        // кладём сами при скачивании, тело читать не нужно
+          if (len === f[1]) good++;
+        }
+        compFiles[c.id] = good === c.files.length;
+        compBad[c.id] = present > 0 && good !== c.files.length;
+        if (wasOn[c.id] && !compFiles[c.id] && typeof toast === 'function') toast(`«${c.name}» ${present ? 'повреждён' : 'пропал из памяти браузера'}: скачай заново на вкладке «Компоненты»`, true, { action: { label: 'Открыть', fn: openComponentsTab }, ms: 9000 });
+      }
+      try { compPersisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : null; } catch (e) { compPersisted = null; }
     } catch (e) { COMPONENTS.forEach(c => { compFiles[c.id] = false; }); }
   }
   if (typeof renderComponents === 'function') renderComponents();
   if (typeof updateComponentHints === 'function') updateComponentHints();
 }
 const compReady = compRefresh();
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !Object.keys(compBusy).length) compRefresh(); });   // Android мог очистить память, пока вкладка была свёрнута
+document.getElementById('compPersistBtn').addEventListener('click', async () => {
+  let ok = false; try { ok = !!(navigator.storage && navigator.storage.persist && await navigator.storage.persist()); } catch (e) {}
+  compPersisted = ok; renderComponents(); toast(ok ? 'Готово: браузер не будет чистить компоненты сам' : 'Браузер не разрешил. Добавь сайт на главный экран (установи как приложение) и попробуй снова', !ok, { ms: 7000 });
+});
 
 /* Скачивание одного файла с прогрессом: возвращает число байт */
 async function compFetchFile(cache, path, onBytes) {
@@ -49,6 +71,7 @@ async function compFetchFile(cache, path, onBytes) {
   const reader = res.body && res.body.getReader ? res.body.getReader() : null, parts = []; let got = 0;
   if (reader) for (;;) { const { done, value } = await reader.read(); if (done) break; parts.push(value); got += value.length; onBytes(value.length); }
   else { const b = await res.blob(); parts.push(b); got = b.size; onBytes(b.size); }
+  if (got !== compSizeOf(path)) throw new Error(`Размер не совпал: ${path} (${got} вместо ${compSizeOf(path)})`);
   const type = res.headers.get('content-type') || (path.endsWith('.wasm') ? 'application/wasm' : path.endsWith('.js') || path.endsWith('.mjs') ? 'text/javascript' : 'application/octet-stream');
   await cache.put(url, new Response(new Blob(parts, { type }), { status: 200, headers: { 'Content-Type': type, 'Content-Length': String(got) } }));
   return got;
@@ -64,10 +87,10 @@ async function compInstall(id, onProgress) {
       const c = compById(x);
       try {
         for (const f of c.files) await compFetchFile(cache, f[0], n => { done += n; if (onProgress) onProgress(Math.min(1, done / total), x); });
-        compFiles[x] = true;
-      } catch (e) { for (const f of c.files) await cache.delete(compUrl(f[0])); compFiles[x] = false; throw e; }
+        compFiles[x] = true; compBad[x] = false;
+      } catch (e) { for (const f of c.files) await cache.delete(compUrl(f[0])); compFiles[x] = false; compBad[x] = false; throw e; }
     }
-    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}      // просим браузер не вычищать файлы
+    try { if (navigator.storage && navigator.storage.persist) compPersisted = await navigator.storage.persist(); } catch (e) {}      // просим браузер не вычищать файлы
   } finally { chain.forEach(x => { delete compBusy[x]; }); if (typeof renderComponents === 'function') renderComponents(); if (typeof updateComponentHints === 'function') updateComponentHints(); }
   if (typeof compInstalledHook === 'function') compInstalledHook(id);
 }
@@ -106,12 +129,12 @@ function renderComponents() {
   [['f', 'Форматы файлов'], ['n', 'Нейросети']].forEach(([g, title]) => {
     const h = document.createElement('div'); h.className = 'comp-group'; h.textContent = title; box.append(h);
     COMPONENTS.filter(c => c.group === g).forEach(c => {
-      const inst = compFiles[c.id] === true, busy = !!compBusy[c.id], need = compChain(c.id).filter(x => !compFiles[x]);
+      const inst = compFiles[c.id] === true, bad = !inst && !!compBad[c.id], busy = !!compBusy[c.id], need = compChain(c.id).filter(x => !compFiles[x]);
       const total = need.reduce((s, x) => s + compBytes(compById(x)), 0);
       const row = document.createElement('div'); row.className = 'comp'; row.dataset.id = c.id;
       const head = document.createElement('div'); head.className = 'comp-head';
       const nm = document.createElement('b'); nm.textContent = c.name;
-      const st = document.createElement('span'); st.className = 'comp-state ' + (inst ? 'on' : busy ? 'busy' : ''); st.textContent = inst ? 'Скачан' : busy ? 'Скачивается…' : 'Не скачан';
+      const st = document.createElement('span'); st.className = 'comp-state ' + (inst ? 'on' : busy ? 'busy' : bad ? 'bad' : ''); st.textContent = inst ? 'Скачан' : busy ? 'Скачивается…' : bad ? 'Повреждён' : 'Не скачан';
       head.append(nm, st);
       const d = document.createElement('p'); d.className = 'note'; d.style.margin = '2px 0 0';
       const extra = (c.requires || []).filter(r => !compFiles[r]).map(r => compById(r).name);
@@ -125,7 +148,7 @@ function renderComponents() {
         b.textContent = 'Удалить'; if (deps.length) { b.disabled = true; b.title = 'Нужен для: ' + deps.map(x => x.name).join(', '); }
         b.addEventListener('click', async () => { try { await compRemove(c.id); toast(`«${c.name}» удалён`); } catch (e) { toast('Не удалось удалить: ' + e.message, true); } });
       } else {
-        b.textContent = 'Скачать';
+        b.textContent = bad ? 'Скачать заново' : 'Скачать';
         b.addEventListener('click', () => compDownloadUI(c.id));
       }
       b.setAttribute('aria-label', `${b.textContent}: ${c.name}`);
@@ -134,6 +157,7 @@ function renderComponents() {
       row.append(head, d, bar, act); box.append(row);
     });
   });
+  const pn = document.getElementById('compPersist'); if (pn) pn.hidden = COMP_NOCACHE || compPersisted !== false || !COMPONENTS.some(c => compFiles[c.id]);
   const have = COMPONENTS.filter(c => compFiles[c.id]), sz = have.reduce((s, c) => s + compBytes(c), 0), left = COMPONENTS.filter(c => !compFiles[c.id]).reduce((s, c) => s + compBytes(c), 0);
   const sum = document.getElementById('compSummary'); if (sum) sum.textContent = COMP_NOCACHE ? 'Менеджер компонентов недоступен в этом режиме' : `Скачано ${have.length} из ${COMPONENTS.length} · занято ${compFmt(sz)}`;
   const all = document.getElementById('compAll'); if (all) { all.disabled = COMP_NOCACHE || !left || Object.keys(compBusy).length > 0; all.textContent = left ? `Скачать всё (${compFmt(left)})` : 'Всё скачано'; }
