@@ -44,3 +44,5 @@ jobs:
         run: node tests/session.js
       - name: Тесты параллельного экспорта
         run: node tests/speed.js
+      - name: Тесты веса, пресетов и правки маски
+        run: node tests/quality.js

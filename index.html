@@ -251,6 +251,7 @@
               <span class="field-label">Цвет фона</span>
               <input type="color" data-key="cutColor" aria-label="Цвет нового фона">
             </div>
+            <div><button type="button" class="btn btn-outlined btn-sm" id="maskEditBtn">Править вручную</button><p class="note" style="margin:4px 0 0">Кистью можно вернуть потерянные части или убрать лишнее.</p></div>
             <p class="note" id="cutAlphaNote" style="margin:0" hidden>Прозрачность сохранится в PNG и WebP. В JPG фон станет белым.</p>
             <div><span class="field-label">Край</span><div class="range-row"><input type="range" data-key="cutEdge" data-num min="0" max="100" step="5" aria-label="Мягкость края"><output data-out="cutEdge" data-unit="%"></output></div><p class="note" style="margin:4px 0 0">Меньше — резче, больше — мягче.</p></div>
           </div>
@@ -582,6 +583,26 @@
     </div>
   </div>
 
+  <div class="cropper" id="maskEd" role="dialog" aria-modal="true" aria-label="Ручная правка маски">
+    <div class="inspect-bar cp-top">
+      <div class="seg" id="meTool" role="group" aria-label="Кисть">
+        <button type="button" data-t="keep" class="active">Оставить</button>
+        <button type="button" data-t="erase">Убрать</button>
+      </div>
+      <label class="me-size"><span>Размер</span><input type="range" id="meSize" min="8" max="120" value="28" aria-label="Размер кисти"></label>
+    </div>
+    <div class="crop-wrap me-wrap">
+      <div class="crop-stage me-stage"><canvas id="meCanvas" class="checker" aria-label="Фото с маской: води пальцем или мышью, чтобы дорисовать"></canvas><i class="me-brush" id="meBrush"></i></div>
+    </div>
+    <div class="inspect-bar cp-foot">
+      <button type="button" class="btn btn-outlined btn-sm" id="meUndo" disabled><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Шаг назад</button>
+      <span class="count-pill" id="meInfo"></span>
+      <button type="button" class="btn btn-outlined btn-sm" id="meReset">Как у нейросети</button>
+      <button type="button" class="btn btn-outlined btn-sm" id="meCancel">Отмена</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="meDone"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Готово</button>
+    </div>
+  </div>
+
   <div class="inspect" id="inspect" role="dialog" aria-modal="true" aria-label="Просмотр результата в масштабе 100%">
     <div class="inspect-bar">
       <div class="seg" id="inspSeg" role="group" aria-label="Версия">
@@ -637,6 +658,7 @@
   <script src="js/analyze.js"></script>
   <script src="js/faces.js"></script>
   <script src="js/cutout.js"></script>
+  <script src="js/maskedit.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>

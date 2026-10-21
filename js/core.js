@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.17.0';
+const APP_VERSION = '2.18.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -39,6 +39,7 @@ const PRESETS = [
   { g: 'Соцсети', id: 'shorts',   name: 'YouTube Shorts', note: '9:16',   w: 1080, h: 1920 },
   { g: 'Соцсети', id: 'igpost',   name: 'Instagram пост', note: '1:1',    w: 1080, h: 1080 },
   { g: 'Соцсети', id: 'ig45',     name: 'Instagram',      note: '4:5',    w: 1080, h: 1350 },
+  { g: 'Соцсети', id: 'ig34',     name: 'Instagram сетка', note: '3:4',   w: 1080, h: 1440 },
   { g: 'Соцсети', id: 'story',    name: 'Stories / Reels',note: '9:16',   w: 1080, h: 1920 },
   { g: 'Соцсети', id: 'tiktok',   name: 'TikTok',         note: '9:16',   w: 1080, h: 1920 },
   { g: 'Соцсети', id: 'x',        name: 'X (Twitter)',    note: '16:9',   w: 1600, h: 900  },

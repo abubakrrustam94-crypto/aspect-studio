@@ -100,7 +100,7 @@ function restoreFocus(el) {
 }
 addEventListener('keydown', e => {
   if (e.key !== 'Tab') return;
-  const dlg = [cpEl, inspEl, $('#review')].find(el => el && el.classList.contains('show'));
+  const dlg = [cpEl, inspEl, $('#review'), $('#maskEd')].find(el => el && el.classList.contains('show'));
   if (!dlg) return;
   const f = [...dlg.querySelectorAll('button, [href], input, select, [tabindex]:not([tabindex="-1"])')].filter(n => !n.disabled && n.offsetParent !== null);
   if (!f.length) { e.preventDefault(); return; }

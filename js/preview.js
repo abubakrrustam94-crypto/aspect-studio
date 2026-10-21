@@ -79,7 +79,42 @@ function updateInfo(item) {
   if (item.reduced) pills.push(`Исходник ${mpOf(item.reduced.from)} МП открыт уменьшенным`);
   const note = $('#enhSizeNote');
   if (note) note.textContent = `Итог: ${ex.cw}×${ex.ch}` + (ex.limited ? ' — упёрлось в «Макс. сторону», подними её в «Экспорт»' : '');
-  infoRow.replaceChildren(...pills.map(pill));
+  infoRow.replaceChildren(...pills.map(pill), weightPill(item, ex));
+}
+
+/* ---------- Вес файла: оценка по предпросмотру, по нажатию — точный расчёт ---------- */
+const wtSig = (item, ex) => JSON.stringify([item.id, S.format, S.quality, S.targetOn, S.targetKB, S.meta, S.author, S.colorSpace, S.maxSide, S.enhOn, item.ov, item.rot, item.flipH, item.flipV, item.crop, item.focus, item.zoom, ex.cw, ex.ch, S.bg, S.fit, S.blur, S.dim, S.color, S.grad1, S.grad2, S.gradAngle, S.sizeMode, S.ratioW, S.ratioH, S.outW, S.outH, S.enhScale, S.enhLevel, S.sharp, S.denoise, S.cutOn, S.cutBg, S.cutEdge, S.wmOn, S.wmText, S.wmPos, S.wmSize, S.wmOpacity, S.wmMode]);
+let wtTimer = 0;
+function weightPill(item, ex) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'info-pill info-weight';
+  const sig = wtSig(item, ex), fmt = S.format;
+  b.title = 'Точный вес файла: нажми, чтобы посчитать по-настоящему (с улучшением это может занять время)';
+  if (item._wt && item._wt.sig === sig) { b.textContent = `Вес ${fmtSize(item._wt.bytes)}`; b.title = 'Точный размер файла при этих настройках'; b.disabled = true; return b; }
+  if (S.targetOn && fmt !== 'png') { b.textContent = `Вес до ${S.targetKB} КБ · точнее`; }
+  else { b.textContent = 'Вес считаю…'; clearTimeout(wtTimer); wtTimer = setTimeout(() => wtEstimate(item, ex, sig, b), 600); }
+  b.addEventListener('click', () => wtExact(item, ex, sig, b));
+  return b;
+}
+async function wtEstimate(item, ex, sig, b) {
+  try {
+    if (cur() !== item || !afterCanvas.width || !b.isConnected) return;
+    const blob = await new Promise(r => afterCanvas.toBlob(r, MIME[S.format], S.quality / 100));
+    if (!blob || !b.isConnected || cur() !== item) return;
+    const bytes = blob.size * (ex.cw * ex.ch) / (afterCanvas.width * afterCanvas.height);
+    b.textContent = `Вес ≈ ${fmtSize(Math.round(bytes))} · точнее`; b.dataset.est = Math.round(bytes);
+  } catch (e) { b.textContent = 'Вес: посчитать'; }
+}
+async function wtExact(item, ex, sig, b) {
+  if (b.dataset.busy || typeof exportBlob !== 'function') return;
+  b.dataset.busy = '1'; b.textContent = 'Считаю…';
+  let bmp;
+  try {
+    bmp = await getBitmap(item);
+    const r = await exportBlob(item, bmp);
+    item._wt = { sig, bytes: r.blob.size };
+    if (b.isConnected && cur() === item) { b.textContent = `Вес ${fmtSize(r.blob.size)}`; b.disabled = true; b.title = 'Точный размер файла при этих настройках'; }
+  } catch (e) { if (!(e && e.name === 'AbortError')) { console.error(e); } b.textContent = 'Вес: не удалось'; }
+  finally { delete b.dataset.busy; }
 }
 
 /* ---------- Слайдер / панорамирование ---------- */
