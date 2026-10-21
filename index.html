@@ -43,6 +43,7 @@
 <symbol id="i-cw" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
 <symbol id="i-flip-h" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><path d="M12 20v2M12 14v2M12 8v2M12 2v2"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-package" viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
 <symbol id="i-archive" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol>
 <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></symbol>
 </defs></svg>
@@ -135,6 +136,7 @@
           <button type="button" role="tab" data-tab="quality"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></i><span>Качество</span></button>
           <button type="button" role="tab" data-tab="extra"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></i><span>Ещё</span></button>
           <button type="button" role="tab" data-tab="export"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></i><span>Экспорт</span></button>
+          <button type="button" role="tab" data-tab="components"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></i><span>Компоненты</span></button>
         </nav>
         <section class="card" id="cardScope" hidden>
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Настройки для</div>
@@ -232,6 +234,7 @@
 
         <section class="card" id="cardCutout" data-tab="bg">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Удалить фон</div>
+          <p class="note warn" id="cutNeed" hidden>Нужен компонент «Удаление фона» (около 3 МБ вместе с движком). <button type="button" class="btn btn-outlined btn-sm js-open-components">Открыть «Компоненты»</button></p>
           <label class="switch"><input type="checkbox" data-key="cutOn"><span class="track"></span><span>Вырезать объект</span></label>
           <div class="stack" id="cutFields" style="margin-top:14px" hidden>
             <div>
@@ -247,7 +250,19 @@
             <p class="note" id="cutAlphaNote" style="margin:0" hidden>Прозрачность сохранится в PNG и WebP. В JPG фон станет белым.</p>
             <div><span class="field-label">Край</span><div class="range-row"><input type="range" data-key="cutEdge" data-num min="0" max="100" step="5" aria-label="Мягкость края"><output data-out="cutEdge" data-unit="%"></output></div><p class="note" style="margin:4px 0 0">Меньше — резче, больше — мягче.</p></div>
           </div>
-          <p class="note" style="margin:10px 0 0">Работает для любых объектов: товаров, людей, животных. Лёгкая модель (около 3 МБ) скачивается один раз при первом включении, дальше работает без сети. Фото никуда не уходят. Новый фон заменяет и поля вокруг фото.</p>
+          <p class="note" style="margin:10px 0 0">Работает для любых объектов: товаров, людей, животных. Нужен скачанный компонент, дальше работает без сети. Фото никуда не уходят. Новый фон заменяет и поля вокруг фото.</p>
+        </section>
+
+        <section class="card" id="cardComponents" data-tab="components">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg> Компоненты</div>
+          <p class="note" style="margin-top:0">Тяжёлые модули скачиваются только здесь и только по кнопке: сайт ничего не качает сам. Файлы сохраняются в браузере и дальше работают без интернета. Не скачал нужный компонент — приложение предупредит, какой именно.</p>
+          <p class="note warn" id="compNoCache" hidden>В этом режиме браузер не даёт сохранять файлы (нужен https или localhost), поэтому компоненты загружаются при первом использовании, как обычно.</p>
+          <p class="comp-sum" id="compSummary" role="status" aria-live="polite"></p>
+          <div class="row" style="margin:8px 0 4px">
+            <button type="button" class="btn btn-tonal btn-sm" id="compAll">Скачать всё</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="compNone">Удалить всё</button>
+          </div>
+          <div id="compList"></div>
         </section>
 
         <section class="card" id="cardMargins" data-tab="bg">
@@ -358,7 +373,8 @@
             <button type="button" class="btn btn-outlined btn-sm" id="anTuneAll" hidden><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Для всех фото</button>
           </div>
           <label class="switch" style="margin-top:14px"><input type="checkbox" data-key="faceAI"><span class="track"></span><span>Искать лица</span></label>
-          <p class="note" id="faceNote" style="margin:6px 0 0">Кадр при «Заполнить» будет смотреть на лица. Лёгкая модель (около 1,5 МБ) скачивается один раз при первом анализе, потом работает без сети. Фото никуда не уходят.</p>
+          <p class="note warn" id="faceNeed" hidden>Нужен компонент «Поиск лиц» (около 2 МБ вместе с движком). <button type="button" class="btn btn-outlined btn-sm js-open-components">Открыть «Компоненты»</button></p>
+          <p class="note" id="faceNote" style="margin:6px 0 0">Кадр при «Заполнить» будет смотреть на лица. Работает без сети, когда компонент скачан. Фото никуда не уходят.</p>
           <p class="note" style="margin:10px 0 0">Подбор включит или выключит улучшение, выберет увеличение, резкость, шумоподавление и тип фона по этому фото. Результат можно поправить вручную или отменить.</p>
         </section>
 
@@ -604,6 +620,7 @@
   </div>
 </div>
 <script src="js/core.js"></script>
+  <script src="js/components.js"></script>
   <script src="js/formats.js"></script>
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>

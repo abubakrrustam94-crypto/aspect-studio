@@ -22,7 +22,7 @@ const SHOW = process.argv.includes('-v');
   };
   await scan('пустой экран, светлая тема');
   await p.setInputFiles('#fileInput', [path.join(FX, 'quad.jpg'), path.join(FX, 'quad.gif')]); await p.waitForFunction(() => items.length === 2); await p.waitForTimeout(600);
-  for (const tab of ['frame', 'bg', 'quality', 'extra', 'export']) {
+  for (const tab of ['frame', 'bg', 'quality', 'extra', 'export', 'components']) {
     await p.click(`#settingsTabs [data-tab=${tab}]`); await p.waitForTimeout(250);
     if (tab === 'extra') await p.evaluate(() => set('wmOn', true));
     if (tab === 'bg') await p.evaluate(() => { set('cutOn', true); set('cutBg', 'color'); });
@@ -31,7 +31,7 @@ const SHOW = process.argv.includes('-v');
   }
   await p.evaluate(() => { document.documentElement.setAttribute('data-theme', 'dark'); });
   await p.waitForTimeout(300);
-  for (const tab of ['frame', 'bg', 'quality', 'extra', 'export']) { await p.click(`#settingsTabs [data-tab=${tab}]`); await p.waitForTimeout(200); await scan('вкладка «' + tab + '», тёмная тема'); }
+  for (const tab of ['frame', 'bg', 'quality', 'extra', 'export', 'components']) { await p.click(`#settingsTabs [data-tab=${tab}]`); await p.waitForTimeout(200); await scan('вкладка «' + tab + '», тёмная тема'); }
   await p.evaluate(() => { document.documentElement.setAttribute('data-theme', 'light'); });
   // окно обрезки и справка
   await p.click('#cropBtn'); await p.waitForFunction(() => cp.open, null, { timeout: 8000 }); await p.waitForTimeout(500);

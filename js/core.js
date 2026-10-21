@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.13.0';
+const APP_VERSION = '2.14.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -304,6 +304,7 @@ function bigPhotoMsg(list) {
   return list.length === 1 ? one + tail : `${list.length} больших фото открыты в уменьшенном виде (${one.split(' — ')[0]} и др.)` + tail;
 }
 async function addFiles(list) {
+  await compReady;
   const files = Array.from(list || []).filter(isInputFile);
   if (!files.length) { toast('Выбери изображения', true); return; }
   const first = items.length;
@@ -311,11 +312,15 @@ async function addFiles(list) {
   for (let i = 0; i < files.length; i++) {
     if (files.length > 3) toast(`Загрузка ${i + 1} / ${files.length}…`);
     try { const it = await makeItem(await normalizeInput(files[i], notes)); items.push(it); if (it.reduced) bigNotes.push(it); }
-    catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: files[i].name, msg: e && e.userMsg }); }
+    catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: files[i].name, msg: e && e.userMsg, ids: e && e.compIds }); }
   }
   if (items.length > first) { idx = first; updateChrome(); schedule(); }
   const ok = items.length - first, extra = notes.length ? ' · ' + notes.slice(0, 2).join('; ') + (notes.length > 2 ? '…' : '') : '';
-  if (failed.length) {
+  if (failed.length && failed.every(f => f.ids)) {            // не хватает компонентов: говорим, какие скачать
+    const ids = [...new Set(failed.flatMap(f => f.ids))];
+    toast(`${failed.length === 1 ? failed[0].name + ': не открыт.' : `Не открыто файлов: ${failed.length}.`} ${compMissingText(ids, '')}`, true, { action: { label: 'Открыть', fn: openComponentsTab }, ms: 10000 });
+  }
+  else if (failed.length) {
     const f = failed[0], heic = /\.hei[cf]$/i.test(f.name);
     const why = f.msg || (heic ? 'не удалось прочитать HEIC' : 'формат не распознан или файл повреждён');
     toast(failed.length === 1 ? `${f.name}: ${why}` : `Не удалось открыть ${failed.length} из ${files.length}: ${failed.slice(0, 2).map(x => x.name).join(', ')}${failed.length > 2 ? '…' : ''}. ${why}`, true, { ms: 7000 });

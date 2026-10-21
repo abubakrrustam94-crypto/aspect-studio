@@ -463,8 +463,10 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
   if (!ctx) throw new RangeError('canvas');
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const L = layout(item.w, item.h, cw, ch, item, c);
-  if (c.cutOn && typeof ensureMask === 'function') await ensureMask(item, bmp);
-  const cut = !!(c.cutOn && item.mask && !item.maskFail && item.mask.sig === coSig(item));
+  const cutAvail = !!(c.cutOn && compInstalled('cutout'));
+  if (c.cutOn && !cutAvail) compWarnOnce('cutout', 'Удаление фона');       // включено в настройках, но компонента нет: рисуем без вырезания
+  if (cutAvail && typeof ensureMask === 'function') await ensureMask(item, bmp);
+  const cut = !!(cutAvail && item.mask && !item.maskFail && item.mask.sig === coSig(item));
   if (cut) {                                       // фон удалён: вместо исходного фона и полей — выбранный
     if (c.cutBg === 'transparent' && !opaque) ctx.clearRect(0, 0, cw, ch);
     else { ctx.fillStyle = c.cutBg === 'color' ? c.cutColor : '#fff'; ctx.fillRect(0, 0, cw, ch); }

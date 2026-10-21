@@ -81,8 +81,10 @@ function anSubject(g, w, h) {
    Возвращает { boxes: [{x0,y0,x1,y1}] в долях кадра, fail } либо null, если лиц нет */
 async function anFaces(canvas) {
   let boxes = null, fail = false;
+  let missing = false;
   if (S.faceAI && typeof detectFacesBF === 'function') {
-    try { boxes = await detectFacesBF(canvas); } catch (e) { fail = true; console.warn('faces', e); }
+    if (!compInstalled('faces')) missing = true;                  // компонент не скачан: сами ничего не качаем
+    else try { boxes = await detectFacesBF(canvas); } catch (e) { fail = true; console.warn('faces', e); }
   }
   if (!boxes && 'FaceDetector' in window) {
     try {
@@ -90,7 +92,7 @@ async function anFaces(canvas) {
       boxes = fs.map(f => { const b = f.boundingBox; return { x0: b.x / canvas.width, y0: b.y / canvas.height, x1: (b.x + b.width) / canvas.width, y1: (b.y + b.height) / canvas.height }; });
     } catch (e) {}
   }
-  if (!boxes || !boxes.length) return fail ? { boxes: [], fail: true } : null;
+  if (!boxes || !boxes.length) return (fail || missing) ? { boxes: [], fail: fail, missing } : null;
   return { boxes: boxes.map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })), fail: false };
 }
 // Общая рамка всех лиц и точка, на которую смотрит кадр
@@ -107,7 +109,7 @@ async function analyzePhoto(bmp) {
   const union = has ? anFaceUnion(f.boxes) : null;
   const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : anSubject(g, w, h);
   canvas.width = canvas.height = 0;
-  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail) };
+  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing) };
 }
 
 const anSharpLabel = r => r < 0.22 ? ['Очень мягкое', 'bad'] : r < 0.36 ? ['Мягковатое', 'warn'] : r < 0.65 ? ['Нормальное', 'ok'] : ['Чёткое', 'ok'];

@@ -38,3 +38,5 @@ jobs:
         run: node tests/faces.js
       - name: Тесты удаления фона (U²-Net-P, офлайн)
         run: node tests/cutout.js
+      - name: Тесты вкладки «Компоненты»
+        run: node tests/components.js

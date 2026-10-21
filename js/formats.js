@@ -11,6 +11,14 @@ const MAX_INPUT_PIXELS = 150e6;
 const isInputFile = f => (f.type && f.type.startsWith('image/')) || INPUT_EXT_RE.test(f.name || '');
 
 class FormatError extends Error { constructor(msg) { super(msg); this.name = 'FormatError'; this.userMsg = msg; } }
+// Нужного компонента нет (не скачан на вкладке «Компоненты»): декодер не запускаем и ничего не качаем сами
+class ComponentMissing extends FormatError {
+  constructor(ids) { super(compMissingText(ids, '')); this.name = 'ComponentMissing'; this.compIds = ids; }
+}
+function assertComp(id) {
+  if (compInstalled(id)) return;
+  throw new ComponentMissing(compChain(id).filter(x => compFiles[x] !== true));
+}
 const extOf = n => ((n || '').match(/\.([^.]+)$/) || [, ''])[1].toLowerCase();
 const checkPixels = (w, h) => { if (!w || !h) throw new FormatError('Пустое изображение'); if (w * h > MAX_INPUT_PIXELS) throw new FormatError(`Слишком большое изображение (${w}×${h}) для браузера`); };
 
@@ -18,6 +26,7 @@ const checkPixels = (w, h) => { if (!w || !h) throw new FormatError('Пусто�
 const vendorCache = {};
 const vendorUrl = p => new URL(p, document.baseURI).href;
 function loadScript(path) {
+  if (!vendorCache[path]) { const c = compForPath(path); if (c) assertComp(c.id); }
   return vendorCache[path] || (vendorCache[path] = new Promise((res, rej) => {
     const s = document.createElement('script'); s.src = vendorUrl(path); s.async = true;
     s.onload = () => res(); s.onerror = () => { delete vendorCache[path]; rej(new FormatError('Не удалось загрузить декодер формата. Проверь соединение (нужно один раз)')); };
@@ -25,7 +34,7 @@ function loadScript(path) {
   }));
 }
 async function loadPako() { await loadScript('vendor/pako/pako.umd.min.js'); return self.pako; }
-async function loadUTIF() { await loadPako(); await loadScript('vendor/utif/UTIF.js'); return self.UTIF; }
+async function loadUTIF() { assertComp('tiff'); await loadPako(); await loadScript('vendor/utif/UTIF.js'); return self.UTIF; }
 
 /* ---------- Холст ↔ файл ---------- */
 async function canvasToFile(c, name) {
@@ -114,6 +123,7 @@ async function heicToFile(file, u8) {
 
 /* ============================ JPEG XL ============================ */
 async function jxlToFile(file, u8) {
+  assertComp('jxl');
   await loadScript('vendor/jxl/jxl-decode.js');
   if (!jxlToFile.ready) {
     const wasm = await WebAssembly.compile(await (await fetch(vendorUrl('vendor/jxl/jxl_dec.wasm'))).arrayBuffer());
@@ -357,6 +367,7 @@ async function aiToFile(file, u8, notes) {
     if (head.startsWith('%!PS-Adobe')) return epsToFile(file, u8, notes);
     throw new FormatError('Этот AI-файл сохранён без PDF-совместимости. В Illustrator: Сохранить как → «Создать PDF-совместимый файл», либо экспортируй в PNG/SVG');
   }
+  assertComp('pdf');
   let pdfjs;
   try { pdfjs = await import(vendorUrl('vendor/pdfjs/pdf.min.mjs')); } catch (e) { throw new FormatError('Не удалось загрузить модуль чтения PDF/AI. Проверь соединение (нужно один раз)'); }
   pdfjs.GlobalWorkerOptions.workerSrc = vendorUrl('vendor/pdfjs/pdf.worker.min.mjs');

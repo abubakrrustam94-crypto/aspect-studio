@@ -57,6 +57,7 @@ const box = (t, d) => { const b = Buffer.alloc(8); b.writeUInt32BE(8 + d.length)
 
   const vendorReq = []; p.on('request', r => { if (/\/vendor\/(?!blazeface|tfjs)/.test(r.url())) vendorReq.push(r.url()); });
   { const r = await load(path.join(FX, 'quad.jpg')); ok(r.ok && !vendorReq.length, 'обычный JPG не подгружает внешние декодеры'); }
+  await p.evaluate(async () => { for (const c of COMPONENTS) await compInstall(c.id); });       // декодеры теперь скачиваются только по кнопке: ставим все
   for (const c of CASES.filter(c => !process.env.ONLY || new RegExp(process.env.ONLY).test(c.f))) {
     const r = await load(path.join(FX, c.f));
     if (!r.ok) { ok(false, `${c.f}: не открылся (${r.msg})`); continue; }

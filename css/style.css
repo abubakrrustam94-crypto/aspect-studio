@@ -24,6 +24,7 @@
   --md-sys-color-outline: #938f9e;
   --md-sys-color-outline-variant: #484554;
   --md-sys-color-error: #ffb4ab;
+  --md-sys-color-on-error: #410002;
   --md-sys-color-success: #6ee7b7;
 
   --shape-xs: 4px; --shape-sm: 8px; --shape-md: 12px; --shape-lg: 16px;
@@ -56,6 +57,7 @@
   --md-sys-color-outline: #7a757f;
   --md-sys-color-outline-variant: #cac4d0;
   --md-sys-color-error: #b3261e;
+  --md-sys-color-on-error: #ffffff;
   --md-sys-color-success: #047857;
   --elevation-1: 0 1px 2px rgba(0,0,0,.1), 0 1px 3px 1px rgba(0,0,0,.06);
   --elevation-2: 0 1px 2px rgba(0,0,0,.1), 0 2px 6px 2px rgba(0,0,0,.06);
@@ -358,7 +360,7 @@ input[type="color"]::-webkit-color-swatch { border: 3px solid var(--md-sys-color
   max-width: calc(100vw - 32px); transition: all .4s var(--motion-spring); text-align: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
-.toast.error { background: var(--md-sys-color-error); color: #410002; }
+.toast.error { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
 body.no-toolbar .toast { bottom: 24px; }
 
 .progress-sheet {
@@ -416,6 +418,7 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .toast.has-act { pointer-events: auto; display: flex; align-items: center; gap: 14px; }
 .toast-act { border: none; background: none; font-weight: 700; font-size: .88rem; padding: 4px 8px; border-radius: 10px; color: var(--md-sys-color-primary-container); }
 .toast-act:hover { background: color-mix(in srgb, var(--md-sys-color-primary-container) 18%, transparent); }
+.toast.error .toast-act { color: inherit; text-decoration: underline; }
 .mp { display: inline-flex; align-items: center; }
 .mp-x { border: none; background: none; font-size: 18px; line-height: 1; opacity: .55; padding: 4px 8px; border-radius: 50%; color: inherit; }
 .mp-x:hover { opacity: 1; background: color-mix(in srgb, var(--md-sys-color-error) 22%, transparent); }
@@ -451,7 +454,8 @@ footer kbd { background: var(--md-sys-color-surface-container-high); padding: 1p
 .col-settings:not([data-tab="bg"])      > .card[data-tab="bg"],
 .col-settings:not([data-tab="quality"]) > .card[data-tab="quality"],
 .col-settings:not([data-tab="extra"])   > .card[data-tab="extra"],
-.col-settings:not([data-tab="export"])  > .card[data-tab="export"] { display: none; }
+.col-settings:not([data-tab="export"])  > .card[data-tab="export"],
+.col-settings:not([data-tab="components"]) > .card[data-tab="components"] { display: none; }
 .col-settings > .card[data-tab] { animation: tabIn .3s var(--motion-emphasized); }
 @keyframes tabIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (min-width: 900px) { .tabs { position: sticky; top: 12px; z-index: 6; } }
@@ -578,3 +582,18 @@ a.btn { text-decoration: none; }
 
 /* Шахматка под прозрачным результатом */
 canvas.checker { background-color: #fff; background-image: linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%), linear-gradient(45deg, #d9d9d9 25%, transparent 25%, transparent 75%, #d9d9d9 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+
+/* Компоненты */
+.comp-group { margin: 16px 0 6px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--md-sys-color-on-surface-variant); }
+.comp { padding: 12px 14px; margin-bottom: 8px; border-radius: 18px; background: var(--md-sys-color-surface-container-high); }
+.comp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.comp-state { font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant); }
+.comp-state.on { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.comp-state.busy { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.comp-bar { height: 6px; border-radius: 99px; margin-top: 8px; background: var(--md-sys-color-surface-container-highest); overflow: hidden; }
+.comp-bar[hidden] { display: none; }
+.comp-bar i { display: block; height: 100%; width: 0; background: var(--md-sys-color-primary); transition: width .2s linear; }
+.comp-sum { margin: 10px 0 0; font-weight: 600; }
+.note.warn { padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--md-sys-color-error) 12%, transparent); color: var(--md-sys-color-on-surface); }
+.note.warn[hidden] { display: none; }
+.note.warn .btn { margin-top: 8px; }

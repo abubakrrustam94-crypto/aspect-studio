@@ -16,9 +16,16 @@ const URL_ = 'http://localhost:8771/';
     await p.evaluate(() => { items.length = 0; idx = 0; }); await p.setInputFiles('#fileInput', path.join(FX, f)); await p.waitForFunction(() => items.length === 1);
     await p.evaluate(() => { items[0].an = undefined; ensureAnalysis(items[0]); });
     await p.waitForFunction(() => items[0].an !== undefined, null, { timeout: 30000 });
-    return p.evaluate(() => { const a = items[0].an; return a && { faces: a.faces, box: a.faceBox, fail: a.faceFail, subject: a.subject }; });
+    return p.evaluate(() => { const a = items[0].an; return a && { faces: a.faces, box: a.faceBox, fail: a.faceFail, missing: a.faceMissing, subject: a.subject }; });
   };
+  // без компонента лица не ищутся и ничего не скачивается
+  const vreq = []; p.on('request', r => { if (/\/vendor\/(tfjs|blazeface)\//.test(r.url())) vreq.push(r.url()); });
   let a = await analyse('face_astronaut.jpg');
+  ok(a.faces === 0 && a.missing && !vreq.length, 'компонент не скачан: лица не ищутся, сеть не трогается, анализ помечен');
+  ok(await p.waitForFunction(() => /не скачан компонент «Поиск лиц»/.test(document.getElementById('anAdvice').textContent), null, { timeout: 5000 }).then(() => true, () => false), 'в «Анализе фото» сказано, какой компонент скачать');
+  await p.evaluate(() => compInstall('faces'));
+  ok(await p.evaluate(() => compInstalled('faces') && compInstalled('tfjs')), 'после скачивания компонент (с движком) установлен');
+  a = await analyse('face_astronaut.jpg');
   ok(a.faces === 1 && a.box.x0 > 0.25 && a.box.x1 < 0.65 && a.box.y0 < 0.3 && a.box.y1 > 0.25, `одно лицо найдено, рамка ${[a.box.x0, a.box.y0, a.box.x1, a.box.y1].map(v => v.toFixed(2))}`);
   ok(await p.evaluate(() => /лиц: 1/.test(document.getElementById('anStats').textContent)) || (await p.waitForFunction(() => /лиц: 1/.test(document.getElementById('anStats').textContent), null, { timeout: 5000 }).then(() => true, () => false)), 'в «Анализе фото» написано «лиц: 1»');
   a = await analyse('face_two.jpg'); ok(a.faces === 2 && a.box.x0 < 0.2 && a.box.x1 > 0.7, `два лица, общая рамка x ${a.box.x0.toFixed(2)}–${a.box.x1.toFixed(2)}`);
@@ -51,18 +58,18 @@ const URL_ = 'http://localhost:8771/';
   ok(await p.evaluate(() => items[0].an.faces === 2), 'после повторного включения анализ перезапускается и лица находятся');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
 
-  // ---------- нет сети при первой загрузке модели: приложение живёт, потом восстанавливается ----------
+  // ---------- сбой при скачивании компонента: ничего не остаётся, повтор работает ----------
   const c2 = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: 'block' }); const q = await c2.newPage(); const errs2 = []; q.on('pageerror', e => errs2.push(e.message));
   await q.goto(URL_); await q.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await q.reload(); await q.waitForTimeout(500);
   await q.route('**/vendor/blazeface/**', r => r.abort());
-  await q.setInputFiles('#fileInput', path.join(FX, 'face_astronaut.jpg')); await q.waitForFunction(() => items.length === 1);
-  await q.waitForFunction(() => items[0].an !== undefined, null, { timeout: 30000 });
-  const bad = await q.evaluate(() => ({ fail: items[0].an.faceFail, faces: items[0].an.faces, ok: !!items[0].an.sharp }));
-  ok(bad.fail && bad.faces === 0 && bad.ok, 'модель не скачалась: анализ всё равно готов, помечено «модель не загрузилась»');
-  ok(await q.waitForFunction(() => /Модель лиц не загрузилась/.test(document.getElementById('anAdvice').textContent), null, { timeout: 5000 }).then(() => true, () => false), 'пользователю объяснено, что нужен интернет');
+  const bad = await q.evaluate(async () => { try { await compInstall('faces'); return 'ok'; } catch (e) { return 'fail'; } });
+  ok(bad === 'fail' && await q.evaluate(() => !compInstalled('faces') && compFiles.faces === false), 'скачивание оборвалось: компонент не считается установленным');
+  ok(await q.evaluate(async () => { const c = await caches.open(COMP_CACHE); const ks = (await c.keys()).map(r => r.url); return !ks.some(u => u.includes('blazeface')); }), 'недокачанные файлы не остались в кэше');
   await q.unroute('**/vendor/blazeface/**');
+  await q.setInputFiles('#fileInput', path.join(FX, 'face_astronaut.jpg')); await q.waitForFunction(() => items.length === 1);
+  await q.evaluate(() => compInstall('faces'));
   await q.evaluate(() => { items[0].an = undefined; ensureAnalysis(items[0]); }); await q.waitForFunction(() => items[0].an !== undefined, null, { timeout: 30000 });
-  ok(await q.evaluate(() => items[0].an.faces === 1 && !items[0].an.faceFail), 'сеть появилась: следующий анализ находит лицо без перезагрузки страницы');
+  ok(await q.evaluate(() => items[0].an.faces === 1 && !items[0].an.faceFail), 'повторное скачивание удалось, лицо находится без перезагрузки');
 
   // ---------- офлайн после первой загрузки ----------
   const c3 = await b.newContext({ viewport: { width: 1100, height: 900 } }); const o = await c3.newPage(); const errs3 = [];
@@ -70,6 +77,7 @@ const URL_ = 'http://localhost:8771/';
   await o.goto(URL_); await o.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); });
   await o.evaluate(async () => { await navigator.serviceWorker.ready; }); await o.reload(); await o.waitForTimeout(800);
   ok(await o.evaluate(() => !!navigator.serviceWorker.controller), 'service worker управляет страницей');
+  await o.evaluate(() => compInstall('faces'));
   await o.setInputFiles('#fileInput', path.join(FX, 'face_astronaut.jpg')); await o.waitForFunction(() => items.length === 1);
   await o.waitForFunction(() => items[0].an !== undefined && items[0].an.faces === 1, null, { timeout: 30000 });
   await o.waitForTimeout(800);                                   // даём service worker дописать кэш

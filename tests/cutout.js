@@ -19,6 +19,11 @@ const EXPORT = `async ({ fmt, pts }) => {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(URL_); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(600);
+  // без компонента включить нельзя, и сеть не трогается
+  const vreq = []; p.on('request', r => { if (/\/vendor\/(tfjs|cutout)\//.test(r.url())) vreq.push(r.url()); });
+  await p.evaluate(() => set('cutOn', true));
+  ok(await p.evaluate(() => S.cutOn === false) && /компонент «Удаление фона»/.test(await p.textContent('#toast')) && !vreq.length, 'без компонента удаление фона не включается: предупреждение, сеть не трогается');
+  await p.evaluate(() => compInstall('cutout'));
   const load = async f => { await p.evaluate(() => { items.length = 0; idx = 0; }); await p.setInputFiles('#fileInput', path.join(FX, f)); await p.waitForFunction(() => items.length === 1); await p.waitForTimeout(200); };
   const near = (a, b, t = 12) => a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) <= t);
   const exp = (fmt, pts) => p.evaluate(`(${EXPORT})`, { fmt, pts }).then(f => f);
@@ -77,22 +82,27 @@ const EXPORT = `async ({ fmt, pts }) => {
   ok(near(pv, [255, 255, 255], 3), 'в окне предпросмотра фон уже белый: ' + pv.slice(0, 3));
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
 
-  // ---------- модель не скачалась ----------
+  // ---------- сбой скачивания компонента ----------
   const c2 = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: 'block' }); const q = await c2.newPage(); const errs2 = []; q.on('pageerror', e => errs2.push(e.message));
   await q.goto(URL_); await q.evaluate(SEEN); await q.reload(); await q.waitForTimeout(500);
   await q.route('**/vendor/cutout/**', r => r.abort());
+  const bad = await q.evaluate(async () => { try { await compInstall('cutout'); return 'ok'; } catch (e) { return 'fail'; } });
+  ok(bad === 'fail' && await q.evaluate(() => !compInstalled('cutout')), 'скачивание оборвалось: компонент не установлен, удаление фона по-прежнему выключено');
+  await q.unroute('**/vendor/cutout/**');
   await q.setInputFiles('#fileInput', path.join(FX, 'noface_coffee.jpg')); await q.waitForFunction(() => items.length === 1);
-  const bad = await q.evaluate(`(async () => { set('sizeMode','auto'); set('ratioW',1); set('ratioH',1); set('fit','fit'); set('enhOn',false); set('cutOn', true); set('cutBg','white'); const it = items[0], bmp = await loadBitmap(it), res = await exportBlob(it, bmp); return { fail: it.maskFail, size: res.blob.size, toast: document.getElementById('toast').textContent }; })()`);
-  ok(bad.fail === 'load' && bad.size > 1000, 'модель не скачалась: фото всё равно экспортируется (без вырезания)');
-  ok(/нужен интернет/.test(bad.toast), 'объяснено, что при первом запуске нужен интернет');
-  await q.unroute('**/vendor/cutout/**'); await q.evaluate(() => { items[0].maskTry = 0; });
-  const good = await q.evaluate(`(async () => { const it = items[0], bmp = await loadBitmap(it); await exportBlob(it, bmp); return { fail: it.maskFail, has: !!it.mask }; })()`);
-  ok(good.has && !good.fail, 'сеть появилась: следующий экспорт вырезает без перезагрузки страницы');
-  ok(!errs2.length, 'нет ошибок JS в сценарии без модели');
+  await q.evaluate(() => compInstall('cutout'));
+  const good = await q.evaluate(`(async () => { set('sizeMode','auto'); set('ratioW',1); set('ratioH',1); set('fit','fit'); set('enhOn',false); set('cutOn', true); set('cutBg','white'); const it = items[0], bmp = await loadBitmap(it); await exportBlob(it, bmp); return { fail: it.maskFail, has: !!it.mask, on: S.cutOn }; })()`);
+  ok(good.on && good.has && !good.fail, 'повторное скачивание удалось: фон вырезается без перезагрузки страницы');
+  ok(!errs2.length, 'нет ошибок JS в сценарии со сбоем');
+  // включено в настройках, а компонент удалён: рисуем без вырезания и предупреждаем
+  await q.evaluate(() => compRemove('cutout'));
+  const gone = await q.evaluate(`(async () => { const it = items[0], bmp = await loadBitmap(it), r = await exportBlob(it, bmp); return { size: r.blob.size, toast: document.getElementById('toast').textContent }; })()`);
+  ok(gone.size > 1000 && /компонент «Удаление фона»/.test(gone.toast), 'компонент удалён, а настройка осталась: экспорт идёт без вырезания, с предупреждением');
 
   // ---------- офлайн после первой загрузки ----------
   const c3 = await b.newContext({ viewport: { width: 1100, height: 900 } }); const o = await c3.newPage(); const errs3 = []; o.on('pageerror', e => errs3.push(e.message));
   await o.goto(URL_); await o.evaluate(SEEN); await o.evaluate(async () => { await navigator.serviceWorker.ready; }); await o.reload(); await o.waitForTimeout(800);
+  await o.evaluate(() => compInstall('cutout'));
   await o.setInputFiles('#fileInput', path.join(FX, 'noface_coffee.jpg')); await o.waitForFunction(() => items.length === 1);
   const prep = `set('sizeMode','auto'); set('ratioW',1); set('ratioH',1); set('fit','fit'); set('enhOn',false); set('cutOn',true); set('cutBg','white');`;
   await o.evaluate(`(async () => { ${prep} const it = items[0], bmp = await loadBitmap(it); await exportBlob(it, bmp); })()`);

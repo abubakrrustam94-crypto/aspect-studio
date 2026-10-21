@@ -55,3 +55,5 @@ pip install onnx onnxsim numpy
 curl -L -o u2netp.onnx https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx
 python3 tools/build_u2netp.py u2netp.onnx vendor/cutout
 ```
+
+Компоненты не скачиваются автоматически: реестр файлов и размеров — `COMPONENTS` в `js/components.js`; при замене файла обнови размер (проверит `tests/components.js`).
