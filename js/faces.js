@@ -16,10 +16,10 @@ function bfStart() {                                  // один раз; при
     if (typeof Worker === 'undefined') throw new Error('no worker');
     bfWorker = new Worker('js/faces-worker.js');
     bfWorker.onmessage = e => { const w = bfWait.get(e.data.id); if (!w) return; bfWait.delete(e.data.id); e.data.ok ? w.res(e.data) : w.rej(new Error(e.data.error)); };
-    bfWorker.onerror = e => { bfWait.forEach(w => w.rej(new Error('worker'))); bfWait.clear(); };
+    bfWorker.onerror = e => { e.preventDefault(); bfWait.forEach(w => w.rej(new Error('worker'))); bfWait.clear(); };
     const r = await bfCall({ type: 'init' }); bfBackend = r.backend;
   })();
-  bfReady.catch(() => { if (bfWorker) bfWorker.terminate(); bfWorker = null; bfReady = null; bfWait.clear(); });
+  bfReady.catch(() => { if (typeof compRefresh === 'function') compRefresh(); if (bfWorker) bfWorker.terminate(); bfWorker = null; bfReady = null; bfWait.clear(); });
   return bfReady;
 }
 function bfIoU(a, b) {

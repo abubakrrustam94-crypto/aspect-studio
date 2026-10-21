@@ -14,10 +14,10 @@ function coStart() {                                 // один раз; при 
     if (typeof Worker === 'undefined') throw new Error('no worker');
     coWorker = new Worker('js/cutout-worker.js');
     coWorker.onmessage = e => { const w = coWait.get(e.data.id); if (!w) return; coWait.delete(e.data.id); e.data.ok ? w.res(e.data) : w.rej(new Error(e.data.error)); };
-    coWorker.onerror = () => { coWait.forEach(w => w.rej(new Error('worker'))); coWait.clear(); };
+    coWorker.onerror = e => { e.preventDefault(); coWait.forEach(w => w.rej(new Error('worker'))); coWait.clear(); };
     coBackend = (await coCall({ type: 'init' })).backend;
   })();
-  coReady.catch(() => { if (coWorker) coWorker.terminate(); coWorker = null; coReady = null; coWait.clear(); });
+  coReady.catch(() => { if (typeof compRefresh === 'function') compRefresh(); if (coWorker) coWorker.terminate(); coWorker = null; coReady = null; coWait.clear(); });
   return coReady;
 }
 
