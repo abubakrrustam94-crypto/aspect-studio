@@ -161,12 +161,12 @@ async function fitToSize(c, mime, q0, limit) {
   return best || { blob: await toB(c, qMin), q: qMin, w: c.width, h: c.height, met: false, scale: 1 };
 }
 
-async function exportBlob(item, bmp, formatOverride) {
+async function exportBlob(item, bmp, formatOverride, work) {
   const fmt = formatOverride || S.format;
   const mime = MIME[fmt];
   const c = document.createElement('canvas');
   if (cfgFor(item).enhOn) await yieldUI();
-  const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item) });
+  const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item), ...(work ? { work } : {}) });
   let blob, outW = cw, outH = ch, fit = null;
   if (S.targetOn && fmt !== 'png') {
     fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && (S.meta === 'basic' || S.author) ? 1500 : 0));
@@ -351,6 +351,44 @@ async function cleanStaleTmp(maxAgeMs) {
   } catch (e) {}
 }
 
+/* ---------- Параллельная обработка: несколько фото в работе одновременно, результаты принимаем строго по порядку ---------- */
+const HW = navigator.hardwareConcurrency || 2;
+function exportConcurrency(list) {
+  if (typeof window.EXPORT_CONC === 'number') return Math.max(1, window.EXPORT_CONC);
+  if (list.length < 2) return 1;
+  let n = DEV_MEM <= 2 || HW < 4 ? 1 : DEV_MEM <= 4 ? 2 : HW >= 6 ? 3 : 2;
+  let big = 0; list.forEach(it => { const s = computeSize(it.w, it.h, 0, cfgFor(it)); big = Math.max(big, s.cw * s.ch); });
+  if (big > MAX_AREA * 0.45) n = 1;          // большие кадры: две копии в памяти не нужны
+  return Math.min(n, list.length);
+}
+async function pooledExport(list, conc, consume) {
+  const works = [exWork]; while (works.length < conc) works.push(new Work());
+  exPool.splice(0, exPool.length, ...works);
+  const free = works.slice(), q = []; let next = 0;
+  const produce = async (item, w) => {
+    let bmp; try { bmp = await loadBitmap(item); return await exportBlob(item, bmp, undefined, w); } finally { closeBmp(bmp); }
+  };
+  const fill = () => {
+    while (next < list.length && free.length && !cancelFlag) {
+      const item = list[next++], w = free.pop();
+      q.push({ item, p: produce(item, w).then(r => ({ r }), e => ({ e })).then(x => { free.push(w); return x; }) });
+    }
+  };
+  fill();
+  try {
+    while (q.length) {
+      const { item, p } = q.shift(), res = await p;
+      if (await consume(item, res.r, res.e) || cancelFlag) break;
+      fill();
+    }
+  } finally {
+    exPool.forEach(w => w.cancel());          // остановить то, что ещё считается, и дождаться
+    for (const x of q) await x.p;
+    works.slice(1).forEach(w => w.cancel());
+    exPool.splice(0, exPool.length, exWork);
+  }
+}
+
 async function exportToFolder() {
   const list = items.filter(i => !i.skip), total = list.length;
   if (!total) { toast('Отметь хотя бы одно фото', true); return; }
@@ -359,20 +397,20 @@ async function exportToFolder() {
   let ok = 0, unmet = 0, diskFull = false; const failed = [];
   showProgress('Сохранение в папку…');
   try {
-    for (let i = 0; i < total; i++) {
-      if (cancelFlag) break;
-      const item = list[i]; setProgress(i, total, item.name); await yieldUI();
-      let bmp;
+    let done = 0;
+    await pooledExport(list, exportConcurrency(list), async (item, r, e) => {
+      setProgress(done, total, item.name); await yieldUI();
       try {
-        bmp = await loadBitmap(item); const r = await exportBlob(item, bmp);
+        if (e) throw e;
         await writeToFolder(r.blob, r.name); ok++; item.status = 'ok'; if (r.fit && !r.fit.met) unmet++;
-      } catch (e) {
-        console.error(e); failed.push(item.name); item.status = 'bad';
-        if (e && e.name === 'QuotaExceededError') { diskFull = true; break; }
-        if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) { failed.push('(нет доступа)'); break; }
-      } finally { closeBmp(bmp); }
-      setProgress(i + 1, total, item.name);
-    }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return true;
+        console.error(err); failed.push(item.name); item.status = 'bad';
+        if (err && err.name === 'QuotaExceededError') { diskFull = true; return true; }
+        if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) { failed.push('(нет доступа)'); return true; }
+      }
+      setProgress(++done, total, item.name);
+    });
     const nf = failed.filter(x => !x.startsWith('(')).length, name = dirHandle ? dirHandle.name : '';
     if (cancelFlag) toast(`Отменено. Сохранено файлов: ${ok}`);
     else if (diskFull) toast(`На диске не хватило места. Сохранено файлов: ${ok}`, true);
@@ -408,15 +446,12 @@ async function exportAll() {
   };
   showProgress('Обработка…');
   try {
-    for (let i = 0; i < total; i++) {
-      if (cancelFlag) break;
-      const item = list[i];
-      setProgress(i, total, item.name);
+    let done = 0;
+    await pooledExport(list, exportConcurrency(list), async (item, r, e) => {
+      setProgress(done, total, item.name);
       await yieldUI();
-      let bmp;
       try {
-        bmp = await loadBitmap(item);
-        const r = await exportBlob(item, bmp);
+        if (e) throw e;
         let name = r.name, n = 2;
         while (used.has(name)) name = r.name.replace(/(\.[^.]+)$/, `_${n++}$1`);
         used.add(name);
@@ -426,14 +461,14 @@ async function exportAll() {
         }
         await zip.add(name, data); ok++; item.status = 'ok';
         if (r.fit && !r.fit.met) unmet++;
-      } catch (e) {
-        if (e && e.name === 'AbortError') break;
-        console.error(e); failed.push(item.name); item.status = 'bad';
-        if (e && e.name === 'QuotaExceededError') { diskFull = true; break; }
-        if (e instanceof RangeError || /memory|alloc/i.test(String(e && e.message))) { failed.push('(мало памяти)'); break; }
-      } finally { closeBmp(bmp); }
-      setProgress(i + 1, total, item.name);
-    }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return true;
+        console.error(err); failed.push(item.name); item.status = 'bad';
+        if (err && err.name === 'QuotaExceededError') { diskFull = true; return true; }
+        if (err instanceof RangeError || /memory|alloc/i.test(String(err && err.message))) { failed.push('(мало памяти)'); return true; }
+      }
+      setProgress(++done, total, item.name);
+    });
     if (cancelFlag) { await zip.abort(); toast(parts ? `Отменено. Уже сохранено частей: ${parts}` : 'Отменено'); }
     else if (diskFull) { await zip.abort(); toast('На устройстве не хватило места для архива. Освободи память и повтори.', true); }
     else if (ok) {

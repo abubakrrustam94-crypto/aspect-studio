@@ -421,6 +421,7 @@ class Work {
 Work.off = false;
 const pvWork = new Work();   // предпросмотр: каждый новый кадр отменяет предыдущий
 const exWork = new Work();   // экспорт и окно 100%
+const exPool = [exWork];     // воркеры параллельного экспорта (первый — общий); отмена гасит все
 
 // Рисует слой с фото; при включённом улучшении — Lanczos + шумоподавление + резкость в воркере (только область фото, фон и водяной знак не трогаем)
 async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S) {

@@ -42,3 +42,5 @@ jobs:
         run: node tests/components.js
       - name: Тесты отмены, сессии и «Поделиться»
         run: node tests/session.js
+      - name: Тесты параллельного экспорта
+        run: node tests/speed.js
