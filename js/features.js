@@ -187,6 +187,7 @@ function renderPresets() {
   $('#presetsEmpty').hidden = myPresets.length > 0;
 }
 function applyMyPreset(p) {
+  histPush('preset');
   const it = cur(), ok = k => k in DEFAULTS && typeof p.cfg[k] === typeof DEFAULTS[k];
   Object.keys(p.cfg).forEach(k => { if (ok(k) && !PRESET_SKIP.includes(k)) S[k] = p.cfg[k]; });
   if (it && it.ov) OV_KEYS.forEach(k => { if (ok(k)) it.ov[k] = p.cfg[k]; });
@@ -685,7 +686,7 @@ $('#appVersion').textContent = 'v' + APP_VERSION;
   const disarm = () => { armed = 0; btn.textContent = 'Сбросить все настройки'; btn.classList.remove('armed'); note.hidden = true; };
   btn.addEventListener('click', async () => {
     if (!armed) { armed = setTimeout(disarm, 6000); btn.textContent = 'Точно сбросить?'; btn.classList.add('armed'); note.hidden = false; return; }
-    clearTimeout(armed);
+    clearTimeout(armed); try { await sessForget(); } catch (e) {}
     try { Object.keys(localStorage).filter(k => k.startsWith('aspect-studio')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
     location.reload();
   });

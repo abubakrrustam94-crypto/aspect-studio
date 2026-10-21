@@ -1,7 +1,7 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v24';
+const VERSION = 'aspect-studio-v25';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
-const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/features.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
+const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/session.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/features.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -14,15 +14,27 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== COMP_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== COMP_CACHE && k !== 'aspect-share').map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // Приём фото из системного меню «Поделиться»: кладём файлы во временный кэш и открываем приложение
+  if (req.method === 'POST' && url.origin === location.origin && url.pathname.endsWith('/share-target')) {
+    e.respondWith((async () => {
+      try {
+        const fd = await req.formData(), files = fd.getAll('photos').filter(f => f && f.size), c = await caches.open('aspect-share');
+        for (const k of await c.keys()) await c.delete(k);
+        await Promise.all(files.map((f, i) => c.put(new URL('./share/' + i, self.registration.scope).href, new Response(f, { headers: { 'Content-Type': f.type || 'application/octet-stream', 'X-Name': encodeURIComponent(f.name || ''), 'X-Modified': String(f.lastModified || Date.now()) } }))));
+        return Response.redirect(new URL('./?shared=' + files.length, self.registration.scope).href, 303);
+      } catch (err) { return Response.redirect(new URL('./', self.registration.scope).href, 303); }
+    })());
+    return;
+  }
+  if (req.method !== 'GET') return;
 
   // Страница: сначала сеть (чтобы обновления доходили), при отсутствии сети — кэш
   if (req.mode === 'navigate') {

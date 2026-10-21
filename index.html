@@ -76,6 +76,7 @@
             </div>
             <input type="file" id="fileInput" accept="image/*,.tif,.tiff,.heic,.heif,.jxl,.svg,.ai,.eps,.psd,.psb,.xcf,.exr,.hdr,.ico,.bmp,.gif,.cr2,.cr3,.nef,.nrw,.arw,.raf,.orf,.rw2,.dng,.pef,.rwl" multiple>
           </div>
+          <div class="note sess-banner" id="sessBanner" role="region" aria-label="Прошлая сессия" hidden><span id="sessBannerText"></span> <button type="button" class="btn btn-tonal btn-sm" id="sessRestore">Продолжить</button> <button type="button" class="btn btn-outlined btn-sm" id="sessDrop">Забыть</button></div>
           <div class="order-row" id="orderRow" hidden>
             <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево"><svg class="ic" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
             <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо"><svg class="ic" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
@@ -86,6 +87,9 @@
               <option value="size">По размеру файла</option>
               <option value="rev">Развернуть порядок</option>
             </select>
+            <button type="button" class="btn btn-outlined btn-sm" id="undoBtn" title="Шаг назад (Ctrl+Z)" aria-label="Шаг назад" disabled><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg></button>
+            <button type="button" class="btn btn-outlined btn-sm" id="redoBtn" title="Шаг вперёд (Ctrl+Shift+Z)" aria-label="Шаг вперёд" disabled><svg class="ic" aria-hidden="true"><use href="#i-cw"/></svg></button>
+            <button type="button" class="btn btn-outlined btn-sm" id="resetPhoto" title="Сбросить это фото: настройки, поворот, обрезку">Сбросить фото</button>
             <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Результаты</button>
           </div>
           <div class="thumbs-row" id="thumbsRow" hidden>
@@ -498,6 +502,12 @@
             </div>
           </div>
         </section>
+        <section class="card" id="cardSession" data-tab="export">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Запоминать фото</div>
+          <label class="switch"><input type="checkbox" id="sessOn"><span class="track"></span><span>Сохранять фото до следующего запуска</span></label>
+          <p class="note">Если закрыть вкладку, предложим продолжить с тем же набором фото и настройками. Копии лежат только в этом браузере и никуда не отправляются; до 400 МБ. Выключишь переключатель или нажмёшь кнопку ниже, и всё сохранённое удалится.</p>
+          <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="sessForgetBtn">Удалить сохранённые фото</button></div>
+        </section>
         <section class="card" id="cardPrivacy" data-tab="export">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Метаданные и цвет</div>
           <span class="field-label">Метаданные в результате</span>
@@ -631,6 +641,7 @@
   <script src="js/ui.js"></script>
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
+  <script src="js/session.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/changelog.js"></script>
 <script src="js/main.js"></script>

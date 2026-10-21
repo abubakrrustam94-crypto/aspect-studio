@@ -40,3 +40,5 @@ jobs:
         run: node tests/cutout.js
       - name: Тесты вкладки «Компоненты»
         run: node tests/components.js
+      - name: Тесты отмены, сессии и «Поделиться»
+        run: node tests/session.js

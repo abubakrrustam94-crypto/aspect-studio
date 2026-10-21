@@ -598,3 +598,5 @@ canvas.checker { background-color: #fff; background-image: linear-gradient(45deg
 .note.warn { padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--md-sys-color-error) 12%, transparent); color: var(--md-sys-color-on-surface); }
 .note.warn[hidden] { display: none; }
 .note.warn .btn { margin-top: 8px; }
+.sess-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; padding: 10px 12px; border-radius: 14px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.sess-banner[hidden] { display: none; }

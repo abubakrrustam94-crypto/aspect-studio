@@ -29,6 +29,7 @@ let exporting = false;
 function set(key, val) {
   if (exporting) { toast('Идёт экспорт — настройки пока заблокированы'); return; }
   const it = cur();
+  histPush('set:' + key);
   if (key === 'cutOn' && val && !compInstalled('cutout')) { compWarn(['cutout'], 'Удаление фона'); syncUI(); return; }      // без компонента не включаем
   if (key === 'faceAI' && val && !compInstalled('faces')) compWarn(['faces'], 'Поиск лиц');
   if (typeof DEFAULTS[key] === 'number' && typeof val === 'string') val = Number(val);
