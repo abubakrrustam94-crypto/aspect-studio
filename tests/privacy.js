@@ -26,7 +26,7 @@ function p3ToSrgb([r, g, b]) {       // та же матрица, что в те
   const tab = t => p.click(`#settingsTabs [data-tab=${t}]`);
 
   // ---------- метаданные ----------
-  await load('exif_gps.jpg'); await tab('export');
+  await load('exif_gps.jpg'); await tab('meta');
   const info = await p.textContent('#metaInfo');
   ok(/геолокация/.test(info) && /TestCam/.test(info) && /2024-05-01/.test(info), 'исходное фото: найдены геолокация, камера и дата → ' + info.slice(0, 90));
   const exp = (fmt = 'jpg') => p.evaluate(async fmt => { S.format = fmt; const it = items[0], bmp = await loadBitmap(it), r = await exportBlob(it, bmp); closeBmp(bmp); const info = await readExifBasics(new File([r.blob], 'x.jpg')); const u8 = new Uint8Array(await r.blob.arrayBuffer()); const txt = new TextDecoder('latin1').decode(u8); return { type: r.blob.type, info, secret: /SecretSoftware/.test(txt), cam: /TestCam/.test(txt), copy: /Иван/.test(new TextDecoder().decode(u8)) }; }, fmt);

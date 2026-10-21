@@ -46,7 +46,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   // вкладки настроек
   const tabsOk = await p.evaluate(() => {
     const res = {};
-    for (const t of ['frame', 'bg', 'quality', 'extra', 'export']) {
+    for (const t of ['frame', 'bg', 'quality', 'extra', 'export', 'meta', 'components', 'about']) {
       document.querySelector(`#settingsTabs [data-tab="${t}"]`).click();
       res[t] = [...document.querySelectorAll('#colSettings > .card[data-tab]')].filter(c => c.offsetParent).map(c => c.dataset.tab);
     }

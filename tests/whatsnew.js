@@ -24,7 +24,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   await p.evaluate(() => wnOpen()); await p.mouse.click(5, 5); await p.waitForTimeout(200);
   ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'тап по затемнению закрывает окно');
   // 3. кнопка в «О программе»
-  await p.click('#settingsTabs [data-tab=extra]'); await p.click('#wnOpenBtn'); await p.waitForTimeout(200);
+  await p.click('#settingsTabs [data-tab=about]'); await p.click('#wnOpenBtn'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => !document.getElementById('whatsnew').hidden && document.querySelectorAll('#wnList h3').length >= 5), 'кнопка «Что нового» открывает полный список');
   await p.click('#wnClose'); ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'кнопка «Понятно» закрывает окно');
   ok(!p.errs.length, 'нет ошибок JS');

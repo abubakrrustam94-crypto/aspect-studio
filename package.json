@@ -1,6 +1,6 @@
 {
   "name": "aspect-studio",
-  "version": "2.18.0",
+  "version": "2.18.1",
   "private": true,
   "description": "Смена формата фото без обрезки — работает полностью в браузере",
   "scripts": {
