@@ -30,7 +30,8 @@ function set(key, val) {
   if (exporting) { toast('Идёт экспорт — настройки пока заблокированы'); return; }
   const it = cur();
   histPush('set:' + key);
-  if (key === 'cutOn' && val && !compInstalled('cutout')) { compWarn(['cutout'], 'Удаление фона'); syncUI(); return; }      // без компонента не включаем
+  if (key === 'cutOn' && val && !compInstalled(cutComp(cfgFor(it)))) { compWarn([cutComp(cfgFor(it))], 'Удаление фона'); syncUI(); return; }
+  if (key === 'cutQuality' && val === 'precise' && !compInstalled('cutout2')) { compWarn(['cutout2'], 'Точное удаление фона'); syncUI(); return; }      // без компонента не включаем
   if (key === 'faceAI' && val && !compInstalled('faces')) compWarn(['faces'], 'Поиск лиц');
   if (typeof DEFAULTS[key] === 'number' && typeof val === 'string') val = Number(val);
   const t = (it && it.ov && OV_KEYS.includes(key)) ? it.ov : S;

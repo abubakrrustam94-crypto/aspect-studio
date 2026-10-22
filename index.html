@@ -240,7 +240,7 @@
 
         <section class="card" id="cardCutout" data-tab="bg">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Удалить фон</div>
-          <p class="note warn" id="cutNeed" hidden>Нужен компонент «Удаление фона» (около 3 МБ вместе с движком). <button type="button" class="btn btn-outlined btn-sm js-open-components">Открыть «Компоненты»</button></p>
+          <p class="note warn" id="cutNeed" hidden>Нужен компонент <span id="cutNeedName">«Удаление фона» (около 3 МБ вместе с движком)</span>. <button type="button" class="btn btn-outlined btn-sm js-open-components">Открыть «Компоненты»</button></p>
           <label class="switch"><input type="checkbox" data-key="cutOn"><span class="track"></span><span>Вырезать объект</span></label>
           <div class="stack" id="cutFields" style="margin-top:14px" hidden>
             <div>
@@ -248,6 +248,14 @@
               <div class="seg" data-group="cutBg" role="group" aria-label="Новый фон">
                 <button type="button" data-val="white">Белый</button><button type="button" data-val="color">Цвет</button><button type="button" data-val="transparent">Прозрачный</button>
               </div>
+            </div>
+            <div>
+              <span class="field-label">Качество</span>
+              <div class="seg" data-group="cutQuality" role="group" aria-label="Качество удаления фона">
+                <button type="button" data-val="fast">Быстро</button>
+                <button type="button" data-val="precise">Точно</button>
+              </div>
+              <p class="note" style="margin:4px 0 0"><b>Быстро</b>: до нескольких секунд, компонент около 3 МБ. <b>Точно</b> (IS-Net): аккуратнее края, волосы и мелкие детали, но считает десятки секунд, компонент около 58 МБ.</p>
             </div>
             <div id="cutColorRow" hidden>
               <span class="field-label">Цвет фона</span>
@@ -694,6 +702,7 @@
   <script src="js/render.js"></script>
   <script src="js/analyze.js"></script>
   <script src="js/faces.js"></script>
+  <script src="js/ort.js"></script>
   <script src="js/cutout.js"></script>
   <script src="js/maskedit.js"></script>
   <script src="js/preview.js"></script>

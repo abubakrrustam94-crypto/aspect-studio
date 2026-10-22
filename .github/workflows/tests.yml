@@ -48,3 +48,5 @@ jobs:
         run: node tests/quality.js
       - name: Тесты вкладки «Метаданные»
         run: node tests/meta.js
+      - name: Тесты точного удаления фона (IS-Net, ONNX)
+        run: node tests/cutout2.js

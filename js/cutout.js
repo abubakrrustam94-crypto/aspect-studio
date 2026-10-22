@@ -59,14 +59,26 @@ function coGuided(I, p, w, h, r, eps) {
 }
 
 /* Маска для готового (уже повёрнутого/обрезанного) изображения bmp. Возвращает { w, h, data: Uint8Array 0..255, cover } */
-async function computeMask(bmp) {
-  await coStart();
-  const bw = dimsOf(bmp).w, bh = dimsOf(bmp).h, N = 320;
+/* Точная модель (IS-Net на ONNX): вход 1024×1024, выход — карта 0..1; приводим к тому же виду, что даёт быстрая */
+async function coPrecise(px, N) {
+  const f = new Float32Array(3 * N * N), mean = [0.485, 0.456, 0.406];
+  for (let i = 0; i < N * N; i++) for (let k = 0; k < 3; k++) f[k * N * N + i] = px[i * 4 + k] / 255 - mean[k];
+  const out = await ortRun(['vendor/models/isnet-int8.onnx.p1', 'vendor/models/isnet-int8.onnx.p2'], { input: { data: f, dims: [1, 3, N, N], type: 'float32' } });
+  const a = out[Object.keys(out)[0]].data; let mn = Infinity, mx = -Infinity;
+  for (let i = 0; i < a.length; i++) { const v = a[i]; if (v < mn) mn = v; if (v > mx) mx = v; }
+  const r = new Uint8Array(N * N), k = 255 / ((mx - mn) || 1);
+  for (let i = 0; i < r.length; i++) r[i] = Math.round((a[i] - mn) * k);
+  return r;
+}
+async function computeMask(bmp, quality = 'fast') {
+  const precise = quality === 'precise';
+  if (!precise) await coStart();
+  const bw = dimsOf(bmp).w, bh = dimsOf(bmp).h, N = precise ? 1024 : 320;
   // 1) вход модели — 320×320 (как у rembg: с растяжением)
   const c = document.createElement('canvas'); c.width = c.height = N;
   const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, N, N);
   const px = g.getImageData(0, 0, N, N).data;
-  const m320 = (await coCall({ type: 'mask', pixels: px }, [px.buffer])).mask;
+  const m320 = precise ? await coPrecise(px, N) : (await coCall({ type: 'mask', pixels: px }, [px.buffer])).mask;
   // 2) рабочее разрешение: маска растягивается, фото уменьшается до того же размера
   const k = Math.min(1, CO_SIDE / Math.max(bw, bh)), w = Math.max(8, Math.round(bw * k)), h = Math.max(8, Math.round(bh * k));
   const id = g.createImageData(N, N); for (let i = 0; i < m320.length; i++) { id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = m320[i]; id.data[i * 4 + 3] = 255; }
@@ -86,7 +98,7 @@ async function computeMask(bmp) {
   return { w, h, data, cover: sum / data.length };
 }
 
-const coSig = item => `${item.rot || 0}|${item.flipH ? 1 : 0}|${item.flipV ? 1 : 0}|${item.crop ? [item.crop.x, item.crop.y, item.crop.w, item.crop.h].map(v => v.toFixed(4)).join(',') : ''}`;
+const coSig = item => `${cfgFor(item).cutQuality === 'precise' ? 'p' : 'f'}|${item.rot || 0}|${item.flipH ? 1 : 0}|${item.flipV ? 1 : 0}|${item.crop ? [item.crop.x, item.crop.y, item.crop.w, item.crop.h].map(v => v.toFixed(4)).join(',') : ''}`;
 const coPending = new Map();
 /* Маска фото (кэшируется на фото; пересчитывается после поворота/обрезки). Ошибка → item.maskFail */
 function ensureMask(item, bmp) {
@@ -98,13 +110,13 @@ function ensureMask(item, bmp) {
   item.maskTry = Date.now();
   const quiet = typeof exporting !== 'undefined' && exporting;
   const p = (async () => {
-    if (!quiet) toast('Вырезаю фон… (первый раз скачивается модель, около 3 МБ)', false, { ms: 6000 });
+    if (!quiet) toast(cfgFor(item).cutQuality === 'precise' ? 'Вырезаю фон точной моделью… это займёт от 15 секунд до пары минут, не закрывай вкладку' : 'Вырезаю фон…', false, { ms: cfgFor(item).cutQuality === 'precise' ? 20000 : 6000 });
     try {
-      const m = await computeMask(bmp);
+      const m = await computeMask(bmp, cfgFor(item).cutQuality);
       m.sig = sig; item.mask = m; item.maskCv = null; item.maskFail = m.cover < 0.02 ? 'empty' : false;    // почти ничего не найдено — не вырезаем
     } catch (e) { console.warn('cutout', e); item.maskFail = 'load'; item.mask = null; }
     finally { coPending.delete(key); }
-    if (!quiet && item.maskFail === 'load') toast(location.protocol === 'file:' ? 'Удаление фона не работает, если открыт сам файл index.html: открой сайт по ссылке (http/https)' : 'Не удалось загрузить модель удаления фона: при первом запуске нужен интернет', true, { ms: 7000 });
+    if (!quiet && item.maskFail === 'load') toast(location.protocol === 'file:' ? 'Удаление фона не работает, если открыт сам файл index.html: открой сайт по ссылке (http/https)' : (cfgFor(item).cutQuality === 'precise' ? 'Точная модель не запустилась (возможно, не хватило памяти). Выбери «Быстро» или закрой другие вкладки' : 'Не удалось запустить модель удаления фона: проверь, что компонент скачан на вкладке «Компоненты»'), true, { ms: 7000 });
     else if (!quiet && item.maskFail === 'empty') toast('Не нашёл объект на этом фото, фон оставлен как есть', true, { ms: 6000 });
     else if (!quiet) toast('Фон удалён');
     return item.mask;

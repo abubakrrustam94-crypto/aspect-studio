@@ -156,6 +156,10 @@ node tests/cutout.js     # удаление фона, офлайн (по http)
 
 `js/metadata.js`: полный разбор JPEG (EXIF, JFIF, XMP, IPTC), таблица «Было → Будет» (`metaRows`), профили, проверка готового файла (`inspectBlob` для JPG, PNG, WebP). Запись: `metaOpts` и `buildSafeExif` в `js/export.js`. Принцип прежний: геолокация, серийные номера, программа, объектив, миниатюра, XMP и IPTC не переносятся никогда. Новые настройки: `metaCam`, `metaDate` (keep/today/none), `metaCopy` (шаблон), `metaDpi` (JFIF + EXIF для JPG, pHYs для PNG); режим `meta` получил значение `custom`.
 
+## Точное удаление фона (v2.20)
+
+Общий ONNX-движок: `js/ort.js` + `js/ort-worker.js` (onnxruntime-web 1.30, WASM в один поток, сессия одна, воркер закрывается через 45 с простоя). Файлы движка: `vendor/ort/`. Модель IS-Net (int8, из пакета `@imgly/background-removal-data`, исходная модель DIS, Apache-2.0) лежит в `vendor/models/isnet-int8.onnx.p1` и `.p2` (две половины, склеиваются в воркере); версия fp16 (88 МБ) почти не отличается по результату и не включена. Выбор качества: настройка `cutQuality` (fast/precise), компонент определяет `cutComp()`. Сайт личный, поэтому лицензии на некоммерческое использование допустимы.
+
 ## Надёжность
 
 - **Автотесты:** `npm install && npx playwright install chromium && npm test`. `tests/run.js` — основные проверки, `tests/stress.js` — ZIP из 100 файлов (имена, CRC), фото с EXIF-поворотом, размеры 1×1, 2×3000, 9000×9000, 12000×40, журнал ошибок.

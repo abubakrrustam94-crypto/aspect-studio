@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.19.0';
+const APP_VERSION = '2.20.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -73,7 +73,7 @@ const DEFAULTS = {
   view: 'slider', pin: true,
   enhOn: true, enhScale: 1, enhLevel: 'mid', sharp: 45, denoise: 20, smart: true,
   meta: 'none', author: '', colorSpace: 'p3', metaCam: true, metaDate: 'keep', metaCopy: '', metaDpi: 0,
-  faceAI: true, cutOn: false, cutBg: 'white', cutColor: '#ffffff', cutEdge: 50, nameStart: 1, nameTranslit: false, nameSpaces: false, folderOn: false,
+  faceAI: true, cutOn: false, cutBg: 'white', cutColor: '#ffffff', cutEdge: 50, cutQuality: 'fast', nameStart: 1, nameTranslit: false, nameSpaces: false, folderOn: false,
 };
 
 let S = { ...DEFAULTS };
@@ -89,7 +89,7 @@ try {
 for (const k of Object.keys(DEFAULTS)) if (typeof S[k] !== typeof DEFAULTS[k]) S[k] = DEFAULTS[k];
 
 // Настройки на фото: у фото может быть свой набор (item.ov) поверх общих S
-const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge'];
+const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality'];
 const cfgFor = item => (item && item.ov) ? Object.assign({}, S, item.ov) : S;
 const tgt = () => { const it = items[idx]; return it && it.ov ? it.ov : S; };   // куда писать изменения
 

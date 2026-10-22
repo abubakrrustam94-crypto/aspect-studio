@@ -15,7 +15,11 @@ const COMPONENTS = [
   { id: 'tfjs', group: 'n', name: 'Движок нейросетей', desc: 'Общая основа для поиска лиц и удаления фона; сам по себе ничего не делает', files: [['vendor/tfjs/runtime.js', 692675], ['vendor/tfjs/tfjs-backend-wasm.wasm', 311123], ['vendor/tfjs/tfjs-backend-wasm-simd.wasm', 424594]] },
   { id: 'faces', group: 'n', name: 'Поиск лиц', desc: 'Кадр «Заполнить» смотрит на лица', files: [['vendor/blazeface/blazeface-back.json', 79043], ['vendor/blazeface/blazeface-back.bin', 538928]], requires: ['tfjs'] },
   { id: 'cutout', group: 'n', name: 'Удаление фона', desc: 'Вырезает объект из кадра: товары, люди, животные', files: [['vendor/cutout/u2netp.json', 28572], ['vendor/cutout/u2netp.f16.bin', 2250970]], requires: ['tfjs'] },
+  { id: 'ort', group: 'n', name: 'Движок ONNX', desc: 'Общий движок для точных нейросетей (удаление фона, увеличение и др.)', files: [['vendor/ort/ort.wasm.min.js', 50196], ['vendor/ort/ort-wasm-simd-threaded.mjs', 24381], ['vendor/ort/ort-wasm-simd-threaded.wasm', 14239897]] },
+  { id: 'cutout2', group: 'n', name: 'Удаление фона: точный', desc: 'IS-Net: аккуратнее края, волосы, мелкие детали; считает дольше быстрого', files: [['vendor/models/isnet-int8.onnx.p1', 22171218], ['vendor/models/isnet-int8.onnx.p2', 22171218]], requires: ['ort'] },
 ];
+/* Какой компонент нужен удалению фона при выбранном качестве */
+const cutComp = (cfg = S) => cfg && cfg.cutQuality === 'precise' ? 'cutout2' : 'cutout';
 const compById = id => COMPONENTS.find(c => c.id === id);
 const compUrl = p => new URL(p, document.baseURI).href;
 const compBytes = c => c.files.reduce((s, f) => s + f[1], 0);
@@ -182,15 +186,14 @@ document.getElementById('compAll').addEventListener('click', async () => {
   toast('Все компоненты скачаны');
 });
 document.getElementById('compNone').addEventListener('click', async () => {
-  const order = ['faces', 'cutout', 'tiff', 'tfjs', 'zlib', 'heif', 'jxl', 'exr', 'pdf'];
-  for (const id of order) if (compFiles[id]) { try { await compRemove(id); } catch (e) {} }
+  for (let pass = 0; pass < 4; pass++) for (const c of COMPONENTS) if (compFiles[c.id] || compBad[c.id]) { try { await compRemove(c.id); } catch (e) {} }   // сначала те, от кого ничего не зависит
   toast('Компоненты удалены');
 });
 renderComponents();
 
 /* Подсказки в карточках функций: что нужно скачать */
 function updateComponentHints() {
-  const cut = document.getElementById('cutNeed'); if (cut) cut.hidden = compInstalled('cutout');
+  const cut = document.getElementById('cutNeed'); if (cut) { const id = cutComp(typeof cfgFor === 'function' && typeof cur === 'function' ? cfgFor(cur()) : S); cut.hidden = compInstalled(id); const nm = document.getElementById('cutNeedName'); if (nm) nm.textContent = id === 'cutout2' ? '«Удаление фона: точный» (около 58 МБ вместе с движком)' : '«Удаление фона» (около 3 МБ вместе с движком)'; }
   const face = document.getElementById('faceNeed'); if (face) face.hidden = compInstalled('faces');
 }
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.js-open-components')) openComponentsTab(); });

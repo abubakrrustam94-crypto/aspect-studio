@@ -73,7 +73,7 @@ async function openMaskEditor() {
   const item = cur(); if (!item || me.open || busy) return;
   const E = cfgFor(item);
   if (!E.cutOn) { toast('Сначала включи «Вырезать объект»', true); return; }
-  if (!compInstalled('cutout')) { compWarn(['cutout'], 'Удаление фона'); return; }
+  if (!compInstalled(cutComp(E))) { compWarn([cutComp(E)], 'Удаление фона'); return; }
   busy = true; setToolbarBusy(true);
   try {
     const bmp = await getBitmap(item); await ensureMask(item, bmp);

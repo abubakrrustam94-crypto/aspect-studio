@@ -10,6 +10,8 @@
 | `exr/` | OpenEXR | [parse-exr](https://github.com/dmnsgn/parse-exr) 1.0.2 (+ fflate), собрано esbuild в один файл | MIT |
 | `jxl/` | JPEG XL (если браузер не открывает сам) | [@jsquash/jxl](https://github.com/jamsinclair/jSquash) 1.3.0 (libjxl в WebAssembly) | Apache-2.0 |
 | `pdfjs/` | AI (PDF-совместимые) | [pdf.js](https://github.com/mozilla/pdf.js) 6.4.299, legacy-сборка | Apache-2.0 |
+| `ort/` | Общий движок ONNX (WASM) | [onnxruntime-web](https://github.com/microsoft/onnxruntime) 1.30.0 (`ort.wasm.min.js`, `ort-wasm-simd-threaded.{mjs,wasm}`) | MIT |
+| `models/isnet-int8.onnx.p1`, `.p2` (две половины одной модели, склеиваются в воркере; так файлы не больше ~22 МБ) | Точное удаление фона | IS-Net (DIS), квантованная версия из [@imgly/background-removal-data](https://www.npmjs.com/package/@imgly/background-removal-data) 1.4.5 | Apache-2.0 (модель), для личного использования |
 
 | `tfjs/` | Общий рантайм для лиц и удаления фона | [TensorFlow.js](https://github.com/tensorflow/tfjs) core + cpu + wasm + converter 4.22.0, собрано esbuild в `runtime.js`, плюс `tfjs-backend-wasm*.wasm` | Apache-2.0 |
 | `blazeface/` | Определение лиц (грузится при первом анализе фото) | [BlazeFace](https://github.com/google-ai-edge/mediapipe) (MediaPipe), веса в формате tfjs из [human-models](https://github.com/vladmandic/human-models) | Apache-2.0 / MIT |
