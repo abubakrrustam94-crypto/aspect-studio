@@ -55,6 +55,7 @@ const ensureMetaFull = it => it.metaFull ? Promise.resolve(it.metaFull) : (it._m
 async function inspectBlob(blob) {
   const buf = new Uint8Array(await blob.slice(0, 262144).arrayBuffer()), dv = new DataView(buf.buffer);
   if (blob.type === 'image/jpeg') { const m = await readMetaFull(blob); return { type: 'jpg', ...m }; }
+  if (blob.type === 'image/avif' || blob.type === 'image/jxl') return { type: blob.type === 'image/avif' ? 'avif' : 'jxl', gps: false, exif: false, xmp: false, iptc: false, dpi: 0, chunks: [] };   // кодеры не пишут метаданные
   const r = { type: blob.type === 'image/png' ? 'png' : 'webp', gps: false, exif: false, xmp: false, iptc: false, dpi: 0, chunks: [] };
   if (r.type === 'png') {
     for (let p = 8; p + 12 <= buf.length;) {
@@ -108,7 +109,7 @@ async function renderMetaTable(it) {
   rows.forEach(r => { const tr = document.createElement('tr'); tr.className = 'mt-' + r.kind; const a = document.createElement('th'); a.scope = 'row'; a.textContent = r.label; const b = document.createElement('td'); b.textContent = r.was; const c = document.createElement('td'); c.textContent = r.will; tr.append(a, b, c); tb.append(tr); });
   tbl.append(tb); box.replaceChildren(tbl);
   const g = $('#metaGps'); g.hidden = !m.gps;
-  if (fmt !== 'jpg') { const n = document.createElement('p'); n.className = 'note'; n.textContent = fmt === 'png' ? 'В PNG метаданные камеры не записываются; можно записать только разрешение (DPI).' : 'В WebP метаданные не записываются, файл получается «чистым».'; box.append(n); }
+  if (fmt !== 'jpg') { const n = document.createElement('p'); n.className = 'note'; n.textContent = fmt === 'png' ? 'В PNG метаданные камеры не записываются; можно записать только разрешение (DPI).' : 'В ' + fmt.toUpperCase() + ' метаданные не записываются, файл получается «чистым».'; box.append(n); }
   const bt = $('#metaBatch');
   if (items.length > 1) {
     const all = await Promise.all(items.map(ensureMetaFull)); if (tok !== metaTabTok) return;

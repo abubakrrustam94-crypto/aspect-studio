@@ -83,7 +83,7 @@ function updateInfo(item) {
 }
 
 /* ---------- Вес файла: оценка по предпросмотру, по нажатию — точный расчёт ---------- */
-const wtSig = (item, ex) => JSON.stringify([item.id, S.format, S.quality, S.targetOn, S.targetKB, S.meta, S.author, S.metaCam, S.metaDate, S.metaCopy, S.metaDpi, S.colorSpace, S.maxSide, S.enhOn, item.ov, item.rot, item.flipH, item.flipV, item.crop, item.focus, item.zoom, ex.cw, ex.ch, S.bg, S.fit, S.blur, S.dim, S.color, S.grad1, S.grad2, S.gradAngle, S.sizeMode, S.ratioW, S.ratioH, S.outW, S.outH, S.enhScale, S.enhLevel, S.sharp, S.denoise, S.cutOn, S.cutBg, S.cutEdge, S.wmOn, S.wmText, S.wmPos, S.wmSize, S.wmOpacity, S.wmMode]);
+const wtSig = (item, ex) => JSON.stringify([item.id, S.format, S.quality, S.jpgEngine, S.pngOpt, S.pngColors, S.encEffort, typeof compInstalled === 'function' && ENC_COMP[S.format] ? compInstalled(ENC_COMP[S.format]) : 0, S.targetOn, S.targetKB, S.meta, S.author, S.metaCam, S.metaDate, S.metaCopy, S.metaDpi, S.colorSpace, S.maxSide, S.enhOn, item.ov, item.rot, item.flipH, item.flipV, item.crop, item.focus, item.zoom, ex.cw, ex.ch, S.bg, S.fit, S.blur, S.dim, S.color, S.grad1, S.grad2, S.gradAngle, S.sizeMode, S.ratioW, S.ratioH, S.outW, S.outH, S.enhScale, S.enhLevel, S.sharp, S.denoise, S.cutOn, S.cutBg, S.cutEdge, S.wmOn, S.wmText, S.wmPos, S.wmSize, S.wmOpacity, S.wmMode]);
 let wtTimer = 0;
 function weightPill(item, ex) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'info-pill info-weight';
@@ -98,7 +98,7 @@ function weightPill(item, ex) {
 async function wtEstimate(item, ex, sig, b) {
   try {
     if (cur() !== item || !afterCanvas.width || !b.isConnected) return;
-    const blob = await new Promise(r => afterCanvas.toBlob(r, MIME[S.format], S.quality / 100));
+    const blob = await encodeBlob(afterCanvas, S.format, S.quality / 100);
     if (!blob || !b.isConnected || cur() !== item) return;
     const bytes = blob.size * (ex.cw * ex.ch) / (afterCanvas.width * afterCanvas.height);
     b.textContent = `Вес ≈ ${fmtSize(Math.round(bytes))} · точнее`; b.dataset.est = Math.round(bytes);

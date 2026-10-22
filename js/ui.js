@@ -32,6 +32,9 @@ function set(key, val) {
   histPush('set:' + key);
   if (key === 'cutOn' && val && !compInstalled(cutComp(cfgFor(it)))) { compWarn([cutComp(cfgFor(it))], 'Удаление фона'); syncUI(); return; }
   if (key === 'cutQuality' && val === 'precise' && !compInstalled('cutout2')) { compWarn(['cutout2'], 'Точное удаление фона'); syncUI(); return; }      // без компонента не включаем
+  if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
+  if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
+  if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
   if (key === 'faceAI' && val && !compInstalled('faces')) compWarn(['faces'], 'Поиск лиц');
   if (typeof DEFAULTS[key] === 'number' && typeof val === 'string') val = Number(val);
   const t = (it && it.ov && OV_KEYS.includes(key)) ? it.ov : S;
@@ -85,6 +88,11 @@ function syncUI() {
   $('#wmPosBox').hidden = E.wmMode === 'tile';
   $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
+  { const f = E.format, jx = f === 'jxl' && +S.quality >= 100;
+    $('#jpgEngRow').hidden = f !== 'jpg'; $('#pngOptRow').hidden = f !== 'png'; $('#pngColorsRow').hidden = S.pngOpt !== 'lossy';
+    $('#encEffRow').hidden = !(f === 'avif' || f === 'jxl' || (f === 'jpg' && S.jpgEngine === 'moz') || (f === 'png' && S.pngOpt !== 'off'));
+    const nt = $('#encNote'); const msg = f === 'jxl' ? (jx ? 'Качество 100% — JPEG XL без потерь.' : 'Качество 100% включает JPEG XL без потерь. Открывается не во всех программах.') : f === 'avif' ? 'AVIF кодируется медленно: большие фото считаются десятки секунд. Широкий цвет (P3) приводится к sRGB, метаданные не записываются.' : f === 'jpg' && S.jpgEngine === 'moz' ? 'MozJPEG: прогрессивный JPEG, файл меньше при том же виде. Считается дольше обычного.' : f === 'png' && S.pngOpt === 'lossy' ? 'Палитра уменьшает файл в 2–4 раза, но градиенты могут стать ступенчатыми; прозрачность сохраняется.' : '';
+    nt.textContent = msg; nt.hidden = !msg; }
   $('#qualityRow').classList.toggle('disabled', E.format === 'png'); $('#qualityRow').setAttribute('aria-disabled', E.format === 'png');
   $('#quality').disabled = E.format === 'png';
   $('#targetRow').classList.toggle('disabled', E.format === 'png'); $('#targetRow').setAttribute('aria-disabled', E.format === 'png');
@@ -252,7 +260,7 @@ addEventListener('paste', e => {
 function updateNameExample() {
   const it = cur(), ex = $('#nameExample');
   if (!ex) return;
-  const ext = ({ png: 'png', jpg: 'jpg', webp: 'webp' })[S.format] || 'png';
+  const ext = ({ png: 'png', jpg: 'jpg', webp: 'webp', avif: 'avif', jxl: 'jxl' })[S.format] || 'png';
   const sample = it || { name: 'photo.jpg' };
   const w = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outW : it.w) : 1920, h = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outH : it.h) : 1080;
   ex.textContent = 'Пример: ' + makeName(sample, w, h, ext);

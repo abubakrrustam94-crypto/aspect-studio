@@ -3,8 +3,8 @@
 /* ===================================================================
    Экспорт: один файл, поделиться, копировать, ZIP
    =================================================================== */
-const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
-const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+const MIME = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', avif: 'image/avif', jxl: 'image/jxl' };
+const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif', 'image/jxl': 'jxl' };
 /* Имя файла по шаблону: {name} {n} {w} {h} {date} */
 /* ---------- Имя файла: шаблон, счётчики, транслитерация ---------- */
 const TRANSLIT = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'yo', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
@@ -163,8 +163,8 @@ async function injectExif(blob, tiff) {
 }
 
 /* Подгонка под размер файла: сначала качество (бинарный поиск), потом уменьшение картинки */
-async function fitToSize(c, mime, q0, limit) {
-  const toB = (cv, q) => new Promise(r => cv.toBlob(r, mime, q));
+async function fitToSize(c, fmt, q0, limit) {
+  const toB = (cv, q) => encodeBlob(cv, fmt, q);
   const qMin = Math.min(0.35, q0);
   let cv = c, scale = 1, best = null;
   try {
@@ -202,9 +202,9 @@ async function exportBlob(item, bmp, formatOverride, work) {
   const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item), ...(work ? { work } : {}) });
   let blob, outW = cw, outH = ch, fit = null;
   if (S.targetOn && fmt !== 'png') {
-    fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && metaWrites() ? 1600 : 0));
+    fit = await fitToSize(c, fmt, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && metaWrites() ? 1600 : 0));
     blob = fit.blob; outW = fit.w; outH = fit.h;
-  } else blob = await new Promise(r => c.toBlob(r, mime, S.quality / 100));
+  } else blob = await encodeBlob(c, fmt, S.quality / 100);
   c.width = c.height = 0;
   if (!blob) throw new Error('Не удалось создать файл (слишком большой холст?)');
   const mo = metaOpts();
@@ -281,7 +281,7 @@ const downloadCurrent = async () => {
     if (useFolder) saved = await writeToFolder(r.blob, r.name); else saveBlob(r.blob, r.name);
     const where = useFolder ? ` в папку «${dirHandle.name}»` : '';
     if (r.fit && !r.fit.met) { toast(`Не удалось уложиться в ${S.targetKB} КБ: получилось ${fmtSize(r.blob.size)}`, true); return; }
-    toast(r.fit ? `Сохранено${where} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)} · качество ${Math.round(r.fit.q * 100)}%` : r.fellBack ? `Браузер не умеет ${S.format.toUpperCase()} — сохранён ${saved.split('.').pop().toUpperCase()}${where}` : `Сохранено${where} · ${saved} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)}`);
+    toast(r.fit ? `Сохранено${where} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)} · качество ${Math.round(r.fit.q * 100)}%` : r.fellBack ? (ENC_COMP[S.format] && !compInstalled(ENC_COMP[S.format]) ? `Для ${S.format.toUpperCase()} нужен компонент (вкладка «Компоненты») — сохранён ${saved.split('.').pop().toUpperCase()}${where}` : `Браузер не умеет ${S.format.toUpperCase()} — сохранён ${saved.split('.').pop().toUpperCase()}${where}`) : `Сохранено${where} · ${saved} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)}`);
   });
 };
 
@@ -394,6 +394,7 @@ function exportConcurrency(list) {
   if (typeof window.EXPORT_CONC === 'number') return Math.max(1, window.EXPORT_CONC);
   if (list.length < 2) return 1;
   let n = DEV_MEM <= 2 || HW < 4 ? 1 : DEV_MEM <= 4 ? 2 : HW >= 6 ? 3 : 2;
+  if (S.format === 'avif' || S.format === 'jxl') n = Math.min(n, DEV_MEM >= 6 ? 2 : 1);   // кодеры тяжёлые по памяти
   let big = 0; list.forEach(it => { const s = computeSize(it.w, it.h, 0, cfgFor(it)); big = Math.max(big, s.cw * s.ch); });
   if (big > MAX_AREA * 0.45) n = 1;          // большие кадры: две копии в памяти не нужны
   return Math.min(n, list.length);

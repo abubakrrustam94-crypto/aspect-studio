@@ -12,6 +12,10 @@ const COMPONENTS = [
   { id: 'jxl', group: 'f', name: 'JPEG XL', desc: 'Файлы .jxl (если браузер не открывает их сам)', files: [['vendor/jxl/jxl-decode.js', 20282], ['vendor/jxl/jxl_dec.wasm', 849240]] },
   { id: 'exr', group: 'f', name: 'OpenEXR', desc: 'Файлы .exr', files: [['vendor/exr/parse-exr.js', 26476]] },
   { id: 'pdf', group: 'f', name: 'Adobe Illustrator (AI)', desc: 'Файлы .ai с PDF-совместимостью', files: [['vendor/pdfjs/pdf.min.mjs', 523774], ['vendor/pdfjs/pdf.worker.min.mjs', 1321307]] },
+  { id: 'encjpeg', group: 'e', name: 'JPG: MozJPEG', desc: 'Файл JPG на 10–20% меньше при том же виде (прогрессивный JPEG)', files: [['vendor/enc/mozjpeg_enc.js', 38422], ['vendor/enc/mozjpeg_enc.wasm', 251524]] },
+  { id: 'encpng', group: 'e', name: 'PNG: оптимизатор', desc: 'oxipng: PNG без потерь на 10–30% меньше; режим «Палитра» уменьшает ещё сильнее', files: [['vendor/enc/squoosh_oxipng.js', 6307], ['vendor/enc/squoosh_oxipng_bg.wasm', 164172]] },
+  { id: 'encavif', group: 'e', name: 'AVIF', desc: 'Формат вывода AVIF: вдвое меньше JPG при том же виде; кодирование медленное', files: [['vendor/enc/avif_enc.js', 39621], ['vendor/enc/avif_enc.wasm', 3485872]] },
+  { id: 'encjxl', group: 'e', name: 'JPEG XL: запись', desc: 'Формат вывода JXL, в том числе без потерь; открывается не везде', files: [['vendor/enc/jxl_enc.js', 47073], ['vendor/enc/jxl_enc.wasm', 1363824]] },
   { id: 'tfjs', group: 'n', name: 'Движок нейросетей', desc: 'Общая основа для поиска лиц и удаления фона; сам по себе ничего не делает', files: [['vendor/tfjs/runtime.js', 692675], ['vendor/tfjs/tfjs-backend-wasm.wasm', 311123], ['vendor/tfjs/tfjs-backend-wasm-simd.wasm', 424594]] },
   { id: 'faces', group: 'n', name: 'Поиск лиц', desc: 'Кадр «Заполнить» смотрит на лица', files: [['vendor/blazeface/blazeface-back.json', 79043], ['vendor/blazeface/blazeface-back.bin', 538928]], requires: ['tfjs'] },
   { id: 'cutout', group: 'n', name: 'Удаление фона', desc: 'Вырезает объект из кадра: товары, люди, животные', files: [['vendor/cutout/u2netp.json', 28572], ['vendor/cutout/u2netp.f16.bin', 2250970]], requires: ['tfjs'] },
@@ -130,7 +134,7 @@ function renderComponents() {
   const box = document.getElementById('compList'); if (!box) return;
   box.replaceChildren();
   const note = document.getElementById('compNoCache'); if (note) note.hidden = !COMP_NOCACHE;
-  [['f', 'Форматы файлов'], ['n', 'Нейросети']].forEach(([g, title]) => {
+  [['f', 'Форматы файлов'], ['e', 'Сжатие и форматы вывода'], ['n', 'Нейросети']].forEach(([g, title]) => {
     const h = document.createElement('div'); h.className = 'comp-group'; h.textContent = title; box.append(h);
     COMPONENTS.filter(c => c.group === g).forEach(c => {
       const inst = compFiles[c.id] === true, bad = !inst && !!compBad[c.id], busy = !!compBusy[c.id], need = compChain(c.id).filter(x => !compFiles[x]);

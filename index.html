@@ -453,6 +453,26 @@
             <button type="button" data-val="png">PNG</button>
             <button type="button" data-val="jpg">JPG</button>
             <button type="button" data-val="webp">WebP</button>
+            <button type="button" data-val="avif">AVIF</button>
+            <button type="button" data-val="jxl">JXL</button>
+          </div>
+          <div class="stack" id="encBox" style="margin-top:14px">
+            <div id="jpgEngRow" hidden>
+              <span class="field-label">Кодер JPG</span>
+              <div class="seg" data-group="jpgEngine" role="group" aria-label="Кодер JPG"><button type="button" data-val="native">Браузер</button><button type="button" data-val="moz">MozJPEG</button></div>
+            </div>
+            <div id="pngOptRow" hidden>
+              <span class="field-label">Сжатие PNG</span>
+              <div class="seg" data-group="pngOpt" role="group" aria-label="Сжатие PNG"><button type="button" data-val="off">Обычное</button><button type="button" data-val="lossless">Без потерь</button><button type="button" data-val="lossy">Палитра</button></div>
+              <div id="pngColorsRow" hidden style="margin-top:8px"><span class="field-label">Цветов в палитре</span>
+                <div class="seg" data-group="pngColors" data-num role="group" aria-label="Цветов в палитре"><button type="button" data-val="256">256</button><button type="button" data-val="128">128</button><button type="button" data-val="64">64</button><button type="button" data-val="32">32</button></div>
+              </div>
+            </div>
+            <div id="encEffRow" hidden>
+              <span class="field-label">Усилие сжатия</span>
+              <div class="seg" data-group="encEffort" role="group" aria-label="Усилие сжатия"><button type="button" data-val="fast">Быстро</button><button type="button" data-val="normal">Обычно</button><button type="button" data-val="best">Максимум</button></div>
+            </div>
+            <p class="note" id="encNote" hidden></p>
           </div>
           <div class="stack" style="margin-top:14px">
             <div id="qualityRow">
@@ -494,7 +514,7 @@
               <p class="note" id="folderOnNote" hidden style="margin:6px 0 0">Кнопка «Скачать» кладёт файл в папку, а кнопка «В папку» — все отмеченные фото отдельными файлами (без ZIP). Существующие файлы не перезаписываются: к имени добавляется _2, _3…</p>
             </div>
             <div id="targetRow">
-              <label class="switch"><input type="checkbox" data-key="targetOn"><span class="track"></span><span>Уложиться в размер файла (JPG / WebP)</span></label>
+              <label class="switch"><input type="checkbox" data-key="targetOn"><span class="track"></span><span>Уложиться в размер файла (JPG / WebP / AVIF / JXL)</span></label>
               <div class="row" id="targetFields" style="margin-top:10px;align-items:center;gap:8px">
                 <span class="field-label" style="margin:0">Не больше</span>
                 <input class="num" type="number" inputmode="numeric" data-key="targetKB" data-num min="20" max="20000" step="10" aria-label="Максимальный размер файла, КБ" style="max-width:110px">
@@ -707,6 +727,7 @@
   <script src="js/maskedit.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/enc.js"></script>
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
   <script src="js/session.js"></script>
