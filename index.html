@@ -512,17 +512,52 @@
           <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="sessForgetBtn">Удалить сохранённые фото</button></div>
         </section>
         <section class="card" id="cardPrivacy" data-tab="meta">
-          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Метаданные и цвет</div>
-          <span class="field-label">Метаданные в результате</span>
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Метаданные</div>
+          <span class="field-label">Быстрый профиль</span>
+          <div class="chips" id="metaProfiles" role="group" aria-label="Профили метаданных">
+            <button type="button" class="chip" data-p="public" title="Удалить всё: для соцсетей и маркетплейсов">Для публикации</button>
+            <button type="button" class="chip" data-p="portfolio" title="Оставить камеру и дату, добавить автора">Для портфолио</button>
+            <button type="button" class="chip" data-p="print" title="Без камеры и даты, с разрешением 300 dpi">Для печати</button>
+          </div>
+          <span class="field-label" style="margin-top:14px;display:block">Что записать в результат</span>
           <div class="seg" data-group="meta" role="group" aria-label="Метаданные в результате">
             <button type="button" data-val="none">Удалить всё</button>
             <button type="button" data-val="basic">Дата и камера</button>
+            <button type="button" data-val="custom">Свой выбор</button>
+          </div>
+          <div class="stack" id="metaCustom" style="margin-top:12px" hidden>
+            <label class="switch"><input type="checkbox" data-key="metaCam"><span class="track"></span><span>Камера и модель</span></label>
+            <div>
+              <span class="field-label">Дата съёмки</span>
+              <div class="seg" data-group="metaDate" role="group" aria-label="Дата съёмки">
+                <button type="button" data-val="keep">Как в оригинале</button>
+                <button type="button" data-val="today">Сегодняшняя</button>
+                <button type="button" data-val="none">Без даты</button>
+              </div>
+            </div>
           </div>
           <p class="note" id="metaInfo"></p>
-          <div style="margin-top:12px">
+          <p class="note warn" id="metaGps" hidden role="status">В исходном фото есть геолокация. Из результата она удаляется всегда, в любом режиме.</p>
+          <p class="note" id="metaBatch" hidden></p>
+          <div id="metaTable"></div>
+          <div class="row" style="margin-top:10px"><button type="button" class="btn btn-tonal btn-sm" id="metaCheckBtn">Проверить готовый файл</button></div>
+          <ul class="meta-check" id="metaCheck" hidden aria-live="polite"></ul>
+          <div style="margin-top:14px">
             <span class="field-label">Автор (по желанию)</span>
             <input class="text-input" type="text" data-key="author" maxlength="80" placeholder="Например: Иван Петров" autocomplete="off" aria-label="Автор для метаданных JPG">
-            <p class="note">Запишется в JPG как «Автор» и «© Автор». В PNG и WebP метаданные не записываются.</p>
+            <span class="field-label" style="margin-top:10px;display:block">Авторские права (по желанию)</span>
+            <input class="text-input" type="text" data-key="metaCopy" maxlength="120" placeholder="© {год} {автор}" autocomplete="off" aria-label="Шаблон авторских прав">
+            <p class="note">Пусто: запишется «© Автор». В шаблоне работают {автор} и {год}. Пишется только в JPG.</p>
+          </div>
+          <div style="margin-top:14px">
+            <span class="field-label">Разрешение (DPI)</span>
+            <div class="seg" data-group="metaDpi" role="group" aria-label="Разрешение в точках на дюйм">
+              <button type="button" data-val="0">Не записывать</button>
+              <button type="button" data-val="72">72</button>
+              <button type="button" data-val="150">150</button>
+              <button type="button" data-val="300">300</button>
+            </div>
+            <p class="note">Нужно для печати: на размер в пикселях не влияет. Записывается в JPG и PNG; в WebP метаданные не пишутся вовсе.</p>
           </div>
           <div style="margin-top:14px">
             <span class="field-label">Цветовое пространство</span>
@@ -530,7 +565,7 @@
               <button type="button" data-val="srgb">sRGB</button>
               <button type="button" data-val="p3">Display P3</button>
             </div>
-            <p class="note"><b>sRGB</b> — цвета выглядят одинаково везде: сайты, маркетплейсы, соцсети. Широкий цвет из фото переводится в sRGB. <b>Display P3</b> — насыщеннее на новых экранах (iPhone, Mac), но только если он есть в исходном фото; в остальных программах цвет может отличаться.</p>
+            <p class="note"><b>sRGB</b> — цвета выглядят одинаково везде: сайты, маркетплейсы, соцсети. Широкий цвет из фото переводится в sRGB. <b>Display P3</b> — насыщеннее на новых экранах (iPhone, современные Android и Mac), но на старых мониторах и в некоторых программах цвета могут выглядеть тусклее. Для публикации выбирай sRGB.</p>
           </div>
         </section>
       </div>
@@ -666,6 +701,7 @@
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
   <script src="js/session.js"></script>
+  <script src="js/metadata.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/changelog.js"></script>
 <script src="js/main.js"></script>

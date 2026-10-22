@@ -74,12 +74,16 @@ async function readExifBasics(file) {
   return null;
 }
 
-function buildExifTiff({ make, model, dto, artist, copyright }) {
+function buildExifTiff({ make, model, dto, artist, copyright, dpi }) {
   const enc = str => { const b = new TextEncoder().encode(str), a = new Uint8Array(b.length + 1); a.set(b); return a; };
   const items = [];
   if (make) items.push({ tag: 0x010F, type: 2, data: enc(make) });
   if (model) items.push({ tag: 0x0110, type: 2, data: enc(model) });
   items.push({ tag: 0x0112, type: 3, value: 1 });            // Orientation = 1: поворот уже применён к пикселям
+  if (dpi) {                                                  // разрешение: два рационала dpi/1 и единица «дюйм»
+    const rat = new Uint8Array(8); new DataView(rat.buffer).setUint32(0, dpi); new DataView(rat.buffer).setUint32(4, 1);
+    items.push({ tag: 0x011A, type: 5, data: rat, count: 1 }, { tag: 0x011B, type: 5, data: rat.slice(), count: 1 }, { tag: 0x0128, type: 3, value: 2 });
+  }
   if (artist) items.push({ tag: 0x013B, type: 2, data: enc(artist) });
   if (copyright) items.push({ tag: 0x8298, type: 2, data: enc(copyright) });
   if (dto) items.push({ tag: 0x8769, type: 4, value: 0 });   // смещение Exif IFD подставим ниже
@@ -93,7 +97,7 @@ function buildExifTiff({ make, model, dto, artist, copyright }) {
   const out = new Uint8Array(dataStart + cursor), dv = new DataView(out.buffer);
   out.set([0x4D, 0x4D, 0x00, 0x2A], 0); dv.setUint32(4, 8);
   const writeEntry = (o, it) => {
-    dv.setUint16(o, it.tag); dv.setUint16(o + 2, it.type); dv.setUint32(o + 4, it.data ? it.data.length : 1);
+    dv.setUint16(o, it.tag); dv.setUint16(o + 2, it.type); dv.setUint32(o + 4, it.count || (it.data ? it.data.length : 1));
     if (it.data) { if (it.inline) out.set(it.inline, o + 8); else dv.setUint32(o + 8, it.off); }
     else if (it.type === 3) dv.setUint16(o + 8, it.value); else dv.setUint32(o + 8, it.value);
   };
@@ -105,15 +109,44 @@ function buildExifTiff({ make, model, dto, artist, copyright }) {
   return out;
 }
 
+/* Что писать в результат: режим «meta» (none / basic / custom) + автор, права и DPI, которые не зависят от режима */
+const metaNowStr = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}:${z(d.getMonth() + 1)}:${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`; };
+function metaOpts(c = S) {
+  const m = c.meta, author = (c.author || '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 80);
+  const tpl = (c.metaCopy || '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 120);
+  const copyright = tpl ? tpl.replace(/\{(автор|author)\}/gi, author).replace(/\{(год|year)\}/gi, String(new Date().getFullYear())).replace(/\s+/g, ' ').trim() : (author ? '© ' + author : '');
+  return { cam: m === 'basic' ? true : m === 'custom' ? !!c.metaCam : false, date: m === 'basic' ? 'keep' : m === 'custom' ? (c.metaDate || 'keep') : 'none', author, copyright, dpi: [72, 96, 150, 300].includes(+c.metaDpi) ? +c.metaDpi : 0 };
+}
+const metaWrites = (c = S) => { const o = metaOpts(c); return o.cam || o.date !== 'none' || !!o.author || !!o.copyright || o.dpi > 0; };
+
 async function buildSafeExif(file, withCamera = true) {
-  const info = withCamera ? await readExifBasics(file).catch(() => null) : null;
+  const o = metaOpts();
+  const info = (o.cam || o.date === 'keep') ? await readExifBasics(file).catch(() => null) : null;
   const clean = str => (str || '').replace(/[^\x20-\x7E]/g, '').trim().slice(0, 64);
-  const make = clean(info && info.make), model = clean(info && info.model);
-  const dto = info && /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(info.dto || '') ? info.dto : '';
-  const artist = (S.author || '').replace(/[\u0000-\u001f]+/g, ' ').trim().slice(0, 80);
-  const copyright = artist ? '© ' + artist : '';
-  if (!make && !model && !dto && !artist) return null;
-  return buildExifTiff({ make, model, dto, artist, copyright });
+  const make = o.cam ? clean(info && info.make) : '', model = o.cam ? clean(info && info.model) : '';
+  const dto = o.date === 'today' ? metaNowStr() : o.date === 'keep' && info && /^\d{4}:\d\d:\d\d \d\d:\d\d:\d\d$/.test(info.dto || '') ? info.dto : '';
+  const artist = o.author, copyright = o.copyright;
+  if (!make && !model && !dto && !artist && !copyright && !o.dpi) return null;
+  return buildExifTiff({ make, model, dto, artist, copyright, dpi: o.dpi });
+}
+
+/* JPEG: плотность пикселей в JFIF (единица — дюйм) */
+async function setJfifDpi(blob, dpi) {
+  const src = new Uint8Array(await blob.arrayBuffer());
+  if (src[0] !== 0xFF || src[1] !== 0xD8 || src[2] !== 0xFF || src[3] !== 0xE0 || src[6] !== 0x4A || src[7] !== 0x46 || src[8] !== 0x49 || src[9] !== 0x46) return blob;   // нет JFIF — в EXIF всё равно запишем
+  src[11] = 1; src[12] = dpi >> 8; src[13] = dpi & 255; src[14] = dpi >> 8; src[15] = dpi & 255;
+  return new Blob([src], { type: 'image/jpeg' });
+}
+/* PNG: чанк pHYs (пикселей на метр) сразу после IHDR */
+async function setPngDpi(blob, dpi) {
+  const src = new Uint8Array(await blob.arrayBuffer());
+  if (src.length < 40 || src[1] !== 0x50 || src[2] !== 0x4E || src[3] !== 0x47) return blob;
+  const ppm = Math.round(dpi / 0.0254), chunk = new Uint8Array(21), dv = new DataView(chunk.buffer);
+  dv.setUint32(0, 9); chunk.set([0x70, 0x48, 0x59, 0x73], 4); dv.setUint32(8, ppm); dv.setUint32(12, ppm); chunk[16] = 1;
+  dv.setUint32(17, crc32(chunk.subarray(4, 17)));
+  const at = 8 + 12 + new DataView(src.buffer).getUint32(8);      // после сигнатуры и IHDR
+  for (let p = 8; p < src.length - 12;) { const len = new DataView(src.buffer).getUint32(p), nm = String.fromCharCode(src[p + 4], src[p + 5], src[p + 6], src[p + 7]); if (nm === 'pHYs') return blob; if (nm === 'IDAT') break; p += 12 + len; }
+  return new Blob([src.subarray(0, at), chunk, src.subarray(at)], { type: 'image/png' });
 }
 
 async function injectExif(blob, tiff) {
@@ -169,14 +202,18 @@ async function exportBlob(item, bmp, formatOverride, work) {
   const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item), ...(work ? { work } : {}) });
   let blob, outW = cw, outH = ch, fit = null;
   if (S.targetOn && fmt !== 'png') {
-    fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && (S.meta === 'basic' || S.author) ? 1500 : 0));
+    fit = await fitToSize(c, mime, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && metaWrites() ? 1600 : 0));
     blob = fit.blob; outW = fit.w; outH = fit.h;
   } else blob = await new Promise(r => c.toBlob(r, mime, S.quality / 100));
   c.width = c.height = 0;
   if (!blob) throw new Error('Не удалось создать файл (слишком большой холст?)');
-  if ((S.meta === 'basic' || S.author) && blob.type === 'image/jpeg') {
-    try { const tiff = await buildSafeExif(item.file, S.meta === 'basic'); if (tiff) blob = await injectExif(blob, tiff); } catch (e) { console.warn('exif', e); }
-  }
+  const mo = metaOpts();
+  if (blob.type === 'image/jpeg' && metaWrites()) {
+    try {
+      if (mo.dpi) blob = await setJfifDpi(blob, mo.dpi);
+      const tiff = await buildSafeExif(item.file); if (tiff) blob = await injectExif(blob, tiff);
+    } catch (e) { console.warn('exif', e); }
+  } else if (blob.type === 'image/png' && mo.dpi) { try { blob = await setPngDpi(blob, mo.dpi); } catch (e) { console.warn('png dpi', e); } }
   const ext = EXT[blob.type] || fmt;
   return { blob, w: outW, h: outH, fit, name: makeName(item, outW, outH, ext), fellBack: blob.type !== mime };
 }

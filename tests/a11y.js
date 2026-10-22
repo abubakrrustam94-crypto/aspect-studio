@@ -21,11 +21,12 @@ const SHOW = process.argv.includes('-v');
     ok(!bad.length, `${label}: нет серьёзных нарушений` + (bad.length ? '\n' + bad.map(v => `    · [${v.impact}] ${v.id} ×${v.n}: ${v.help}\n      ${v.nodes.join('\n      ')}`).join('\n') : ''));
   };
   await scan('пустой экран, светлая тема');
-  await p.setInputFiles('#fileInput', [path.join(FX, 'quad.jpg'), path.join(FX, 'quad.gif')]); await p.waitForFunction(() => items.length === 2); await p.waitForTimeout(600);
+  await p.setInputFiles('#fileInput', [path.join(FX, 'quad.jpg'), path.join(FX, 'quad.gif'), path.join(FX, 'exif_gps.jpg')]); await p.waitForFunction(() => items.length === 3); await p.waitForTimeout(600);
   for (const tab of ['frame', 'bg', 'quality', 'extra', 'export', 'meta', 'components', 'about']) {
     await p.click(`#settingsTabs [data-tab=${tab}]`); await p.waitForTimeout(250);
     if (tab === 'extra') await p.evaluate(() => set('wmOn', true));
     if (tab === 'bg') await p.evaluate(() => { set('cutOn', true); set('cutBg', 'color'); });
+    if (tab === 'meta') await p.evaluate(() => { set('meta', 'custom'); set('metaDpi', 300); });
     if (tab === 'export') await p.evaluate(() => { set('targetOn', true); });
     await scan('вкладка «' + tab + '», светлая тема');
   }

@@ -717,8 +717,9 @@ let metaTok = 0;
 async function renderMetaInfo() {
   const el = $('#metaInfo'); if (!el) return;
   const it = cur(), tok = ++metaTok;
-  const basic = S.meta === 'basic';
-  const tail = basic ? 'В результат попадут только камера и дата (в JPG). Геолокация не переносится никогда.' : 'В результат не попадёт ничего: ни геолокация, ни камера, ни дата.';
+  const o = metaOpts(), parts = [o.cam && 'камера', o.date === 'keep' ? 'дата съёмки' : o.date === 'today' ? 'сегодняшняя дата' : '', o.author && 'автор', o.copyright && 'авторские права', o.dpi && o.dpi + ' dpi'].filter(Boolean);
+  const tail = parts.length ? `В результат (JPG) попадёт: ${parts.join(', ')}. Геолокация не переносится никогда.` : 'В результат не попадёт ничего: ни геолокация, ни камера, ни дата.';
+  if (typeof renderMetaTable === 'function') renderMetaTable(it);
   if (!it) { el.textContent = tail; return; }
   if (it.metaInfo === undefined) it.metaInfo = await readExifBasics(it.file).catch(() => null);
   if (tok !== metaTok) return;

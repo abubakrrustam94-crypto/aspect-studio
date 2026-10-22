@@ -46,3 +46,5 @@ jobs:
         run: node tests/speed.js
       - name: Тесты веса, пресетов и правки маски
         run: node tests/quality.js
+      - name: Тесты вкладки «Метаданные»
+        run: node tests/meta.js

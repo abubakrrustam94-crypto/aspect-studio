@@ -114,6 +114,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   ok(imp.join('|') === 'Тест:ratioW|Новый:ratioW,ratioH', 'импорт: слияние по имени, мусорные ключи отброшены (' + imp.join('|') + ')');
   fs.writeFileSync(fp, '{"hello":1}'); await p3.setInputFiles('#presetsFile', fp); await p3.waitForTimeout(200);
   ok(await p3.evaluate(() => myPresets.length) === 2, 'чужой файл не портит наборы');
+  await p3.click('#settingsTabs [data-tab=about]');
   ok(await p3.evaluate(() => /^v\d/.test(document.getElementById('appVersion').textContent)) && (await p3.getAttribute('#repoLink', 'href')).includes('github.com'), '«О программе»: версия и ссылка на репозиторий');
   await p3.click('#resetAll'); ok(await p3.evaluate(() => localStorage.getItem('aspect-studio-presets') !== null), 'сброс требует второго нажатия');
   await Promise.all([p3.waitForNavigation(), p3.click('#resetAll')]); await p3.waitForTimeout(500);

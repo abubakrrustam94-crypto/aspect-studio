@@ -76,6 +76,7 @@ function syncUI() {
   $('#bgFillNote').hidden = E.fit !== 'fill';
   $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
   $('#cutFields').hidden = !E.cutOn;
+  $('#metaCustom').hidden = S.meta !== 'custom';
   $('#cutColorRow').hidden = E.cutBg !== 'color';
   $('#cutAlphaNote').hidden = E.cutBg !== 'transparent';
   afterCanvas.classList.toggle('checker', !!((E.cutOn && E.cutBg === 'transparent') || (E.fit === 'fit' && E.bg === 'transparent')));
@@ -186,6 +187,10 @@ function renderThumbs() {
     sl.title = it.status === 'bad' ? 'Ошибка при обработке' : it.skip ? 'Не входит в ZIP' : 'Входит в ZIP';
     sl.addEventListener('click', ev => { ev.stopPropagation(); it.skip = !it.skip; it.status = ''; renderThumbs(); updateZipLabel(); });
     if (it.skip) w.classList.add('skip');
+    if (it.metaFull && it.metaFull.gps) {
+      const g = document.createElement('span'); g.className = 'thumb-gps'; g.setAttribute('aria-hidden', 'true'); g.textContent = 'GPS'; g.title = 'В исходном фото есть геолокация. В результат она не попадёт.';
+      b.setAttribute('aria-label', b.getAttribute('aria-label') + ', в исходнике есть геолокация'); w.append(g);
+    }
     w.append(b, x, sl); thumbsEl.append(w);
   });
   const active = thumbsEl.children[idx];
