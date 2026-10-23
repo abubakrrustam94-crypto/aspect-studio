@@ -12,6 +12,7 @@ const COMPONENTS = [
   { id: 'jxl', group: 'f', name: 'JPEG XL', desc: 'Файлы .jxl (если браузер не открывает их сам)', files: [['vendor/jxl/jxl-decode.js', 20282], ['vendor/jxl/jxl_dec.wasm', 849240]] },
   { id: 'exr', group: 'f', name: 'OpenEXR', desc: 'Файлы .exr', files: [['vendor/exr/parse-exr.js', 26476]] },
   { id: 'pdf', group: 'f', name: 'Adobe Illustrator (AI)', desc: 'Файлы .ai с PDF-совместимостью', files: [['vendor/pdfjs/pdf.min.mjs', 523774], ['vendor/pdfjs/pdf.worker.min.mjs', 1321307]] },
+  { id: 'raw', group: 'f', name: 'RAW: полное проявление', desc: 'LibRaw: проявляет настоящие данные матрицы вместо встроенного превью (CR2, CR3, NEF, ARW, RAF, DNG и др.)', files: [['vendor/raw/worker.js', 63682], ['vendor/raw/libraw.wasm', 1385126]] },
   { id: 'encjpeg', group: 'e', name: 'JPG: MozJPEG', desc: 'Файл JPG на 10–20% меньше при том же виде (прогрессивный JPEG)', files: [['vendor/enc/mozjpeg_enc.js', 38422], ['vendor/enc/mozjpeg_enc.wasm', 251524]] },
   { id: 'encpng', group: 'e', name: 'PNG: оптимизатор', desc: 'oxipng: PNG без потерь на 10–30% меньше; режим «Палитра» уменьшает ещё сильнее', files: [['vendor/enc/squoosh_oxipng.js', 6307], ['vendor/enc/squoosh_oxipng_bg.wasm', 164172]] },
   { id: 'encavif', group: 'e', name: 'AVIF', desc: 'Формат вывода AVIF: вдвое меньше JPG при том же виде; кодирование медленное', files: [['vendor/enc/avif_enc.js', 39621], ['vendor/enc/avif_enc.wasm', 3485872]] },

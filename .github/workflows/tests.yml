@@ -52,3 +52,5 @@ jobs:
         run: node tests/cutout2.js
       - name: Сжатие и форматы вывода (блок L)
         run: node tests/encode.js
+      - name: RAW через LibRaw (блок M)
+        run: node tests/raw.js

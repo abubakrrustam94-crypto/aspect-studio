@@ -10,6 +10,7 @@
 | `exr/` | OpenEXR | [parse-exr](https://github.com/dmnsgn/parse-exr) 1.0.2 (+ fflate), собрано esbuild в один файл | MIT |
 | `jxl/` | JPEG XL (если браузер не открывает сам) | [@jsquash/jxl](https://github.com/jamsinclair/jSquash) 1.3.0 (libjxl в WebAssembly) | Apache-2.0 |
 | `pdfjs/` | AI (PDF-совместимые) | [pdf.js](https://github.com/mozilla/pdf.js) 6.4.299, legacy-сборка | Apache-2.0 |
+| `raw/` | Проявление RAW | [libraw-wasm-nothread](https://www.npmjs.com/package/libraw-wasm-nothread) 1.6.0 (`worker.js` со встроенным загрузчиком, `libraw.wasm`; однопоточная сборка LibRaw, обёртка libraw-wasm Яна Буана) | ISC (обёртка); сам LibRaw — LGPL 2.1 / CDDL 1.0 |
 | `enc/` | Кодеры: MozJPEG, oxipng, AVIF, JPEG XL | [jSquash](https://github.com/jamsinclair/jSquash) (`@jsquash/jpeg` 1.6.0, `oxipng` 2.3.0, `avif` 2.1.1, `jxl` 1.3.0; сборки из Squoosh), коды: mozjpeg (BSD), oxipng (MIT), libavif (BSD), libjxl (BSD) | Apache-2.0 (обёртки) |
 | `ort/` | Общий движок ONNX (WASM) | [onnxruntime-web](https://github.com/microsoft/onnxruntime) 1.30.0 (`ort.wasm.min.js`, `ort-wasm-simd-threaded.{mjs,wasm}`) | MIT |
 | `models/isnet-int8.onnx.p1`, `.p2` (две половины одной модели, склеиваются в воркере; так файлы не больше ~22 МБ) | Точное удаление фона | IS-Net (DIS), квантованная версия из [@imgly/background-removal-data](https://www.npmjs.com/package/@imgly/background-removal-data) 1.4.5 | Apache-2.0 (модель), для личного использования |

@@ -196,3 +196,7 @@ Wildberries — 3:4, от 900×1200; Ozon — 3:4, оптимально 1200×16
 ## Сжатие и форматы вывода (v2.21)
 
 `js/enc.js` + `js/enc-worker.js`: кодирование в отдельных потоках (до двух, закрываются через 45 с простоя). Компоненты `encjpeg` (MozJPEG), `encpng` (oxipng + собственная палитра: срез до 5/5/5/4 бит, медианное сечение, Флойд–Стейнберг), `encavif`, `encjxl` лежат в `vendor/enc/`. Настройки: `jpgEngine` (native/moz), `pngOpt` (off/lossless/lossy), `pngColors`, `encEffort` (fast/normal/best). `encodeBlob(canvas, fmt, q)` — единая точка входа; без компонента используется `canvas.toBlob`. P3 в JPG/PNG сохраняется профилем, взятым у самого браузера, в AVIF/JXL — перевод в sRGB. Тест: `tests/encode.js`.
+
+## RAW через LibRaw (v2.22)
+
+Компонент `raw` (`vendor/raw/worker.js` + `libraw.wasm`). `rawDevelop()` в `js/formats.js` создаёт модульный воркер на один снимок, проявляет (AHD, баланс белого камеры или авто, sRGB, 8 бит, ориентация из файла; на устройствах с памятью ≤3 ГБ — половинное разрешение), закрывает воркер и отдаёт обычный файл. Настройки `rawMode` (full/preview) и `rawWb` (camera/auto) действуют на файлы, добавленные после изменения. Если проявить не удалось — открывается встроенное превью. Тест: `tests/raw.js` на синтетических DNG (`tests/make_raw.py`).

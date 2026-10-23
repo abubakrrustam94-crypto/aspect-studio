@@ -330,6 +330,15 @@
           </div>
         </section>
 
+        <section class="card" data-tab="extra" id="cardRaw">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg> RAW-снимки</div>
+          <span class="field-label">Как открывать</span>
+          <div class="seg" data-group="rawMode" role="group" aria-label="Как открывать RAW"><button type="button" data-val="full">Полностью</button><button type="button" data-val="preview">Превью</button></div>
+          <span class="field-label" style="margin-top:12px">Баланс белого</span>
+          <div class="seg" data-group="rawWb" role="group" aria-label="Баланс белого RAW"><button type="button" data-val="camera">Как в камере</button><button type="button" data-val="auto">Авто</button></div>
+          <p class="note" id="rawNote">«Полностью» проявляет данные матрицы через LibRaw: больше деталей и динамического диапазона, чем во встроенном превью, но дольше. Нужен компонент «RAW: полное проявление» (вкладка «Компоненты»); без него открывается превью. Настройка действует на фото, которые добавишь после изменения. На устройствах с малой памятью снимок открывается в половинном разрешении.</p>
+        </section>
+
         <section class="card" data-tab="extra">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-droplets"/></svg> Водяной знак</div>
           <label class="switch"><input type="checkbox" data-key="wmOn"><span class="track"></span><span>Добавить водяной знак</span></label>

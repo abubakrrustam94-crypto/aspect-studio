@@ -29,6 +29,7 @@ const PIX = `async (pts) => { S.format = 'png'; const it = items[0], bmp = await
   await p.evaluate(() => { const it = items[0]; set('sizeMode', 'auto'); set('ratioW', it.w); set('ratioH', it.h); set('fit', 'fit'); set('enhOn', false); set('format', 'png'); set('cutOn', true); set('cutBg', 'color'); set('cutColor', '#ff8800'); });
   // без компонента «Точно» не включается
   await p.evaluate(() => set('cutQuality', 'precise'));
+  const dbg = [await p.evaluate(() => S.cutQuality), await p.textContent('#toast'), vreq.slice()]; if (dbg[0] !== 'fast' || !/Точное удаление фона/.test(dbg[1]) || dbg[2].length) console.log('  отладка:', JSON.stringify(dbg));
   ok(await p.evaluate(() => S.cutQuality === 'fast') && /Точное удаление фона/.test(await p.textContent('#toast')) && !vreq.length, 'без компонента режим «Точно» не включается: предупреждение, сеть не трогается');
   // быстрый режим работает, маска помечена как быстрая
   let fast = await pix([[.03, .03], [.5, .5]]); ok(near(fast[0], [255, 136, 0], 3) && !near(fast[1], [255, 136, 0], 40), 'быстрый режим: фон заменён, чашка на месте');

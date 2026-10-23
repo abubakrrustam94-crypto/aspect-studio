@@ -4,7 +4,7 @@
    — свои небольшие разборщики: RAW (встроенное превью), PSD/PSB, HDR, SVG, EPS (превью), XCF;
    — внешние декодеры из папки vendor/, подгружаются только при первом таком файле: HEIC/HEIF, TIFF, EXR, JXL, AI (PDF). */
 
-const RAW_EXT = 'cr2|cr3|nef|nrw|arw|raf|orf|rw2|dng|pef|rwl';
+const RAW_EXT = 'cr2|cr3|crw|nef|nrw|arw|srf|sr2|raf|orf|rw2|dng|pef|rwl|srw|3fr|erf|mrw|kdc|dcr|mef|iiq';
 const INPUT_EXT_RE = new RegExp('\\.(jpe?g|jfif|png|apng|webp|gif|bmp|ico|avif|tiff?|heic|heif|jxl|svg|ai|eps|psd|psb|xcf|exr|hdr|' + RAW_EXT + ')$', 'i');
 const INPUT_ACCEPT = 'image/*,.tif,.tiff,.heic,.heif,.jxl,.svg,.ai,.eps,.psd,.psb,.xcf,.exr,.hdr,.ico,.bmp,.gif,.' + RAW_EXT.split('|').join(',.');
 const MAX_INPUT_PIXELS = 150e6;
@@ -95,7 +95,15 @@ async function normalizeInput(file, notes) {
     case 'heic': if (await nativeOk(file)) return file; info('Конвертирую HEIC…'); return heicToFile(file, await need());
     case 'jxl': if (await nativeOk(file)) return file; info('Конвертирую JPEG XL…'); return jxlToFile(file, await need());
     case 'tiff': if (await nativeOk(file)) return file; info('Конвертирую TIFF…'); return tiffToFile(file, await need());
-    case 'raw': info('Читаю превью RAW…'); return rawToFile(file, await need(), ext, notes);
+    case 'raw': {
+      const u8 = await need();
+      if (S.rawMode !== 'preview' && compInstalled('raw')) {
+        info('Проявляю RAW…');
+        try { return await rawDevelop(file, u8.slice(), notes); }
+        catch (e) { console.warn('LibRaw', e); if (notes) notes.push(`RAW ${file.name}: полное проявление не удалось (${(e && e.message) || e}), открыто превью`); }
+      }
+      info('Читаю превью RAW…'); return rawToFile(file, u8, ext, notes);
+    }
     case 'psd': info('Читаю PSD…'); return psdToFile(file, await need(), notes);
     case 'hdr': info('Читаю HDR…'); return hdrToFile(file, await need());
     case 'exr': info('Читаю EXR…'); return exrToFile(file, await need());
@@ -210,9 +218,37 @@ function jpegOrientation(u8) {
   }
   return 1;
 }
+/* Полное проявление через LibRaw (WASM, один поток, отдельный воркер, который закрывается сразу после снимка) */
+async function rawDevelop(file, u8, notes) {
+  assertComp('raw');
+  const w = new Worker(vendorUrl('vendor/raw/worker.js'), { type: 'module' });
+  const pending = new Map(); let seq = 0, dead = null;
+  const fail = e => { dead = e; pending.forEach(p => p.rej(e)); pending.clear(); };
+  w.onmessage = ({ data }) => { const p = pending.get(data && data.id); if (!p) return; pending.delete(data.id); data.error ? p.rej(new Error(data.error)) : p.res(data.out); };
+  w.onerror = e => { e.preventDefault(); if (typeof compRefresh === 'function') compRefresh(); fail(new Error('Декодер RAW не запустился')); };
+  const call = (fn, tr, ...args) => new Promise((res, rej) => {
+    if (dead) return rej(dead);
+    const id = ++seq, t = setTimeout(() => { pending.delete(id); rej(new Error('слишком долго')); fail(new Error('слишком долго')); }, 180000);
+    pending.set(id, { res: v => { clearTimeout(t); res(v); }, rej: e => { clearTimeout(t); rej(e); } });
+    w.postMessage({ id, fn, args }, tr);
+  });
+  try {
+    const settings = { useCameraWb: S.rawWb !== 'auto', useAutoWb: S.rawWb === 'auto', outputBps: 8, outputColor: 1, userQual: 3, userFlip: -1, halfSize: DEV_MEM <= 3 };
+    await call('open', [u8.buffer], u8, settings);
+    const img = await call('imageData', []);
+    if (!img || !img.data || !img.width || !img.height) throw new Error('пустой результат');
+    const W = img.width, H = img.height; checkPixels(W, H);
+    const src = img.data, ch = img.colors || 3, n = W * H, rgba = new Uint8ClampedArray(n * 4), sh = img.bits === 16 ? 8 : 0;
+    const at = sh ? i => src[i] >> 8 : i => src[i];
+    if (src.length < n * ch) throw new Error('неполные данные');
+    for (let i = 0, s = 0, o = 0; i < n; i++, s += ch, o += 4) { rgba[o] = at(s); rgba[o + 1] = at(s + (ch > 1 ? 1 : 0)); rgba[o + 2] = at(s + (ch > 2 ? 2 : 0)); rgba[o + 3] = 255; }
+    if (notes) notes.push(`RAW ${file.name}: проявлено через LibRaw, ${W}×${H}${settings.halfSize ? ' (половинное разрешение: мало памяти)' : ''}`);
+    return await imageDataToFile(new ImageData(rgba, W, H), file.name);
+  } finally { try { w.terminate(); } catch (e) {} pending.clear(); }
+}
 async function rawToFile(file, u8, ext, notes) {
   const cands = jpegScan(u8).filter(c => c.w >= 32 && c.h >= 24);
-  if (!cands.length) throw new FormatError('В этом RAW нет встроенного JPEG-превью. Открой снимок в редакторе и сохрани как JPG/TIFF');
+  if (!cands.length) throw new FormatError(compInstalled('raw') ? 'В этом RAW нет встроенного JPEG-превью, а проявить его не удалось (файл повреждён или формат не поддерживается)' : 'В этом RAW нет встроенного JPEG-превью. Скачай компонент «RAW: полное проявление» (вкладка «Компоненты») или сохрани снимок как JPG/TIFF');
   cands.sort((a, b) => b.w * b.h - a.w * a.h);
   const best = cands[0], jpg = u8.subarray(best.start, best.end);
   const rawO = (ext === 'raf' || ext === 'cr3') ? 1 : tiffOrientation(u8);
