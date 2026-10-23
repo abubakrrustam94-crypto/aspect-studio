@@ -1,0 +1,58 @@
+// Блок P1: нейросетевое шумоподавление (FFDNet, SCUNet) на движке ONNX.
+// Запуск: node tests/denoise.js   (нужен http: воркеры не работают с file://)
+const { chromium } = require('playwright');
+const http = require('http'), fs = require('fs'), path = require('path');
+const ROOT = path.resolve(__dirname, '..'), FX = path.join(__dirname, 'fixtures');
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
+const server = http.createServer((q, r) => { const f = path.join(ROOT, decodeURIComponent(q.url.split('?')[0]).replace(/^\/$/, '/index.html')); if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r); });
+let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) fail++; };
+const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); };
+const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; for (const k in (o.ov || {})) set(k, o.ov[k]); const bmp = await loadBitmap(it); let r, err = null;
+  try { r = await exportBlob(it, bmp); } catch (e) { err = e.name + ':' + e.message; } finally { closeBmp(bmp); }
+  if (err) return { err }; const m = await createImageBitmap(r.blob), c = document.createElement('canvas'); c.width = m.width; c.height = m.height; const x = c.getContext('2d'); x.drawImage(m, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height).data; return { w: c.width, h: c.height, px: o.px ? Array.from(d) : null }; }`;
+(async () => {
+  await new Promise(r => server.listen(8783, r));
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto('http://localhost:8783/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(600);
+  await p.setInputFiles('#fileInput', path.join(FX, 'dn_noisy.png')); await p.waitForFunction(() => items.length === 1); await p.waitForTimeout(300);
+  await p.evaluate(() => { const it = items[0]; set('sizeMode', 'auto'); set('ratioW', it.w); set('ratioH', it.h); set('fit', 'fit'); set('enhOn', true); set('enhScale', 1); set('sharp', 0); set('denoise', 0); set('cutOn', false); set('srModel', 'off'); set('dnModel', 'off'); S.maxSide = 8192; S.format = 'png'; S.metaDpi = 0; });
+  const exp = o => p.evaluate(`(${EXP})(${JSON.stringify(o)})`);
+  const clean = await p.evaluate(async () => { const m = await createImageBitmap(await (await fetch('/tests/fixtures/dn_clean.png')).blob()), c = document.createElement('canvas'); c.width = m.width; c.height = m.height; const x = c.getContext('2d'); x.drawImage(m, 0, 0); return Array.from(x.getImageData(0, 0, c.width, c.height).data); });
+  const W = 300, err = (a, x0 = 0, x1 = W) => { let s = 0, n = 0; for (let i = 0; i < a.length; i += 4) { const x = (i / 4) % W; if (x < x0 || x >= x1) continue; for (let k = 0; k < 3; k++) { s += Math.abs(a[i + k] - clean[i + k]); n++; } } return s / n; };
+  const reg = await p.evaluate(() => ['dnffd', 'dnscu'].map(id => compById(id).files));
+  ok(reg.every(fl => fl.every(([f, s]) => fs.existsSync(path.join(ROOT, f)) && fs.statSync(path.join(ROOT, f)).size === s)), 'модели шумоподавления: файлы на месте, размеры в реестре верны');
+  await p.evaluate(() => { document.getElementById('toast').textContent = ''; set('dnModel', 'ffd'); });
+  ok(await p.evaluate(() => cfgFor(items[0]).dnModel === 'off') && /Нейро-шумоподавление/.test(await p.textContent('#toast')), 'без компонента шумоподавление не включается, показано предупреждение');
+  const base = await exp({ px: true }); const e0 = err(base.px); ok(base.w === 300 && e0 > 10, `без нейросети шум остаётся: ошибка к чистому ${e0.toFixed(1)}`);
+  await p.evaluate(() => compInstall('dnffd')); ok(await p.evaluate(() => compInstalled('dnffd') && compInstalled('ort')), 'скачались модель FFDNet и движок');
+  await p.evaluate(() => { window.__orc = 0; const o = window.ortRun; window.ortRun = (...a) => { window.__orc++; return o(...a); }; set('dnModel', 'ffd'); });
+  ok(await p.evaluate(() => cfgFor(items[0]).dnModel === 'ffd') && !(await p.$eval('#dnLvlRow', e => e.hidden)), 'с компонентом включается, появляется выбор уровня');
+  ok((await p.textContent('#dnNote')).includes('примерно'), 'подсказка показывает оценку времени');
+  const f2 = await exp({ px: true }); const calls = await p.evaluate(() => window.__orc); const e2 = err(f2.px);
+  ok(f2.w === 300 && f2.h === 200 && calls === 2, `размер сохранён, 2 плитки (вызовов ${calls})`);
+  ok(e2 < e0 * 0.6, `шум заметно уменьшен: ошибка ${e0.toFixed(1)} → ${e2.toFixed(1)}`);
+  const seam = err(f2.px, 216, 232), rest = err(f2.px, 20, 200); ok(seam < rest * 1.4, `шва между плитками нет: у границы ${seam.toFixed(1)}, в среднем ${rest.toFixed(1)}`);
+  const before = await p.evaluate(() => window.__orc); const t1 = Date.now(); await exp({ px: false }); const after = await p.evaluate(() => window.__orc);
+  ok(after === before, `повторное сохранение берёт результат из кэша (${Date.now() - t1} мс)`);
+  const l1 = await exp({ px: true, ov: { dnLevel: 1 } }), l3 = await exp({ px: true, ov: { dnLevel: 3 } });
+  let diff = 0; for (let i = 0; i < l1.px.length; i += 4) diff += Math.abs(l1.px[i] - l3.px[i]); ok(diff / (l1.px.length / 4) > 0.5, 'уровни «слабо» и «сильно» дают разный результат');
+  await p.evaluate(() => { set('dnLevel', 2); dnFree(); DN_MODELS.ffd.maxPx = 1000; document.getElementById('toast').textContent = ''; window.__orc = 0; });
+  const big = await exp({ px: false }); ok(big.w === 300 && await p.evaluate(() => window.__orc === 0) && /больше предела/.test(await p.textContent('#toast')), 'фото больше предела: шумоподавление пропущено с пояснением');
+  await p.evaluate(() => { DN_MODELS.ffd.maxPx = 16e6; });
+  await p.evaluate(() => { schedule && schedule(); }); await p.waitForTimeout(1200); ok(await p.evaluate(() => window.__orc === 0), 'предпросмотр нейросеть не запускает');
+  const cres = await p.evaluate(`(async () => { dnFree(); const orig = DN_T; cancelFlag = false; const it = items[0], bmp = await loadBitmap(it); setTimeout(() => { cancelFlag = true; }, 600); let r = 'нет ошибки'; try { await exportBlob(it, bmp); } catch (e) { r = e.name; } closeBmp(bmp); cancelFlag = false; return r; })()`);
+  ok(cres === 'AbortError' || cres === 'нет ошибки', 'отмена посреди шумоподавления: без зависания (' + cres + ')');
+  await p.evaluate(() => compRemove('dnffd')); await p.evaluate(() => { compOnce.clear(); dnFree(); document.getElementById('toast').textContent = ''; });
+  const gone = await exp({ px: false }); ok(gone.w === 300 && /Нейро-шумоподавление/.test(await p.textContent('#toast')), 'модель удалили, настройка осталась: экспорт без неё, с предупреждением');
+  await p.evaluate(() => { set('dnModel', 'off'); }); await p.evaluate(() => compInstall('dnscu')); ok(await p.evaluate(() => compInstalled('dnscu')), 'SCUNet скачан (две части)');
+  await p.evaluate(() => { set('dnModel', 'scu'); set('dnLevel', 3); window.__orc = 0; });
+  const t2 = Date.now(); const sc = await exp({ px: true }); const e3 = err(sc.px);
+  ok(!sc.err && sc.w === 300 && e3 < e0 * 0.7, `SCUNet: ошибка ${e0.toFixed(1)} → ${e3.toFixed(1)}, ${Date.now() - t2} мс`);
+  await p.evaluate(() => compInstall('srfast')); await p.evaluate(() => { set('srModel', 'fast'); set('dnModel', 'ffd'); });
+  await p.evaluate(() => compInstall('dnffd')); await p.evaluate(() => { set('dnModel', 'ffd'); });
+  const both = await exp({ px: false, ov: { enhScale: 2 } }); ok(!both.err && both.w === 600 && both.h === 400, 'шумоподавление вместе с нейро-увеличением: ' + (both.err || both.w + '×' + both.h));
+  ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.slice(0, 3).join('; ') : ''));
+  await b.close(); server.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсе тесты пройдены'); process.exit(fail ? 1 : 0);
+})();

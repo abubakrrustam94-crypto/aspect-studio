@@ -428,6 +428,20 @@
               </div>
               <p class="note" id="enhSizeNote"></p>
             </div>
+            <div id="dnRow">
+              <span class="field-label">Нейро-шумоподавление</span>
+              <div class="seg" data-group="dnModel" role="group" aria-label="Нейро-шумоподавление">
+                <button type="button" data-val="off">Выкл</button>
+                <button type="button" data-val="ffd">Быстрая</button>
+                <button type="button" data-val="scu">Реальный шум</button>
+              </div>
+              <div class="seg" id="dnLvlRow" data-group="dnLevel" role="group" aria-label="Уровень нейро-шумоподавления" hidden>
+                <button type="button" data-val="1">Слабо</button>
+                <button type="button" data-val="2">Средне</button>
+                <button type="button" data-val="3">Сильно</button>
+              </div>
+              <p class="note" id="dnNote"></p>
+            </div>
             <div id="srRow">
               <span class="field-label">Нейро-увеличение</span>
               <div class="seg" data-group="srModel" role="group" aria-label="Нейро-увеличение">
@@ -759,6 +773,7 @@
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/sr.js"></script>
+  <script src="js/dn.js"></script>
   <script src="js/enc.js"></script>
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>

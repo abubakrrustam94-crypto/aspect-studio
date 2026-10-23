@@ -35,6 +35,7 @@ function set(key, val) {
   if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
   if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
+  if (key === 'dnModel' && val !== 'off' && DN_MODELS[val] && !compInstalled(DN_MODELS[val].comp)) { compWarn([DN_MODELS[val].comp], 'Нейро-шумоподавление'); syncUI(); return; }
   if (key === 'srModel' && val !== 'off' && SR_MODELS[val] && !compInstalled(SR_MODELS[val].comp)) { compWarn([SR_MODELS[val].comp], 'Нейро-увеличение'); syncUI(); return; }
   if (key === 'faceEngine' && val === 'scrfd' && !compInstalled('facex')) { compWarn(['facex'], 'Точный поиск лиц'); syncUI(); return; }
   if (key === 'objEngine' && val !== 'off' && !compInstalled(DET[val === 'small' ? 'small' : 'nano'].comp)) { compWarn([DET[val === 'small' ? 'small' : 'nano'].comp], 'Поиск объектов'); syncUI(); return; }
@@ -104,6 +105,8 @@ function syncUI() {
   { const fe = $('#faceEngNote'), on = S.faceEngine === 'scrfd'; if (fe) fe.textContent = on ? 'SCRFD находит мелкие, повёрнутые и боковые лица и ставит точки глаз. Считается около секунды на фото.' : 'Лёгкий BlazeFace быстрее, но хуже находит мелкие и боковые лица. Точный требует компонент «Лица: точный поиск».';
     const on2 = $('#objNote'); if (on2) on2.textContent = S.objEngine === 'off' ? 'Когда лиц нет, кадр «Заполнить» ищет главный объект по краям деталей. Нейросеть (80 классов) делает это надёжнее. Нужен компонент (вкладка «Компоненты»).' : 'Главный объект находится нейросетью YOLOX; список найденного виден выше, в «Анализе фото». Когда лиц нет, кадр «Заполнить» смотрит на него.'; }
   { const sn = $('#srNote'); if (sn) sn.textContent = E.srModel === 'off' ? 'Нейросеть «дорисовывает» детали при увеличении: заметно лучше обычного растягивания. Нужен компонент (вкладка «Компоненты»). Считается при сохранении и в «Проверить на 100%», в предпросмотре её нет.' : (srEstimateText(it0, E) + ' Работает, когда итоговый кадр больше исходного хотя бы в 1,2 раза. После неё резкость лучше снизить.'); }
+  { const dn = $('#dnNote'); if (dn) dn.textContent = E.dnModel === 'off' ? 'Нейросеть убирает шум и зерно, не стирая детали, как это делает обычный бегунок. Нужен компонент (вкладка «Компоненты»). Считается при сохранении и в «Проверить на 100%».' : (dnEstimateText(it0, E) + (E.dnModel === 'ffd' ? ' Уровень — сила шума на снимке.' : ' Уровень — доля очищенного кадра в результате.')); }
+  { const dr = $('#dnLvlRow'); if (dr) dr.hidden = E.dnModel === 'off'; }
   updateNameExample();
   $('#diskRow input').disabled = !OPFS_OK;
   if (!OPFS_OK) $('#diskNote').textContent = 'Этот браузер не умеет писать файлы на диск из страницы: ZIP собирается в памяти.';

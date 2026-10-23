@@ -394,7 +394,7 @@ function exportConcurrency(list) {
   if (typeof window.EXPORT_CONC === 'number') return Math.max(1, window.EXPORT_CONC);
   if (list.length < 2) return 1;
   let n = DEV_MEM <= 2 || HW < 4 ? 1 : DEV_MEM <= 4 ? 2 : HW >= 6 ? 3 : 2;
-  if (list.some(it => cfgFor(it).srModel !== 'off' && cfgFor(it).enhOn)) n = 1;           // нейросеть считает по одному фото: память и один движок
+  if (list.some(it => (cfgFor(it).srModel !== 'off' || cfgFor(it).dnModel !== 'off') && cfgFor(it).enhOn)) n = 1;           // нейросеть считает по одному фото: память и один движок
   if (S.format === 'avif' || S.format === 'jxl') n = Math.min(n, DEV_MEM >= 6 ? 2 : 1);   // кодеры тяжёлые по памяти
   let big = 0; list.forEach(it => { const s = computeSize(it.w, it.h, 0, cfgFor(it)); big = Math.max(big, s.cw * s.ch); });
   if (big > MAX_AREA * 0.45) n = 1;          // большие кадры: две копии в памяти не нужны

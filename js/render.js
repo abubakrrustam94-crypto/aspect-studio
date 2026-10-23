@@ -437,12 +437,14 @@ async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S, neural 
   // сильное уменьшение сначала делаем нативно (до 2× от цели), чтобы не раздувать память
   const cs = ctxCS(ctx);
   let src = bmp, f = 1;                           // источник и его масштаб относительно исходника (4 после нейросети)
-  if (neural && kx > SR_MIN_K) { const big = await srMaybe(bmp, item, sx0, sy0, sw, sh, c, cs); if (big) { src = big; f = 4; } }
+  let base = bmp, bx = sx0, by = sy0, tag = '';       // источник после нейро-шумоподавления (холст области) или сам снимок
+  if (neural) { const den = await dnMaybe(bmp, item, sx0, sy0, sw, sh, c, cs); if (den) { base = den; bx = 0; by = 0; tag = c.dnModel + c.dnLevel; } }
+  if (neural && kx > SR_MIN_K) { const big = await srMaybe(base, item, bx, by, sw, sh, c, cs, tag); if (big) { src = big; f = 4; } }
   const mid = mkCanvas(Math.round(Math.min(sw * f, dw * 2)), Math.round(Math.min(sh * f, dh * 2)));
   const mctx = mid.getContext('2d', { willReadFrequently: true, colorSpace: cs });
   if (!mctx) throw new RangeError('canvas');
   mctx.imageSmoothingQuality = 'high';
-  if (f === 1) mctx.drawImage(bmp, sx0, sy0, sw, sh, 0, 0, mid.width, mid.height); else mctx.drawImage(src, 0, 0, sw * f, sh * f, 0, 0, mid.width, mid.height);
+  if (f === 1) mctx.drawImage(base, bx, by, sw, sh, 0, 0, mid.width, mid.height); else mctx.drawImage(src, 0, 0, sw * f, sh * f, 0, 0, mid.width, mid.height);
   let layer;
   if (mid.width === dw && mid.height === dh && sharp <= 0 && denoise <= 0) layer = mid;
   else {

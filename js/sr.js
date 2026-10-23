@@ -51,14 +51,14 @@ async function srRun(bmp, sx, sy, sw, sh, m, cs, label) {
 }
 
 /* Вернуть холст ×4 для области фото или null, если нейросеть не нужна/не может. */
-async function srMaybe(bmp, item, sx, sy, sw, sh, c, cs) {
+async function srMaybe(bmp, item, sx, sy, sw, sh, c, cs, tag = '') {
   const m = srOf(c); if (!m) return null;
   if (!compInstalled(m.comp)) { compWarnOnce(m.comp, 'Нейро-увеличение'); return null; }
   if (sw * sh > m.maxPx) {
     const k = item.id + m.comp; if (!srWarned.has(k)) { srWarned.add(k); toast(`Нейро-увеличение «${m.name}» пропущено: ${(sw * sh / 1e6).toFixed(1)} МП больше предела ${(m.maxPx / 1e6).toFixed(1)} МП. Обрежь фото или выбери другую модель`, true, { ms: 8000 }); }
     return null;
   }
-  const key = [m.comp, sx, sy, sw, sh, cs].join('|');
+  const key = [m.comp, sx, sy, sw, sh, cs, tag].join('|');
   if (srSlot && srSlot.id === item.id && srSlot.key === key && srSlot.canvas.width) return srSlot.canvas;
   srFree();
   try {

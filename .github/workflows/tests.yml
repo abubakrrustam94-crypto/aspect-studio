@@ -58,3 +58,5 @@ jobs:
         run: node tests/sr.js
       - name: Лица и объекты (блок O)
         run: node tests/detect.js
+      - name: Нейро-шумоподавление (блок P1)
+        run: node tests/denoise.js
