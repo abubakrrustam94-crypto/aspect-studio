@@ -79,21 +79,25 @@ function anSubject(g, w, h) {
 
 /* Лица: BlazeFace (если не отключено в настройках), иначе встроенный FaceDetector браузера (если он есть).
    Возвращает { boxes: [{x0,y0,x1,y1}] в долях кадра, fail } либо null, если лиц нет */
-async function anFaces(canvas) {
-  let boxes = null, fail = false;
-  let missing = false;
-  if (S.faceAI && typeof detectFacesBF === 'function') {
-    if (!compInstalled('faces')) missing = true;                  // компонент не скачан: сами ничего не качаем
-    else try { boxes = await detectFacesBF(canvas); } catch (e) { fail = true; console.warn('faces', e); }
+async function anFaces(canvas, bmp) {
+  let boxes = null, fail = false, missing = false, eyes = null, xMissing = false, tried = false;
+  if (S.faceAI && S.faceEngine === 'scrfd' && typeof detectFacesSCRFD === 'function') {      // точный поиск: SCRFD с пятью точками
+    if (!compInstalled('facex')) xMissing = true;                                              // не скачан: ниже пробуем лёгкий BlazeFace
+    else try { const src = bmp || canvas, fs = await detectFacesSCRFD(src, src.width, src.height); tried = true; boxes = fs.length ? fs : null; eyes = faceEyes(fs); }
+    catch (e) { fail = true; console.warn('scrfd', e); }
   }
-  if (!boxes && 'FaceDetector' in window) {
+  if (!tried && S.faceAI && typeof detectFacesBF === 'function') {
+    if (!compInstalled('faces')) missing = true;                  // компонент не скачан: сами ничего не качаем
+    else try { boxes = await detectFacesBF(canvas); fail = false; } catch (e) { fail = true; console.warn('faces', e); }
+  }
+  if (!boxes && !tried && 'FaceDetector' in window) {
     try {
       const fs = await new FaceDetector({ fastMode: true, maxDetectedFaces: 6 }).detect(canvas);
       boxes = fs.map(f => { const b = f.boundingBox; return { x0: b.x / canvas.width, y0: b.y / canvas.height, x1: (b.x + b.width) / canvas.width, y1: (b.y + b.height) / canvas.height }; });
     } catch (e) {}
   }
-  if (!boxes || !boxes.length) return (fail || missing) ? { boxes: [], fail: fail, missing } : null;
-  return { boxes: boxes.map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })), fail: false };
+  if (!boxes || !boxes.length) return (fail || missing || xMissing) ? { boxes: [], fail, missing, xMissing } : null;
+  return { boxes: boxes.map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })), eyes, fail: false, xMissing };
 }
 // Общая рамка всех лиц и точка, на которую смотрит кадр
 function anFaceUnion(boxes) {
@@ -105,11 +109,20 @@ function anFaceUnion(boxes) {
 async function analyzePhoto(bmp) {
   const { g, w, h, canvas } = anGray(bmp);
   const m = anMetrics(g, w, h), edgeStd = anEdgeStd(g, w, h);
-  const f = await anFaces(canvas), has = f && f.boxes.length > 0;
+  const f = await anFaces(canvas, bmp), has = f && f.boxes.length > 0;
   const union = has ? anFaceUnion(f.boxes) : null;
-  const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : anSubject(g, w, h);
+  let objects = null, objBox = null, objMain = null, objMissing = false, objFail = false;
+  if (S.objEngine !== 'off' && typeof detectObjects === 'function') {
+    const kind = S.objEngine === 'small' ? 'small' : 'nano';
+    if (!compInstalled(DET[kind].comp)) objMissing = true;
+    else try {
+      const list = await detectObjects(canvas, canvas.width, canvas.height, kind), main = pickMainObject(list);
+      objects = list.slice(0, 8).map(o => ({ name: o.name, cls: o.cls, score: o.score })); objBox = main ? main.box : null; objMain = main ? main.main.name : null;
+    } catch (e) { objFail = true; console.warn('objects', e); }
+  }
+  const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : objBox ? { x: (objBox.x0 + objBox.x1) / 2, y: (objBox.y0 + objBox.y1) / 2 } : anSubject(g, w, h);
   canvas.width = canvas.height = 0;
-  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing) };
+  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing), faceXMissing: !!(f && f.xMissing), eyes: has && f.eyes ? f.eyes : null, objects, objBox, objMain, objMissing, objFail };
 }
 
 const anSharpLabel = r => r < 0.22 ? ['Очень мягкое', 'bad'] : r < 0.36 ? ['Мягковатое', 'warn'] : r < 0.65 ? ['Нормальное', 'ok'] : ['Чёткое', 'ok'];

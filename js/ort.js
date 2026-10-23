@@ -16,8 +16,8 @@ function ortCall(msg, transfer) {
   }).finally(() => { clearTimeout(ortIdle); if (!ortWait.size) ortIdle = setTimeout(ortKill, ORT_IDLE_MS); });
 }
 /* Запуск модели: model — путь в vendor/, inputs — { имя: { data, dims, type } }; возвращает { имя: { data, dims } } */
-async function ortRun(model, inputs, outputs) {
+async function ortRun(model, inputs, outputs, small = false) {      // small: маленькая модель, остаётся в памяти рядом с большой
   const tr = Object.values(inputs).map(i => i.data.buffer);
-  const r = await ortCall({ type: 'run', model, inputs, outputs }, tr);
+  const r = await ortCall({ type: 'run', model, inputs, outputs, small }, tr);
   return r.out;
 }

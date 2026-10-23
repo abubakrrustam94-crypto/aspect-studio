@@ -611,8 +611,9 @@ function renderAnalysis() {
   const [sl, sc] = anSharpLabel(an.sharp), [nl, nc] = anNoiseLabel(an.noise);
   const stat = (name, val, cls) => `<div class="an-stat ${cls || ''}"><small>${name}</small><b>${val}</b></div>`;
   box.innerHTML = stat('Резкость', sl, sc) + stat('Шум', nl, nc) + stat('Размер', `${an.w}×${an.h}<br>${an.mp.toFixed(1)} Мп`) +
-    stat('Объект', an.subject ? (an.faces ? `лиц: ${an.faces}` : 'найден') : 'по центру');
-  $('#anAdvice').textContent = anAdvice(it, an) + (an.faceMissing ? ' Поиск лиц не работает: не скачан компонент «Поиск лиц» (вкладка «Компоненты»), объект определён по краям.' : an.faceFail ? ' Модель лиц не загрузилась, поэтому объект определён по краям.' : '');
+    stat('Объект', an.subject ? (an.faces ? `лиц: ${an.faces}${an.eyes ? ' · глаза' : ''}` : an.objMain || 'найден') : 'по центру') +
+    (an.objects && an.objects.length ? stat('На фото', [...new Set(an.objects.map(o => o.name))].slice(0, 3).join(', ')) : '');
+  $('#anAdvice').textContent = anAdvice(it, an) + (an.faceXMissing ? ' Точный поиск лиц выбран, но не скачан компонент «Лица: точный поиск» (вкладка «Компоненты»).' : '') + (an.objMissing ? ' Поиск объектов выбран, но компонент не скачан (вкладка «Компоненты»).' : an.objFail ? ' Поиск объектов не удался.' : '') + (an.faceMissing ? ' Поиск лиц не работает: не скачан компонент «Поиск лиц» (вкладка «Компоненты»), объект определён по краям.' : an.faceFail ? ' Модель лиц не загрузилась, поэтому объект определён по краям.' : '');
 }
 function applyTune(it, patch) {
   if (!it.ov) { it.ov = {}; OV_KEYS.forEach(k => { it.ov[k] = S[k]; }); }

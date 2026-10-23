@@ -56,3 +56,5 @@ jobs:
         run: node tests/raw.js
       - name: Нейро-увеличение (блок N)
         run: node tests/sr.js
+      - name: Лица и объекты (блок O)
+        run: node tests/detect.js

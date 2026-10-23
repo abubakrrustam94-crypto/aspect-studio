@@ -5,7 +5,15 @@ const ORT_DIR = new URL('../vendor/ort/', self.location.href).href;
 importScripts(ORT_DIR + 'ort.wasm.min.js');
 ort.env.wasm.wasmPaths = ORT_DIR; ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
 let sess = null, sessName = '';
+const smalls = new Map();                 // небольшие модели (лица, объекты) живут рядом с большой и не вытесняют её; не больше трёх
 /* Модель может лежать частями (файлы до ~22 МБ): склеиваем их в один буфер */
+async function getSmall(urls) {
+  const key = urls.join('|');
+  if (smalls.has(key)) { const s = smalls.get(key); smalls.delete(key); smalls.set(key, s); return s; }      // свежие — в конец
+  while (smalls.size >= 3) { const k = smalls.keys().next().value; try { await smalls.get(k).release(); } catch (e) {} smalls.delete(k); }
+  const s = await ort.InferenceSession.create(urls[0], { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+  smalls.set(key, s); return s;
+}
 async function getSession(urls) {
   const key = urls.join('|');
   if (sess && sessName === key) return sess;
@@ -25,9 +33,11 @@ onmessage = async e => {
   const m = e.data;
   try {
     if (m.type === 'init') { self.postMessage({ id: m.id, ok: true, version: ort.env.versions && ort.env.versions.common }); return; }
-    if (m.type === 'free') { if (sess) { try { await sess.release(); } catch (_) {} } sess = null; sessName = ''; self.postMessage({ id: m.id, ok: true }); return; }
+    if (m.type === 'stat') { self.postMessage({ id: m.id, ok: true, small: smalls.size, big: sessName }); return; }
+    if (m.type === 'free') { for (const s of smalls.values()) { try { await s.release(); } catch (_) {} } smalls.clear(); if (sess) { try { await sess.release(); } catch (_) {} } sess = null; sessName = ''; self.postMessage({ id: m.id, ok: true }); return; }
     if (m.type === 'run') {
-      const s = await getSession([].concat(m.model).map(p => new URL('../' + p, self.location.href).href));
+      const urls = [].concat(m.model).map(p => new URL('../' + p, self.location.href).href);
+      const s = m.small ? await getSmall(urls) : await getSession(urls);
       const feeds = {};
       for (const k of Object.keys(m.inputs)) { const i = m.inputs[k]; feeds[k] = new ort.Tensor(i.type || 'float32', i.data, i.dims); }
       const names = m.outputs && m.outputs.length ? m.outputs : [s.outputNames[0]];

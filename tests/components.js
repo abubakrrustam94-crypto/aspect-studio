@@ -17,7 +17,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   const list = await p.evaluate(() => COMPONENTS.map(c => ({ id: c.id, files: c.files })));
   // ---------- реестр совпадает с файлами ----------
   const bad = []; list.forEach(c => c.files.forEach(([f, n]) => { const fp = path.join(ROOT, f); if (!fs.existsSync(fp)) bad.push('нет файла ' + f); else if (fs.statSync(fp).size !== n) bad.push(`размер ${f}: в реестре ${n}, на диске ${fs.statSync(fp).size}`); }));
-  ok(!bad.length && list.length === 19, 'все 19 компонентов: файлы есть, размеры совпадают' + (bad.length ? ': ' + bad.join('; ') : ''));
+  ok(!bad.length && list.length === 22, 'все 22 компонентов: файлы есть, размеры совпадают' + (bad.length ? ': ' + bad.join('; ') : ''));
   const used = new Set(); const src = ['formats', 'faces', 'faces-worker', 'cutout', 'cutout-worker'].map(f => fs.readFileSync(path.join(ROOT, 'js', f + '.js'), 'utf8')).join('\n');
   const missingRef = []; src.replace(/vendor\/[\w./-]+?\.(js|mjs|wasm|json|bin)/g, m => { used.add(m); }); used.forEach(m => { if (!list.some(c => c.files.some(f => f[0] === m))) missingRef.push(m); });
   ok(true || !missingRef.length, 'файлы vendor, которые читает код, есть в реестре' + (missingRef.length ? ': ' + missingRef.join(', ') : ''));
@@ -26,8 +26,8 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   // ---------- вкладка и исходное состояние ----------
   ok(await p.evaluate(() => !!document.querySelector('#settingsTabs [data-tab=components]')), 'есть вкладка «Компоненты»');
   await p.click('#settingsTabs [data-tab=components]');
-  ok(await p.evaluate(() => document.getElementById('colSettings').dataset.tab === 'components' && document.querySelectorAll('#compList .comp').length === 19), 'вкладка показывает 19 компонентов');
-  ok(await p.evaluate(() => [...document.querySelectorAll('#compList .comp-state')].every(s => s.textContent === 'Не скачан')) && /Скачано 0 из 19/.test(await p.textContent('#compSummary')), 'в начале ничего не скачано: «Скачано 0 из 19»');
+  ok(await p.evaluate(() => document.getElementById('colSettings').dataset.tab === 'components' && document.querySelectorAll('#compList .comp').length === 22), 'вкладка показывает 22 компонентов');
+  ok(await p.evaluate(() => [...document.querySelectorAll('#compList .comp-state')].every(s => s.textContent === 'Не скачан')) && /Скачано 0 из 22/.test(await p.textContent('#compSummary')), 'в начале ничего не скачано: «Скачано 0 из 22»');
   // обычная работа ничего не качает
   await p.setInputFiles('#fileInput', path.join(FX, 'quad.jpg')); await p.waitForFunction(() => items.length === 1); await p.waitForTimeout(1500);
   await p.evaluate(() => { set('wmOn', true); set('enhOn', true); set('faceAI', true); });
@@ -54,7 +54,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   r = await tryAdd('quad.heic'); ok(r.n === 1, 'после скачивания HEIC открывается');
   // состояние переживает перезагрузку
   await p.reload(); await p.waitForTimeout(800); await p.click('#settingsTabs [data-tab=components]');
-  ok(await p.evaluate(() => compInstalled('heif') && !compInstalled('exr')) && /Скачано 1 из 19/.test(await p.textContent('#compSummary')), 'после перезагрузки страницы скачанное помнится: «Скачано 1 из 19»');
+  ok(await p.evaluate(() => compInstalled('heif') && !compInstalled('exr')) && /Скачано 1 из 22/.test(await p.textContent('#compSummary')), 'после перезагрузки страницы скачанное помнится: «Скачано 1 из 22»');
   // ---------- зависимости ----------
   await p.click('#compList .comp[data-id=faces] button'); await p.waitForFunction(() => compInstalled('faces'), null, { timeout: 30000 });
   ok(await p.evaluate(() => compInstalled('tfjs') && compInstalled('faces')), 'поиск лиц скачал и общий движок');
@@ -68,7 +68,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   ok(await p.evaluate(() => compInstalled('cutout') && compInstalled('tfjs')), 'удаление «Поиска лиц» не трогает движок: он нужен удалению фона');
   // ---------- всё / ничего ----------
   await p.click('#compAll'); await p.waitForFunction(() => COMPONENTS.every(c => compFiles[c.id]), null, { timeout: 60000 });
-  ok(/Скачано 19 из 19/.test(await p.textContent('#compSummary')) && await p.evaluate(() => document.getElementById('compAll').disabled), '«Скачать всё»: скачано 19 из 19, кнопка неактивна');
+  ok(/Скачано 22 из 22/.test(await p.textContent('#compSummary')) && await p.evaluate(() => document.getElementById('compAll').disabled), '«Скачать всё»: скачано 22 из 22, кнопка неактивна');
   r = await tryAdd('quad_lzw.tif'); ok(r.n === 1, 'после «Скачать всё» TIFF открывается');
   await p.click('#compNone'); await p.waitForFunction(() => COMPONENTS.every(c => !compFiles[c.id]), null, { timeout: 30000 });
   ok(await p.evaluate(async () => (await (await caches.open(COMP_CACHE)).keys()).length === 0), '«Удалить всё»: кэш компонентов пуст');

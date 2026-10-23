@@ -24,6 +24,9 @@ const COMPONENTS = [
   { id: 'srfast', group: 'n', name: 'Увеличение ×4: быстрая', desc: 'Real-ESRGAN animevideo v3: самая быстрая, хороша для рисунков и графики; на фото может сглаживать', files: [['vendor/models/sr-fast-x4.onnx', 2489124]], requires: ['ort'] },
   { id: 'srgen', group: 'n', name: 'Увеличение ×4: обычная', desc: 'Real-ESRGAN general v3: универсальная для фото, добавляет чёткость и убирает шум; мегапиксель считается несколько минут', files: [['vendor/models/sr-general-x4.onnx', 2437741]], requires: ['ort'] },
   { id: 'srmax', group: 'n', name: 'Увеличение ×4: максимум', desc: 'Real-ESRGAN x4plus: лучшее качество и детали; очень медленно (до часа на мегапиксель), для небольших снимков до 0,4 МП', files: [['vendor/models/sr-max-x4.onnx.p1', 16755589], ['vendor/models/sr-max-x4.onnx.p2', 16755589]], requires: ['ort'] },
+  { id: 'facex', group: 'n', name: 'Лица: точный поиск', desc: 'SCRFD: находит мелкие, повёрнутые и боковые лица и ставит 5 точек (глаза, нос, рот): кадр «Заполнить» ставит глаза на линию третей', files: [['vendor/models/scrfd-500m.onnx', 2524817]], requires: ['ort'] },
+  { id: 'objx', group: 'n', name: 'Объекты в кадре', desc: 'YOLOX-nano, 80 классов (люди, животные, предметы): кадр «Заполнить» смотрит на главный объект, а не на середину по краям', files: [['vendor/models/yolox-nano.onnx', 3659407]], requires: ['ort'] },
+  { id: 'objx2', group: 'n', name: 'Объекты: точный', desc: 'YOLOX-s: надёжнее находит мелкие и частично закрытые объекты, считает втрое дольше «nano»', files: [['vendor/models/yolox-s.onnx', 17961858]], requires: ['ort'] },
   { id: 'cutout2', group: 'n', name: 'Удаление фона: точный', desc: 'IS-Net: аккуратнее края, волосы, мелкие детали; считает дольше быстрого', files: [['vendor/models/isnet-int8.onnx.p1', 22171218], ['vendor/models/isnet-int8.onnx.p2', 22171218]], requires: ['ort'] },
 ];
 /* Какой компонент нужен удалению фона при выбранном качестве */

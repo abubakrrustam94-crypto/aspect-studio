@@ -36,11 +36,13 @@ function set(key, val) {
   if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
   if (key === 'srModel' && val !== 'off' && SR_MODELS[val] && !compInstalled(SR_MODELS[val].comp)) { compWarn([SR_MODELS[val].comp], 'Нейро-увеличение'); syncUI(); return; }
+  if (key === 'faceEngine' && val === 'scrfd' && !compInstalled('facex')) { compWarn(['facex'], 'Точный поиск лиц'); syncUI(); return; }
+  if (key === 'objEngine' && val !== 'off' && !compInstalled(DET[val === 'small' ? 'small' : 'nano'].comp)) { compWarn([DET[val === 'small' ? 'small' : 'nano'].comp], 'Поиск объектов'); syncUI(); return; }
   if (key === 'faceAI' && val && !compInstalled('faces')) compWarn(['faces'], 'Поиск лиц');
   if (typeof DEFAULTS[key] === 'number' && typeof val === 'string') val = Number(val);
   const t = (it && it.ov && OV_KEYS.includes(key)) ? it.ov : S;
   t[key] = val;
-  if (key === 'faceAI') items.forEach(i => { i.an = undefined; });     // перезапустить анализ с новой настройкой
+  if (key === 'faceAI' || key === 'faceEngine' || key === 'objEngine') items.forEach(i => { i.an = undefined; });     // перезапустить анализ с новой настройкой
   if (key === 'outW' || key === 'outH') t.presetId = null;
   if (key === 'enhLevel' && LEVELS[val]) Object.assign(t, LEVELS[val]);
   if (key === 'sharp' || key === 'denoise') t.enhLevel = 'custom';
@@ -99,6 +101,8 @@ function syncUI() {
   $('#targetRow').classList.toggle('disabled', E.format === 'png'); $('#targetRow').setAttribute('aria-disabled', E.format === 'png');
   $$('#targetRow input').forEach(x => { x.disabled = E.format === 'png'; });
   $('#targetFields').hidden = !S.targetOn;
+  { const fe = $('#faceEngNote'), on = S.faceEngine === 'scrfd'; if (fe) fe.textContent = on ? 'SCRFD находит мелкие, повёрнутые и боковые лица и ставит точки глаз. Считается около секунды на фото.' : 'Лёгкий BlazeFace быстрее, но хуже находит мелкие и боковые лица. Точный требует компонент «Лица: точный поиск».';
+    const on2 = $('#objNote'); if (on2) on2.textContent = S.objEngine === 'off' ? 'Когда лиц нет, кадр «Заполнить» ищет главный объект по краям деталей. Нейросеть (80 классов) делает это надёжнее. Нужен компонент (вкладка «Компоненты»).' : 'Главный объект находится нейросетью YOLOX; список найденного виден выше, в «Анализе фото». Когда лиц нет, кадр «Заполнить» смотрит на него.'; }
   { const sn = $('#srNote'); if (sn) sn.textContent = E.srModel === 'off' ? 'Нейросеть «дорисовывает» детали при увеличении: заметно лучше обычного растягивания. Нужен компонент (вкладка «Компоненты»). Считается при сохранении и в «Проверить на 100%», в предпросмотре её нет.' : (srEstimateText(it0, E) + ' Работает, когда итоговый кадр больше исходного хотя бы в 1,2 раза. После неё резкость лучше снизить.'); }
   updateNameExample();
   $('#diskRow input').disabled = !OPFS_OK;
