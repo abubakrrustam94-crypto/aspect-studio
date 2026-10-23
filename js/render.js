@@ -424,7 +424,7 @@ const exWork = new Work();   // экспорт и окно 100%
 const exPool = [exWork];     // воркеры параллельного экспорта (первый — общий); отмена гасит все
 
 // Рисует слой с фото; при включённом улучшении — Lanczos + шумоподавление + резкость в воркере (только область фото, фон и водяной знак не трогаем)
-async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S) {
+async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S, neural = false) {
   if (!useEnh) { ctx.drawImage(bmp, L.dx, L.dy, L.dw, L.dh); return; }
   const sharp = c.sharp, denoise = c.denoise, smart = c.smart;
   const iw = item.w, ih = item.h, kx = L.dw / iw, ky = L.dh / ih;
@@ -434,18 +434,20 @@ async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S) {
   if (sw <= 0 || sh <= 0) return;
   const dw = Math.max(1, Math.round(sw * kx)), dh = Math.max(1, Math.round(sh * ky));
   // сильное уменьшение сначала делаем нативно (до 2× от цели), чтобы не раздувать память
-  const mid = mkCanvas(Math.round(Math.min(sw, dw * 2)), Math.round(Math.min(sh, dh * 2)));
   const cs = ctxCS(ctx);
+  let src = bmp, f = 1;                           // источник и его масштаб относительно исходника (4 после нейросети)
+  if (neural && kx > SR_MIN_K) { const big = await srMaybe(bmp, item, sx0, sy0, sw, sh, c, cs); if (big) { src = big; f = 4; } }
+  const mid = mkCanvas(Math.round(Math.min(sw * f, dw * 2)), Math.round(Math.min(sh * f, dh * 2)));
   const mctx = mid.getContext('2d', { willReadFrequently: true, colorSpace: cs });
   if (!mctx) throw new RangeError('canvas');
   mctx.imageSmoothingQuality = 'high';
-  mctx.drawImage(bmp, sx0, sy0, sw, sh, 0, 0, mid.width, mid.height);
+  if (f === 1) mctx.drawImage(bmp, sx0, sy0, sw, sh, 0, 0, mid.width, mid.height); else mctx.drawImage(src, 0, 0, sw * f, sh * f, 0, 0, mid.width, mid.height);
   let layer;
   if (mid.width === dw && mid.height === dh && sharp <= 0 && denoise <= 0) layer = mid;
   else {
     const id = getPix(mctx, 0, 0, mid.width, mid.height, cs);
-    const sigma = Math.min(2.5, Math.max(0.8, 0.8 + 0.5 * Math.log2(Math.max(1, kx))));
-    const gs = 1 / Math.max(1, Math.min(kx, 3));
+    const kk = kx / f, sigma = Math.min(2.5, Math.max(0.8, 0.8 + 0.5 * Math.log2(Math.max(1, kk))));
+    const gs = 1 / Math.max(1, Math.min(kk, 3));
     const buf = await work.run({ buf: id.data.buffer, sw: mid.width, sh: mid.height, dw, dh, sharp, denoise, sigma, smart, gs });
     mid.width = mid.height = 0;
     layer = mkCanvas(dw, dh);
@@ -473,14 +475,14 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     else { ctx.fillStyle = c.cutBg === 'color' ? c.cutColor : '#fff'; ctx.fillRect(0, 0, cw, ch); }
     const tmp = mkCanvas(cw, ch), tctx = tmp.getContext('2d', p3 ? { colorSpace: 'display-p3' } : undefined);
     tctx.imageSmoothingEnabled = true; tctx.imageSmoothingQuality = 'high';
-    await drawPhoto(tctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c);
+    await drawPhoto(tctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
     tctx.globalCompositeOperation = 'destination-in';          // оставляем только объект
     tctx.drawImage(maskCanvas(item, c.cutEdge), L.dx, L.dy, L.dw, L.dh);
     ctx.drawImage(tmp, 0, 0); tmp.width = tmp.height = 0;
   } else {
     if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
     else paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
-    await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c);
+    await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
   }
   drawWatermark(ctx, cw, ch);
   return { cw, ch, L };

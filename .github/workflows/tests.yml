@@ -54,3 +54,5 @@ jobs:
         run: node tests/encode.js
       - name: RAW через LibRaw (блок M)
         run: node tests/raw.js
+      - name: Нейро-увеличение (блок N)
+        run: node tests/sr.js

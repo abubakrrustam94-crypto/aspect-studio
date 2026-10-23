@@ -10,6 +10,7 @@
 | `exr/` | OpenEXR | [parse-exr](https://github.com/dmnsgn/parse-exr) 1.0.2 (+ fflate), собрано esbuild в один файл | MIT |
 | `jxl/` | JPEG XL (если браузер не открывает сам) | [@jsquash/jxl](https://github.com/jamsinclair/jSquash) 1.3.0 (libjxl в WebAssembly) | Apache-2.0 |
 | `pdfjs/` | AI (PDF-совместимые) | [pdf.js](https://github.com/mozilla/pdf.js) 6.4.299, legacy-сборка | Apache-2.0 |
+| `models/sr-fast-x4.onnx`, `sr-general-x4.onnx`, `sr-max-x4.onnx.p1/.p2` | Нейро-увеличение ×4 | [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) (веса `realesr-animevideov3`, `realesr-general-x4v3`, `RealESRGAN_x4plus` с GitHub Releases), граф ONNX собран скриптом `tools/build_esrgan_onnx.py` (веса «максимума» и «обычной» хранятся в fp16 с приведением к fp32 при загрузке) | BSD-3-Clause |
 | `raw/` | Проявление RAW | [libraw-wasm-nothread](https://www.npmjs.com/package/libraw-wasm-nothread) 1.6.0 (`worker.js` со встроенным загрузчиком, `libraw.wasm`; однопоточная сборка LibRaw, обёртка libraw-wasm Яна Буана) | ISC (обёртка); сам LibRaw — LGPL 2.1 / CDDL 1.0 |
 | `enc/` | Кодеры: MozJPEG, oxipng, AVIF, JPEG XL | [jSquash](https://github.com/jamsinclair/jSquash) (`@jsquash/jpeg` 1.6.0, `oxipng` 2.3.0, `avif` 2.1.1, `jxl` 1.3.0; сборки из Squoosh), коды: mozjpeg (BSD), oxipng (MIT), libavif (BSD), libjxl (BSD) | Apache-2.0 (обёртки) |
 | `ort/` | Общий движок ONNX (WASM) | [onnxruntime-web](https://github.com/microsoft/onnxruntime) 1.30.0 (`ort.wasm.min.js`, `ort-wasm-simd-threaded.{mjs,wasm}`) | MIT |

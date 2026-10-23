@@ -21,6 +21,9 @@ const COMPONENTS = [
   { id: 'faces', group: 'n', name: 'Поиск лиц', desc: 'Кадр «Заполнить» смотрит на лица', files: [['vendor/blazeface/blazeface-back.json', 79043], ['vendor/blazeface/blazeface-back.bin', 538928]], requires: ['tfjs'] },
   { id: 'cutout', group: 'n', name: 'Удаление фона', desc: 'Вырезает объект из кадра: товары, люди, животные', files: [['vendor/cutout/u2netp.json', 28572], ['vendor/cutout/u2netp.f16.bin', 2250970]], requires: ['tfjs'] },
   { id: 'ort', group: 'n', name: 'Движок ONNX', desc: 'Общий движок для точных нейросетей (удаление фона, увеличение и др.)', files: [['vendor/ort/ort.wasm.min.js', 50196], ['vendor/ort/ort-wasm-simd-threaded.mjs', 24381], ['vendor/ort/ort-wasm-simd-threaded.wasm', 14239897]] },
+  { id: 'srfast', group: 'n', name: 'Увеличение ×4: быстрая', desc: 'Real-ESRGAN animevideo v3: самая быстрая, хороша для рисунков и графики; на фото может сглаживать', files: [['vendor/models/sr-fast-x4.onnx', 2489124]], requires: ['ort'] },
+  { id: 'srgen', group: 'n', name: 'Увеличение ×4: обычная', desc: 'Real-ESRGAN general v3: универсальная для фото, добавляет чёткость и убирает шум; мегапиксель считается несколько минут', files: [['vendor/models/sr-general-x4.onnx', 2437741]], requires: ['ort'] },
+  { id: 'srmax', group: 'n', name: 'Увеличение ×4: максимум', desc: 'Real-ESRGAN x4plus: лучшее качество и детали; очень медленно (до часа на мегапиксель), для небольших снимков до 0,4 МП', files: [['vendor/models/sr-max-x4.onnx.p1', 16755589], ['vendor/models/sr-max-x4.onnx.p2', 16755589]], requires: ['ort'] },
   { id: 'cutout2', group: 'n', name: 'Удаление фона: точный', desc: 'IS-Net: аккуратнее края, волосы, мелкие детали; считает дольше быстрого', files: [['vendor/models/isnet-int8.onnx.p1', 22171218], ['vendor/models/isnet-int8.onnx.p2', 22171218]], requires: ['ort'] },
 ];
 /* Какой компонент нужен удалению фона при выбранном качестве */
