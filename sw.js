@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v41';
+const VERSION = 'aspect-studio-v42';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
 const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
 const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
@@ -36,7 +36,15 @@ self.addEventListener('activate', e => {
   );
 });
 
+/* Изоляция от других сайтов (COOP + COEP credentialless) включает SharedArrayBuffer: движок нейросетей тогда считает в несколько потоков.
+   GitHub Pages не умеет ставить такие заголовки, поэтому добавляем их к своим ответам здесь. Чужие ресурсы (шрифты) грузятся как раньше, без cookie. */
+const iso = res => {
+  if (!res || res.status === 0 || res.type === 'opaque' || res.type === 'opaqueredirect' || res.type === 'error') return res;
+  const h = new Headers(res.headers); h.set('Cross-Origin-Opener-Policy', 'same-origin'); h.set('Cross-Origin-Embedder-Policy', 'credentialless');
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+};
 self.addEventListener('fetch', e => {
+  const _respondWith = e.respondWith.bind(e); e.respondWith = p => _respondWith(Promise.resolve(p).then(iso));
   const req = e.request;
   const url = new URL(req.url);
   // Приём фото из системного меню «Поделиться»: кладём файлы во временный кэш и открываем приложение

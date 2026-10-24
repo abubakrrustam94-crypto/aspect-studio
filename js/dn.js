@@ -80,5 +80,5 @@ async function dnMaybe(bmp, item, sx, sy, sw, sh, c, cs) {
 function dnEstimateText(item, cfg) {
   const m = dnOf(cfg); if (!m || !item) return '';
   const px = item.w * item.h;
-  return px > m.maxPx ? `Это фото (${(px / 1e6).toFixed(1)} МП) больше предела ${(m.maxPx / 1e6).toFixed(1)} МП для этой модели: шумоподавление будет пропущено.` : `Для этого фото примерно ${fmtDur(px * m.ms)} на компьютере; на телефоне в 2–4 раза дольше.`;
+  return px > m.maxPx ? `Это фото (${(px / 1e6).toFixed(1)} МП) больше предела ${(m.maxPx / 1e6).toFixed(1)} МП для этой модели: шумоподавление будет пропущено.` : `Для этого фото примерно ${fmtDur(px * m.ms * ortSpeed())} на компьютере; на телефоне в 2–4 раза дольше.`;
 }

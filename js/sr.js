@@ -73,6 +73,6 @@ async function srMaybe(bmp, item, sx, sy, sw, sh, c, cs, tag = '') {
 /* Подсказка про время для текущего фото (оценка для компьютера; на телефоне в 2–4 раза дольше) */
 function srEstimateText(item, cfg) {
   const m = srOf(cfg); if (!m || !item) return '';
-  const px = item.w * item.h, t = fmtDur(px * m.ms);
+  const px = item.w * item.h, t = fmtDur(px * m.ms * ortSpeed());
   return px > m.maxPx ? `Это фото (${(px / 1e6).toFixed(1)} МП) больше предела ${(m.maxPx / 1e6).toFixed(1)} МП для этой модели: нейросеть будет пропущена.` : `Для этого фото примерно ${t} на компьютере; на телефоне в 2–4 раза дольше.`;
 }

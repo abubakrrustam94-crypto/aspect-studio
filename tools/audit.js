@@ -2,7 +2,8 @@
    Запуск: NODE_PATH=<путь к node_modules с eslint и globals> node tools/audit.js
    Основные скрипты страницы (порядок как в index.html) считаются одной общей областью видимости; воркеры и тесты проверяются отдельно. */
 const fs = require('fs'), path = require('path');
-if (+require('eslint/package.json').version.split('.')[0] < 9) { console.log('Аудит пропущен: нужен eslint 9 или новее (npm i eslint@9 globals@15)'); process.exit(0); }
+let eslintVer = 0; try { eslintVer = +require('eslint/package.json').version.split('.')[0]; } catch (e) {}
+if (eslintVer < 9) { console.log('Аудит пропущен: не установлен eslint 9 или новее.\nУстановка (один раз): npm i --no-save eslint@9 globals@15\nНа телефоне в Termux это долго и не обязательно: аудит запускается в GitHub Actions при каждом push.'); process.exit(0); }
 const { ESLint } = require('eslint'); const globalsPkg = require('globals'); const espree = require('espree');
 const ROOT = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');

@@ -3,7 +3,7 @@
    Держит одну сессию: новая модель вытесняет старую, чтобы не занимать память телефона. */
 const ORT_DIR = new URL('../vendor/ort/', self.location.href).href;
 importScripts(ORT_DIR + 'ort.wasm.min.js');
-ort.env.wasm.wasmPaths = ORT_DIR; ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
+ort.env.wasm.wasmPaths = ORT_DIR; ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;     // потоки задаёт сообщение init (до первой модели)
 let sess = null, sessName = '';
 const smalls = new Map();                 // небольшие модели (лица, объекты) живут рядом с большой и не вытесняют её; не больше трёх
 /* Модель может лежать частями (файлы до ~22 МБ): склеиваем их в один буфер */
@@ -32,7 +32,7 @@ async function getSession(urls) {
 onmessage = async e => {
   const m = e.data;
   try {
-    if (m.type === 'init') { self.postMessage({ id: m.id, ok: true, version: ort.env.versions && ort.env.versions.common }); return; }
+    if (m.type === 'init') { if (m.threads > 1 && self.crossOriginIsolated && !sess && !smalls.size) ort.env.wasm.numThreads = m.threads; self.postMessage({ id: m.id, ok: true, version: ort.env.versions && ort.env.versions.common, threads: ort.env.wasm.numThreads, isolated: !!self.crossOriginIsolated }); return; }
     if (m.type === 'stat') { self.postMessage({ id: m.id, ok: true, small: smalls.size, big: sessName }); return; }
     if (m.type === 'free') { for (const s of smalls.values()) { try { await s.release(); } catch (_) {} } smalls.clear(); if (sess) { try { await sess.release(); } catch (_) {} } sess = null; sessName = ''; self.postMessage({ id: m.id, ok: true }); return; }
     if (m.type === 'run') {

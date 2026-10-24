@@ -230,3 +230,7 @@ Wildberries — 3:4, от 900×1200; Ozon — 3:4, оптимально 1200×16
 ## Лица и объекты (v2.24)
 
 `js/detect.js`: SCRFD-500M (`facex`; вход 640×640, три уровня шагов 8/16/32 по 2 якоря, рамка + 5 точек) и YOLOX (`objx` nano 416, `objx2` s 640, 80 классов COCO, русские названия). Работает на общем движке ONNX; небольшие модели лежат в отдельных сессиях `small` (до трёх, не вытесняют большую). Настройки `faceEngine` (blaze/scrfd), `faceEyes`, `objEngine` (off/nano/small). `analyzePhoto` возвращает `eyes`, `objects`, `objBox`, `objMain`; `focusOf` для одного портрета ставит линию глаз на 36% высоты кадра, без лиц смотрит на главный объект (`pickMainObject`: размер × уверенность × близость к центру, «мебель» и рамки на весь кадр ослаблены). Тест: `tests/detect.js`.
+
+## Многопоточные нейросети (v2.31)
+
+Service worker добавляет к ответам сайта заголовки `Cross-Origin-Opener-Policy: same-origin` и `Cross-Origin-Embedder-Policy: credentialless`. Страница становится `crossOriginIsolated`, а ONNX Runtime получает `SharedArrayBuffer` и считает в нескольких потоках (замеры на 2 ядрах: MI-GAN ×2,3, SCUNet ×1,7, FFDNet без выигрыша). Число потоков: «Ещё → Скорость нейросетей» (Авто, 1, 2, 4; не больше числа ядер). Без изоляции (первый запуск до установки service worker) движок работает в один поток. WebGPU не используется: его нельзя проверить без видеокарты, а нужный wasm ещё на ~25 МБ. Тест: `node tests/threads.js`.
