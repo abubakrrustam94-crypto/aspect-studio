@@ -85,8 +85,8 @@ document.getElementById('compPersistBtn').addEventListener('click', async () => 
 });
 
 /* Скачивание одного файла с прогрессом: возвращает число байт */
-async function compFetchFile(cache, path, onBytes) {
-  const url = compUrl(path), res = await fetch(url, { cache: 'reload' });
+async function compFetchFile(cache, path, onBytes, signal) {
+  const url = compUrl(path), res = await fetch(url, { cache: 'reload', signal });
   if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + path);
   const reader = res.body && res.body.getReader ? res.body.getReader() : null, parts = []; let got = 0;
   if (reader) for (;;) { const { done, value } = await reader.read(); if (done) break; parts.push(value); got += value.length; onBytes(value.length); }
@@ -97,21 +97,24 @@ async function compFetchFile(cache, path, onBytes) {
   return got;
 }
 /* Скачать компонент (и недостающие зависимости). onProgress(0..1). Ошибка → удаляем недокачанное и пробрасываем */
+const compProg = {};                                            // id → { done, total } для строки с идущим скачиванием
+const compAbort = {};                                           // id → AbortController (кнопка «Отменить»)
+const compCancelled = e => !!e && (e.name === 'AbortError' || /aborted|abort/i.test(String(e.message)));
 async function compInstall(id, onProgress) {
   if (COMP_NOCACHE) throw new Error('Cache API недоступен');
   const chain = compChain(id).filter(x => !compFiles[x]), total = chain.reduce((s, x) => s + compBytes(compById(x)), 0) || 1;
-  let done = 0; const cache = await caches.open(COMP_CACHE);
-  chain.forEach(x => { compBusy[x] = true; }); if (typeof renderComponents === 'function') renderComponents();
+  let done = 0; const cache = await caches.open(COMP_CACHE), ctl = new AbortController();
+  chain.forEach(x => { compBusy[x] = true; compAbort[x] = ctl; compProg[x] = { done: 0, total }; }); if (typeof renderComponents === 'function') renderComponents();
   try {
     for (const x of chain) {
       const c = compById(x);
       try {
-        for (const f of c.files) await compFetchFile(cache, f[0], n => { done += n; if (onProgress) onProgress(Math.min(1, done / total), x); });
+        for (const f of c.files) await compFetchFile(cache, f[0], n => { done += n; chain.forEach(y => { compProg[y] = { done, total }; }); if (onProgress) onProgress(Math.min(1, done / total), x); }, ctl.signal);
         compFiles[x] = true; compBad[x] = false;
       } catch (e) { for (const f of c.files) await cache.delete(compUrl(f[0])); compFiles[x] = false; compBad[x] = false; throw e; }
     }
     try { if (navigator.storage && navigator.storage.persist) compPersisted = await navigator.storage.persist(); } catch (e) {}      // просим браузер не вычищать файлы
-  } finally { chain.forEach(x => { delete compBusy[x]; }); if (typeof renderComponents === 'function') renderComponents(); if (typeof updateComponentHints === 'function') updateComponentHints(); }
+  } finally { chain.forEach(x => { delete compBusy[x]; delete compAbort[x]; delete compProg[x]; }); if (typeof renderComponents === 'function') renderComponents(); if (typeof updateComponentHints === 'function') updateComponentHints(); }
   if (typeof compInstalledHook === 'function') compInstalledHook(id);
 }
 async function compRemove(id) {
@@ -163,7 +166,10 @@ function renderComponents() {
       bar.append(document.createElement('i'));
       const act = document.createElement('div'); act.className = 'row'; act.style.marginTop = '8px';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-sm ' + (inst ? 'btn-outlined' : 'btn-tonal'); b.disabled = busy || COMP_NOCACHE;
-      if (inst) {
+      if (busy) {
+        b.disabled = false; b.className = 'btn btn-sm btn-outlined comp-cancel'; b.textContent = 'Отменить';
+        b.addEventListener('click', () => { b.disabled = true; if (compAbort[c.id]) compAbort[c.id].abort(); });
+      } else if (inst) {
         const deps = compDependents(c.id).filter(x => compFiles[x.id]);
         b.textContent = 'Удалить'; if (deps.length) { b.disabled = true; b.title = 'Нужен для: ' + deps.map(x => x.name).join(', '); }
         b.addEventListener('click', async () => { try { await compRemove(c.id); toast(`«${c.name}» удалён`); } catch (e) { toast('Не удалось удалить: ' + e.message, true); } });
@@ -174,7 +180,9 @@ function renderComponents() {
       b.setAttribute('aria-label', `${b.textContent}: ${c.name}`);
       act.append(b);
       if (inst && compDependents(c.id).some(x => compFiles[x.id])) { const n = document.createElement('span'); n.className = 'note'; n.style.margin = '0'; n.textContent = 'Нужен для: ' + compDependents(c.id).filter(x => compFiles[x.id]).map(x => x.name).join(', '); act.append(n); }
+      const pt = document.createElement('span'); pt.className = 'comp-prog'; pt.setAttribute('aria-live', 'off'); act.append(pt);
       row.append(head, d, bar, act); box.append(row);
+      if (busy) compSetProgress(c.id, compProg[c.id] ? Math.min(1, compProg[c.id].done / compProg[c.id].total) : 0);
     });
   });
   const pn = document.getElementById('compPersist'); if (pn) pn.hidden = COMP_NOCACHE || compPersisted !== false || !COMPONENTS.some(c => compFiles[c.id]);
@@ -186,19 +194,22 @@ function renderComponents() {
 function compSetProgress(id, v) {
   const row = document.querySelector(`#compList .comp[data-id="${id}"]`); if (!row) return;
   const bar = row.querySelector('.comp-bar'); bar.hidden = false; bar.setAttribute('aria-valuenow', Math.round(v * 100)); bar.firstChild.style.width = Math.round(v * 100) + '%';
+  const pt = row.querySelector('.comp-prog'), p = compProg[id];
+  if (pt && p) pt.textContent = `${compMB(p.done)} из ${compMB(p.total)} · ${Math.round(v * 100)}%`;
 }
+const compMB = b => b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', ',') + ' МБ' : Math.max(0, Math.round(b / 1e3)) + ' КБ';
 async function compDownloadUI(id) {
   const c = compById(id);
   try {
     await compInstall(id, (v, cur) => { compSetProgress(id, v); if (cur !== id) compSetProgress(cur, v); });
     toast(`«${c.name}» скачан`);
-  } catch (e) { console.warn('component', e); toast(`Не удалось скачать «${c.name}»: проверь соединение и попробуй снова`, true, { ms: 7000 }); }
+  } catch (e) { if (compCancelled(e)) { toast(`Скачивание «${c.name}» отменено`); return; } console.warn('component', e); toast(`Не удалось скачать «${c.name}»: проверь соединение и попробуй снова`, true, { ms: 7000 }); }
 }
 function compInstalledHook(id) {                                // после скачивания: перезапустить то, что ждало компонент
   if (compChain(id).includes('faces') && typeof items !== 'undefined' && S.faceAI) { items.forEach(i => { if (i.an && i.an.faceMissing) i.an = undefined; }); if (typeof renderAnalysis === 'function') renderAnalysis(); }
 }
 document.getElementById('compAll').addEventListener('click', async () => {
-  for (const c of COMPONENTS) if (!compFiles[c.id]) { try { await compInstall(c.id, (v, cur) => compSetProgress(c.id, v)); } catch (e) { toast(`Не удалось скачать «${c.name}»`, true, { ms: 7000 }); return; } }
+  for (const c of COMPONENTS) if (!compFiles[c.id]) { try { await compInstall(c.id, (v, cur) => compSetProgress(c.id, v)); } catch (e) { toast(compCancelled(e) ? 'Скачивание отменено' : `Не удалось скачать «${c.name}»`, !compCancelled(e), { ms: 7000 }); return; } }
   toast('Все компоненты скачаны');
 });
 document.getElementById('compNone').addEventListener('click', async () => {

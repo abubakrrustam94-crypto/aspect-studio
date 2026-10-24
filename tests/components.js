@@ -103,6 +103,18 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   ok(await p.evaluate(() => !compInstalled('exr')) && /Не удалось скачать/.test(await p.textContent('#toast')), 'обрыв скачивания: понятная ошибка, компонент не установлен');
   await p.unroute('**/vendor/exr/**'); await p.click('#compList .comp[data-id=exr] button'); await p.waitForFunction(() => compInstalled('exr'), null, { timeout: 20000 });
   ok(true, 'повторное нажатие докачивает');
+  // ---------- отмена скачивания и счётчик мегабайт ----------
+  await p.evaluate(() => compRemove('dnffd').catch(() => {}));
+  await p.route('**/vendor/models/dn-ffdnet.onnx', async r => { await new Promise(x => setTimeout(x, 1500)); r.continue().catch(() => {}); });
+  await p.evaluate(() => { document.getElementById('toast').textContent = ''; });
+  await p.click('#compList .comp[data-id=dnffd] button');
+  await p.waitForFunction(() => { const b = document.querySelector('#compList .comp[data-id=dnffd] button'); return b && b.textContent === 'Отменить'; });
+  ok(await p.evaluate(() => { const r = document.querySelector('#compList .comp[data-id=dnffd]'); return /из/.test(r.querySelector('.comp-prog').textContent) && !r.querySelector('.comp-bar').hidden; }), 'во время скачивания кнопка «Скачать» заменена на «Отменить», рядом счётчик «X из Y»');
+  await p.click('#compList .comp[data-id=dnffd] button');
+  await p.waitForFunction(() => !document.querySelector('#compList .comp[data-id=dnffd] .comp-state.busy'), null, { timeout: 8000 });
+  ok(await p.evaluate(() => !compInstalled('dnffd') && !compBusy.dnffd && document.querySelector('#compList .comp[data-id=dnffd] button').textContent === 'Скачать') && /отменено/.test(await p.textContent('#toast')), 'отмена: скачивание остановлено, в кэше ничего не осталось, кнопка снова «Скачать»');
+  await p.unroute('**/vendor/models/dn-ffdnet.onnx');
+  await p.evaluate(() => compInstall('dnffd')); ok(await p.evaluate(() => compInstalled('dnffd')), 'после отмены компонент нормально скачивается');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
 
   // ---------- офлайн ----------
