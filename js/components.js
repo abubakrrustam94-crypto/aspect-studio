@@ -75,6 +75,7 @@ async function compRefresh() {
   }
   if (typeof renderComponents === 'function') renderComponents();
   if (typeof updateComponentHints === 'function') updateComponentHints();
+  if (typeof renderErrLog === 'function') renderErrLog();         // в журнале список компонентов должен совпадать с вкладкой
 }
 const compReady = compRefresh();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !Object.keys(compBusy).length) compRefresh(); });   // Android мог очистить память, пока вкладка была свёрнута
