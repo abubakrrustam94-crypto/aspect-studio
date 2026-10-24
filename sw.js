@@ -1,6 +1,23 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v39';
+const VERSION = 'aspect-studio-v40';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
+const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
+const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
+const scopePath = () => new URL(self.registration.scope).pathname;
+const relPath = url => decodeURIComponent(new URL(url).pathname.slice(scopePath().length));
+/* Файловая система сайта (OPFS): компоненты лежат тут, а не в Cache Storage */
+async function opfsFile(path) {
+  try { const d = await (await navigator.storage.getDirectory()).getDirectoryHandle(COMP_DIR); return await (await d.getFileHandle(encodeURIComponent(path))).getFile(); } catch (e) { return null; }
+}
+async function opfsPut(path, resp, size) {
+  const d = await (await navigator.storage.getDirectory()).getDirectoryHandle(COMP_DIR, { create: true }), name = encodeURIComponent(path);
+  const w = await (await d.getFileHandle(name, { create: true })).createWritable(); let got = 0;
+  try {
+    const rd = resp.body.getReader(); for (;;) { const { done, value } = await rd.read(); if (done) break; await w.write(value); got += value.length; }
+    if (got !== size) throw new Error('size ' + path);
+    await w.close();
+  } catch (e) { try { await w.abort(); } catch (_) {} try { await d.removeEntry(name); } catch (_) {} throw e; }
+}
 const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/session.js', './js/maskedit.js', './js/ort.js', './js/detect.js', './js/ort-worker.js', './js/sr.js', './js/dn.js', './js/erase.js', './js/icc.js', './js/enc.js', './js/enc-worker.js', './js/metadata.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/features.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -48,7 +65,12 @@ self.addEventListener('fetch', e => {
 
   // Компоненты (vendor/): только из кэша компонентов, иначе сеть; сами ничего не кэшируем — скачивание только по кнопке
   if (url.origin === location.origin && url.pathname.includes('/vendor/')) {
-    e.respondWith(caches.open(COMP_CACHE).then(c => c.match(req, { ignoreVary: true })).then(hit => hit || fetch(req)));
+    e.respondWith((async () => {
+      const f = await opfsFile(relPath(req.url));
+      if (f) { const ext = f.name.split('.').pop().toLowerCase(); return new Response(f, { headers: { 'Content-Type': CTYPE[decodeURIComponent(f.name).split('.').pop().toLowerCase()] || 'application/octet-stream', 'Content-Length': String(f.size) } }); }
+      const hit = await caches.open(COMP_CACHE).then(c => c.match(req, { ignoreVary: true }));
+      return hit || fetch(req);
+    })());
     return;
   }
 
@@ -78,3 +100,22 @@ self.addEventListener('fetch', e => {
     )
   );
 });
+
+/* Фоновая загрузка компонентов (Background Fetch): браузер качает сам, мы дописываем файлы в OPFS */
+self.addEventListener('backgroundfetchsuccess', e => {
+  const bf = e.registration; let ok = true;
+  e.waitUntil((async () => {
+    try {
+      const recs = await bf.matchAll();
+      for (const r of recs) {
+        const resp = await r.responseReady, u = new URL(r.request.url), size = +u.searchParams.get('sz');
+        if (!resp || !resp.ok || !size) { ok = false; continue; }
+        try { await opfsPut(relPath(u.href), resp, size); } catch (err) { ok = false; }
+      }
+    } catch (err) { ok = false; }
+    try { const bc = new BroadcastChannel(COMP_BC); bc.postMessage({ t: 'done', bid: bf.id, ok }); bc.close(); } catch (err) {}
+    try { await e.updateUI({ title: ok ? 'Компонент скачан' : 'Не удалось записать файлы' }); } catch (err) {}
+  })());
+});
+self.addEventListener('backgroundfetchfail', e => { try { const bc = new BroadcastChannel(COMP_BC); bc.postMessage({ t: 'done', bid: e.registration.id, ok: false }); bc.close(); } catch (err) {} });
+self.addEventListener('backgroundfetchclick', e => { e.waitUntil(self.clients.matchAll({ type: 'window' }).then(cs => cs.length ? cs[0].focus() : self.clients.openWindow(self.registration.scope))); });

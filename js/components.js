@@ -1,9 +1,20 @@
 'use strict';
 /* Aspect Studio — компоненты: тяжёлые модули (декодеры форматов, нейросети) скачиваются только по кнопке на вкладке «Компоненты».
-   Файлы лежат в Cache Storage браузера (кэш aspect-studio-components); service worker отдаёт их оттуда, поэтому они работают без сети.
+   Файлы лежат в файловой системе сайта (OPFS, папка aspect-components), а не в Cache Storage; service worker отдаёт их оттуда, поэтому они работают без сети.
+   Где OPFS недоступна, используется Cache Storage (кэш aspect-studio-components); скачанное раньше в кэш продолжает работать и переносится кнопкой.
+   Скачивание идёт в фоне (Background Fetch через service worker), если браузер это умеет: продолжается при закрытой вкладке.
    Если нужного компонента нет, функция не запускается, а пользователь получает предупреждение (compNeed / ComponentMissing). */
 const COMP_CACHE = 'aspect-studio-components';
-const COMP_NOCACHE = typeof caches === 'undefined';            // file:// и http не на localhost: Cache API нет — компоненты грузятся по требованию как раньше
+const COMP_NOCACHE = typeof caches === 'undefined';
+const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp', COMP_BG_KEY = 'aspect-studio-bgdl', COMP_STORE_KEY = 'aspect-studio-compstore';
+const COMP_OPFS = !!(typeof navigator !== 'undefined' && navigator.storage && navigator.storage.getDirectory && typeof FileSystemFileHandle !== 'undefined' && FileSystemFileHandle.prototype.createWritable);
+/* Куда кладём новые файлы: 'opfs' (по умолчанию) или 'cache'. Значение 'cache' в localStorage нужно только тестам и старым браузерам */
+const compStoreMode = () => { let v = null; try { v = localStorage.getItem(COMP_STORE_KEY); } catch (e) {} return v === 'cache' || !COMP_OPFS ? 'cache' : 'opfs'; };
+const compBgOn = () => { try { return localStorage.getItem(COMP_BG_KEY) !== '0'; } catch (e) { return true; } };
+const opfsName = p => encodeURIComponent(p);
+const opfsDir = async () => (await navigator.storage.getDirectory()).getDirectoryHandle(COMP_DIR, { create: true });
+async function opfsSize(path) { try { return (await (await (await opfsDir()).getFileHandle(opfsName(path))).getFile()).size; } catch (e) { return -1; } }
+async function opfsRemove(path) { try { await (await opfsDir()).removeEntry(opfsName(path)); } catch (e) {} }            // file:// и http не на localhost: Cache API нет — компоненты грузятся по требованию как раньше
 // files: [путь, размер в байтах]. Размеры сверяет tests/components.js с реальными файлами.
 const COMPONENTS = [
   { id: 'zlib', group: 'f', name: 'Сжатие zlib', desc: 'Нужен для PSD со сжатием ZIP, XCF и TIFF', files: [['vendor/pako/pako.umd.min.js', 45440]] },
@@ -45,6 +56,7 @@ const compFmt = b => b >= 1e6 ? (b / 1e6).toFixed(1).replace('.', ',') + ' МБ'
 const compFiles = {};                                           // id → файлы лежат в кэше
 const compBad = {};                                             // id → файлы есть, но неполные или повреждены
 let compPersisted = null;                                       // true/false после проверки, null — неизвестно
+const compOld = {};                                             // id → компонент (целиком или частично) лежит в старом Cache Storage
 const compBusy = {};                                            // id → идёт скачивание
 /* Установлен ли компонент (вместе с зависимостями). Синхронно: состояние читается из кэша при старте и после каждой операции */
 function compInstalled(id) {
@@ -58,14 +70,18 @@ async function compRefresh() {
     try {
       const cache = await caches.open(COMP_CACHE);
       for (const c of COMPONENTS) {
-        let present = 0, good = 0;
+        let present = 0, good = 0, inCache = 0;
         for (const f of c.files) {
+          const os = COMP_OPFS ? await opfsSize(f[0]) : -1;
+          if (os === f[1]) { present++; good++; continue; }
+          if (os >= 0) present++;                                        // файл есть, но неполный
           const r = await cache.match(compUrl(f[0]));
           if (!r) continue;
-          present++;
+          if (os < 0) present++;
           const len = +(r.headers.get('content-length') || -1);        // кладём сами при скачивании, тело читать не нужно
-          if (len === f[1]) good++;
+          if (len === f[1]) { good++; inCache++; if (os >= 0) present--; }
         }
+        compOld[c.id] = good === c.files.length && inCache > 0;       // лежит в старом кэше: можно перенести
         compFiles[c.id] = good === c.files.length;
         compBad[c.id] = present > 0 && good !== c.files.length;
         if (wasOn[c.id] && !compFiles[c.id] && typeof toast === 'function') toast(`«${c.name}» ${present ? 'повреждён' : 'пропал из памяти браузера'}: скачай заново на вкладке «Компоненты»`, true, { action: { label: 'Открыть', fn: openComponentsTab }, ms: 9000 });
@@ -77,7 +93,7 @@ async function compRefresh() {
   if (typeof updateComponentHints === 'function') updateComponentHints();
   if (typeof renderErrLog === 'function') renderErrLog();         // в журнале список компонентов должен совпадать с вкладкой
 }
-const compReady = compRefresh();
+const compReady = compRefresh().then(() => compBgResume()).catch(() => {});
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !Object.keys(compBusy).length) compRefresh(); });   // Android мог очистить память, пока вкладка была свёрнута
 document.getElementById('compPersistBtn').addEventListener('click', async () => {
   let ok = false; try { ok = !!(navigator.storage && navigator.storage.persist && await navigator.storage.persist()); } catch (e) {}
@@ -85,7 +101,21 @@ document.getElementById('compPersistBtn').addEventListener('click', async () => 
 });
 
 /* Скачивание одного файла с прогрессом: возвращает число байт */
+async function compFetchFileOpfs(path, onBytes, signal) {
+  const url = compUrl(path), res = await fetch(url, { cache: 'reload', signal });
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + path);
+  const fh = await (await opfsDir()).getFileHandle(opfsName(path), { create: true }), w = await fh.createWritable();
+  let got = 0;
+  try {
+    if (res.body && res.body.getReader) { const reader = res.body.getReader(); for (;;) { const { done, value } = await reader.read(); if (done) break; await w.write(value); got += value.length; onBytes(value.length); } }
+    else { const b = await res.blob(); await w.write(b); got = b.size; onBytes(b.size); }
+    if (got !== compSizeOf(path)) throw new Error(`Размер не совпал: ${path} (${got} вместо ${compSizeOf(path)})`);
+    await w.close();
+  } catch (e) { try { await w.abort(); } catch (_) {} await opfsRemove(path); throw e; }       // кусков в хранилище не оставляем
+  return got;
+}
 async function compFetchFile(cache, path, onBytes, signal) {
+  if (compStoreMode() === 'opfs') return compFetchFileOpfs(path, onBytes, signal);
   const url = compUrl(path), res = await fetch(url, { cache: 'reload', signal });
   if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + path);
   const reader = res.body && res.body.getReader ? res.body.getReader() : null, parts = []; let got = 0;
@@ -100,18 +130,98 @@ async function compFetchFile(cache, path, onBytes, signal) {
 const compProg = {};                                            // id → { done, total } для строки с идущим скачиванием
 const compAbort = {};                                           // id → AbortController (кнопка «Отменить»)
 const compCancelled = e => !!e && (e.name === 'AbortError' || /aborted|abort/i.test(String(e.message)));
+
+/* ---------- Фоновое скачивание (Background Fetch): идёт, даже если вкладку свернули или закрыли ---------- */
+const compBgWaiters = {};                                       // id фоновой загрузки → resolve, когда service worker дописал файлы
+let compBc = null; try { compBc = new BroadcastChannel(COMP_BC); } catch (e) {}
+const compBgDone = {}, compBgActive = new Set();                 // сообщения service worker'а и идущие ожидания
+if (compBc) compBc.onmessage = e => { const m = e.data || {}; if (m.t !== 'done') return; compBgDone[m.bid] = m; if (compBgWaiters[m.bid]) compBgWaiters[m.bid](m); else if (!compBgActive.has(m.bid)) compRefresh().then(() => { if (typeof toast === 'function' && m.ok) toast('Компонент скачан в фоне'); }); };
+async function compBgReg() {
+  try {
+    if (!COMP_OPFS || compStoreMode() !== 'opfs' || !compBgOn() || !('serviceWorker' in navigator) || !('BackgroundFetchManager' in self)) return null;
+    const reg = await navigator.serviceWorker.getRegistration(); if (!reg || !reg.active || !reg.backgroundFetch) return null;
+    return reg;
+  } catch (e) { return null; }
+}
+/* Запустить фоновую загрузку для цепочки компонентов; вернёт registration или null (тогда качаем из страницы) */
+async function compBgStart(id, chain, total, ctl) {
+  const reg = await compBgReg(); if (!reg) return null;
+  try {
+    const reqs = []; chain.forEach(x => compById(x).files.forEach(f => reqs.push(new Request(compUrl(f[0]) + '?sz=' + f[1]))));
+    return await reg.backgroundFetch.fetch('comp:' + chain.join(',') + ':' + Date.now(), reqs, { title: 'Aspect Studio: ' + compById(id).name, downloadTotal: total });
+  } catch (e) { console.warn('background fetch', e); return null; }
+}
+/* Ждём конца фоновой загрузки: прогресс, отмена, запись файлов service worker'ом */
+function compBgRun(bgf, chain, total, ctl, onProgress, id, watch = false) {
+  return new Promise((resolve, reject) => {
+    let finished = false, timer = 0, checking = false; const t0 = Date.now(); compBgActive.add(bgf.id);
+    const upd = () => { const done = Math.min(total, bgf.downloaded || 0); chain.forEach(y => { compProg[y] = { done, total }; }); if (onProgress) onProgress(done / total, id); else chain.forEach(y => compSetProgress(y, done / total)); };
+    const end = (err) => { if (finished) return; finished = true; clearInterval(timer); delete compBgWaiters[bgf.id]; compBgActive.delete(bgf.id); err ? reject(err) : resolve(); };
+    const check = async () => {
+      upd();
+      if (watch && !finished && !bgf.result && !(bgf.downloaded > 0) && Date.now() - t0 > (window.COMP_BG_STALL_MS || 12000)) { try { bgf.abort(); } catch (e) {} return end(Object.assign(new Error('stall'), { bgStall: true })); }
+      if (!bgf.result || checking || finished) return;
+      checking = true;
+      if (bgf.result === 'success') {
+        const m = compBgDone[bgf.id] || await new Promise(r => { compBgWaiters[bgf.id] = r; setTimeout(() => r({ ok: null }), 180000); });    // service worker пишет файлы и сообщает
+        await compRefresh();
+        return end(chain.every(x => compFiles[x]) ? null : new Error('Файлы не записались'));
+      }
+      end(bgf.failureReason === 'aborted' || bgf.failureReason === '' ? Object.assign(new Error('Отменено'), { name: 'AbortError' }) : new Error('Фоновая загрузка не удалась: ' + bgf.failureReason));
+    };
+    ctl.signal.addEventListener('abort', () => { try { bgf.abort(); } catch (e) {} });
+    bgf.addEventListener('progress', check); timer = setInterval(check, 1500); check();
+  });
+}
+/* После перезапуска страницы подхватить загрузки, которые ещё идут (или закончились) */
+async function compBgResume() {
+  const reg = await compBgReg(); if (!reg) return;
+  let ids = []; try { ids = await reg.backgroundFetch.getIds(); } catch (e) { return; }
+  for (const bid of ids) {
+    if (!bid.startsWith('comp:')) continue;
+    const bgf = await reg.backgroundFetch.get(bid).catch(() => null); if (!bgf || bgf.result) continue;
+    const chain = bid.split(':')[1].split(',').filter(x => compById(x) && !compFiles[x]); if (!chain.length || chain.some(x => compBusy[x])) continue;
+    const ctl = new AbortController(), total = bgf.downloadTotal || 1;
+    chain.forEach(x => { compBusy[x] = true; compAbort[x] = ctl; compProg[x] = { done: bgf.downloaded || 0, total }; }); renderComponents();
+    compBgRun(bgf, chain, total, ctl, null, chain[chain.length - 1])
+      .then(() => toast('Компонент скачан в фоне'), e => { if (e && e.name === 'AbortError') toast('Скачивание отменено'); else toast('Фоновая загрузка не удалась', true); })
+      .finally(() => { chain.forEach(x => { delete compBusy[x]; delete compAbort[x]; delete compProg[x]; }); renderComponents(); updateComponentHints(); });
+  }
+}
+/* Перенос скачанного раньше из Cache Storage в файлы сайта */
+async function compMigrate() {
+  if (compStoreMode() !== 'opfs') return 0;
+  const cache = await caches.open(COMP_CACHE); let n = 0;
+  for (const c of COMPONENTS) {
+    if (!compOld[c.id] || compBusy[c.id]) continue;
+    try {
+      for (const f of c.files) {
+        const r = await cache.match(compUrl(f[0])); if (!r) continue;
+        const blob = await r.blob(), fh = await (await opfsDir()).getFileHandle(opfsName(f[0]), { create: true }), w = await fh.createWritable();
+        try { await w.write(blob); await w.close(); } catch (e) { try { await w.abort(); } catch (_) {} await opfsRemove(f[0]); throw e; }
+        if (await opfsSize(f[0]) !== f[1]) { await opfsRemove(f[0]); throw new Error('Размер не совпал'); }
+        await cache.delete(compUrl(f[0]));
+      }
+      n++;
+    } catch (e) { console.warn('migrate', c.id, e); }
+  }
+  await compRefresh(); return n;
+}
 async function compInstall(id, onProgress) {
   if (COMP_NOCACHE) throw new Error('Cache API недоступен');
   const chain = compChain(id).filter(x => !compFiles[x]), total = chain.reduce((s, x) => s + compBytes(compById(x)), 0) || 1;
   let done = 0; const cache = await caches.open(COMP_CACHE), ctl = new AbortController();
   chain.forEach(x => { compBusy[x] = true; compAbort[x] = ctl; compProg[x] = { done: 0, total }; }); if (typeof renderComponents === 'function') renderComponents();
   try {
-    for (const x of chain) {
+    const bg = await compBgStart(id, chain, total, ctl);                  // фоновое скачивание, если браузер умеет
+    let fg = !bg;
+    if (bg) { try { await compBgRun(bg, chain, total, ctl, onProgress, id, true); } catch (e) { if (e && e.bgStall) fg = true; else throw e; } }   // фон не тронулся с места: качаем из страницы
+    if (fg) for (const x of chain) {
       const c = compById(x);
       try {
         for (const f of c.files) await compFetchFile(cache, f[0], n => { done += n; chain.forEach(y => { compProg[y] = { done, total }; }); if (onProgress) onProgress(Math.min(1, done / total), x); }, ctl.signal);
         compFiles[x] = true; compBad[x] = false;
-      } catch (e) { for (const f of c.files) await cache.delete(compUrl(f[0])); compFiles[x] = false; compBad[x] = false; throw e; }
+      } catch (e) { for (const f of c.files) { await cache.delete(compUrl(f[0])); await opfsRemove(f[0]); } compFiles[x] = false; compBad[x] = false; throw e; }
     }
     try { if (navigator.storage && navigator.storage.persist) compPersisted = await navigator.storage.persist(); } catch (e) {}      // просим браузер не вычищать файлы
   } finally { chain.forEach(x => { delete compBusy[x]; delete compAbort[x]; delete compProg[x]; }); if (typeof renderComponents === 'function') renderComponents(); if (typeof updateComponentHints === 'function') updateComponentHints(); }
@@ -121,8 +231,8 @@ async function compRemove(id) {
   const deps = compDependents(id).filter(d => compFiles[d.id]);
   if (deps.length) throw new Error('Нужен для: ' + deps.map(d => d.name).join(', '));
   const cache = await caches.open(COMP_CACHE);
-  for (const f of compById(id).files) await cache.delete(compUrl(f[0]));
-  compFiles[id] = false; renderComponents(); updateComponentHints();
+  for (const f of compById(id).files) { await cache.delete(compUrl(f[0])); await opfsRemove(f[0]); }
+  compFiles[id] = false; compOld[id] = false; renderComponents(); updateComponentHints();
 }
 /* Какой компонент нужен для файла (по пути) */
 const compForPath = path => COMPONENTS.find(c => c.files.some(f => f[0] === path));
@@ -185,6 +295,8 @@ function renderComponents() {
       if (busy) compSetProgress(c.id, compProg[c.id] ? Math.min(1, compProg[c.id].done / compProg[c.id].total) : 0);
     });
   });
+  const bgRow = document.getElementById('compBgRow'); if (bgRow) { bgRow.hidden = COMP_NOCACHE || !COMP_OPFS || !('BackgroundFetchManager' in self) || !('serviceWorker' in navigator); const cb = document.getElementById('compBg'); if (cb) cb.checked = compBgOn(); }
+  const oldN = document.getElementById('compOldNote'); if (oldN) oldN.hidden = COMP_NOCACHE || compStoreMode() !== 'opfs' || !COMPONENTS.some(c => compOld[c.id]);
   const pn = document.getElementById('compPersist'); if (pn) pn.hidden = COMP_NOCACHE || compPersisted !== false || !COMPONENTS.some(c => compFiles[c.id]);
   const have = COMPONENTS.filter(c => compFiles[c.id]), sz = have.reduce((s, c) => s + compBytes(c), 0), left = COMPONENTS.filter(c => !compFiles[c.id]).reduce((s, c) => s + compBytes(c), 0);
   const sum = document.getElementById('compSummary'); if (sum) sum.textContent = COMP_NOCACHE ? 'Менеджер компонентов недоступен в этом режиме' : `Скачано ${have.length} из ${COMPONENTS.length} · занято ${compFmt(sz)}`;
@@ -208,6 +320,10 @@ async function compDownloadUI(id) {
 function compInstalledHook(id) {                                // после скачивания: перезапустить то, что ждало компонент
   if (compChain(id).includes('faces') && typeof items !== 'undefined' && S.faceAI) { items.forEach(i => { if (i.an && i.an.faceMissing) i.an = undefined; }); if (typeof renderAnalysis === 'function') renderAnalysis(); }
 }
+document.getElementById('compBg').addEventListener('change', e => { try { localStorage.setItem(COMP_BG_KEY, e.target.checked ? '1' : '0'); } catch (_) {} toast(e.target.checked ? 'Скачивание пойдёт в фоне' : 'Скачивание пойдёт только пока открыта страница'); });
+document.getElementById('compMigrate').addEventListener('click', async e => {
+  e.target.disabled = true; try { const n = await compMigrate(); toast(n ? `Перенесено компонентов: ${n}` : 'Переносить нечего'); } catch (err) { toast('Не удалось перенести: ' + err.message, true); } finally { e.target.disabled = false; renderComponents(); }
+});
 document.getElementById('compAll').addEventListener('click', async () => {
   for (const c of COMPONENTS) if (!compFiles[c.id]) { try { await compInstall(c.id, (v, cur) => compSetProgress(c.id, v)); } catch (e) { toast(compCancelled(e) ? 'Скачивание отменено' : `Не удалось скачать «${c.name}»`, !compCancelled(e), { ms: 7000 }); return; } }
   toast('Все компоненты скачаны');

@@ -11,7 +11,7 @@ const URL_ = 'http://localhost:8771/';
   await new Promise(r => server.listen(8771, r));
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto(URL_); await p.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p.reload(); await p.waitForTimeout(600);
+  await p.goto(URL_); await p.evaluate(() => { localStorage.setItem('aspect-studio-compstore', 'cache'); localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await p.reload(); await p.waitForTimeout(600);
   const analyse = async f => {
     await p.evaluate(() => { items.length = 0; idx = 0; }); await p.setInputFiles('#fileInput', path.join(FX, f)); await p.waitForFunction(() => items.length === 1);
     await p.evaluate(() => { items[0].an = undefined; ensureAnalysis(items[0]); });
@@ -60,7 +60,7 @@ const URL_ = 'http://localhost:8771/';
 
   // ---------- сбой при скачивании компонента: ничего не остаётся, повтор работает ----------
   const c2 = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: 'block' }); const q = await c2.newPage(); const errs2 = []; q.on('pageerror', e => errs2.push(e.message));
-  await q.goto(URL_); await q.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await q.reload(); await q.waitForTimeout(500);
+  await q.goto(URL_); await q.evaluate(() => { localStorage.setItem('aspect-studio-compstore', 'cache'); localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); }); await q.reload(); await q.waitForTimeout(500);
   await q.route('**/vendor/blazeface/**', r => r.abort());
   const bad = await q.evaluate(async () => { try { await compInstall('faces'); return 'ok'; } catch (e) { return 'fail'; } });
   ok(bad === 'fail' && await q.evaluate(() => !compInstalled('faces') && compFiles.faces === false), 'скачивание оборвалось: компонент не считается установленным');
@@ -74,7 +74,7 @@ const URL_ = 'http://localhost:8771/';
   // ---------- офлайн после первой загрузки ----------
   const c3 = await b.newContext({ viewport: { width: 1100, height: 900 } }); const o = await c3.newPage(); const errs3 = [];
   o.on('pageerror', e => errs3.push(e.message));
-  await o.goto(URL_); await o.evaluate(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); });
+  await o.goto(URL_); await o.evaluate(() => { localStorage.setItem('aspect-studio-compstore', 'cache'); localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); });
   await o.evaluate(async () => { await navigator.serviceWorker.ready; }); await o.reload(); await o.waitForTimeout(800);
   ok(await o.evaluate(() => !!navigator.serviceWorker.controller), 'service worker управляет страницей');
   await o.evaluate(() => compInstall('faces'));

@@ -64,3 +64,5 @@ jobs:
         run: node tests/erase.js
       - name: Цветовые профили ICC (блок P3)
         run: node tests/icc.js
+      - name: Компоненты в OPFS и фоновая загрузка
+        run: node tests/opfs.js
