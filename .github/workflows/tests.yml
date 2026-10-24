@@ -62,3 +62,5 @@ jobs:
         run: node tests/denoise.js
       - name: Убрать лишнее (блок P2)
         run: node tests/erase.js
+      - name: Цветовые профили ICC (блок P3)
+        run: node tests/icc.js

@@ -24,7 +24,7 @@ const EXP = `async (o) => { Object.assign(S, o); const it = items[0], bmp = awai
     await p.evaluate(() => { const it = items[0]; set('sizeMode', 'auto'); set('ratioW', it.w); set('ratioH', it.h); set('fit', 'fit'); set('enhOn', false); set('cutOn', false); set('targetOn', false); }); };
   await load('face_two.jpg');
   // реестр
-  const reg = await p.evaluate(() => COMPONENTS.filter(c => c.group === 'e').map(c => ({ id: c.id, files: c.files })));
+  const reg = await p.evaluate(() => COMPONENTS.filter(c => c.group === 'e' && c.id !== 'icc').map(c => ({ id: c.id, files: c.files })));
   ok(reg.length === 4 && reg.every(c => c.files.every(([f, s]) => fs.existsSync(path.join(ROOT, f)) && fs.statSync(path.join(ROOT, f)).size === s)), 'четыре компонента сжатия, файлы на месте, размеры в реестре верны');
   // без компонентов: выбор не включается, экспорт работает как раньше
   await p.evaluate(() => { document.getElementById('toast').textContent = ''; set('format', 'avif'); });

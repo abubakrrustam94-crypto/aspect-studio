@@ -639,8 +639,12 @@
             <div class="seg" data-group="colorSpace" role="group" aria-label="Цветовое пространство">
               <button type="button" data-val="srgb">sRGB</button>
               <button type="button" data-val="p3">Display P3</button>
+              <button type="button" data-val="adobe">Adobe RGB</button>
+              <button type="button" data-val="rec2020">Rec.2020</button>
+              <button type="button" data-val="prophoto">ProPhoto</button>
+              <button type="button" data-val="source">Как у фото</button>
             </div>
-            <p class="note"><b>sRGB</b> — цвета выглядят одинаково везде: сайты, маркетплейсы, соцсети. Широкий цвет из фото переводится в sRGB. <b>Display P3</b> — насыщеннее на новых экранах (iPhone, современные Android и Mac), но на старых мониторах и в некоторых программах цвета могут выглядеть тусклее. Для публикации выбирай sRGB.</p>
+            <p class="note"><b>sRGB</b> — цвета выглядят одинаково везде: сайты, маркетплейсы, соцсети. Широкий цвет из фото переводится в sRGB. <b>Display P3</b> — насыщеннее на новых экранах (iPhone, современные Android и Mac), но на старых мониторах и в некоторых программах цвета могут выглядеть тусклее. Для публикации выбирай sRGB. <b>Adobe RGB</b>, <b>Rec.2020</b> и <b>ProPhoto</b> нужны для печати и фотографов; <b>Как у фото</b> записывает тот профиль, что был в исходном JPG или PNG. Профили работают в JPG и PNG и требуют компонент «Цветовые профили ICC». Предпросмотр показывает обычный цвет.</p>
           </div>
         </section>
       </div>
@@ -794,6 +798,7 @@
   <script src="js/cutout.js"></script>
   <script src="js/maskedit.js"></script>
   <script src="js/erase.js"></script>
+  <script src="js/icc.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/sr.js"></script>

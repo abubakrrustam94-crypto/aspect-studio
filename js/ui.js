@@ -35,6 +35,7 @@ function set(key, val) {
   if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
   if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
+  if (key === 'colorSpace' && typeof ICC_OUT !== 'undefined' && ICC_OUT[val] && !compInstalled('icc')) { compWarn(['icc'], 'Цветовые профили'); syncUI(); return; }
   if (key === 'dnModel' && val !== 'off' && DN_MODELS[val] && !compInstalled(DN_MODELS[val].comp)) { compWarn([DN_MODELS[val].comp], 'Нейро-шумоподавление'); syncUI(); return; }
   if (key === 'srModel' && val !== 'off' && SR_MODELS[val] && !compInstalled(SR_MODELS[val].comp)) { compWarn([SR_MODELS[val].comp], 'Нейро-увеличение'); syncUI(); return; }
   if (key === 'faceEngine' && val === 'scrfd' && !compInstalled('facex')) { compWarn(['facex'], 'Точный поиск лиц'); syncUI(); return; }

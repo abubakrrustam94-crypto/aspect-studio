@@ -197,16 +197,20 @@ async function fitToSize(c, fmt, q0, limit) {
 async function exportBlob(item, bmp, formatOverride, work) {
   const fmt = formatOverride || S.format;
   const mime = MIME[fmt];
-  const c = document.createElement('canvas');
+  let c = document.createElement('canvas');
   if (cfgFor(item).enhOn) await yieldUI();
   const { cw, ch } = await render(c, item, bmp, { opaque: fmt === 'jpg', p3: wantP3(item), ...(work ? { work } : {}) });
-  let blob, outW = cw, outH = ch, fit = null;
+  let blob, outW = cw, outH = ch, fit = null, iccOut = null;
+  if (typeof ICC_OUT !== 'undefined' && ICC_OUT[S.colorSpace]) {            // вывод в Adobe RGB / Rec.2020 / ProPhoto / профиль исходника
+    try { const r = await iccApply(c, item, fmt); if (r) { c.width = c.height = 0; c = r.canvas; iccOut = r.icc; } } catch (e) { console.error('ICC', e); toast('Цветовой профиль не применился (' + friendlyError(e).replace(/^Ошибка: /, '') + '): сохранён обычный цвет', true, { ms: 7000 }); }
+  }
   if (S.targetOn && fmt !== 'png') {
     fit = await fitToSize(c, fmt, S.quality / 100, Math.max(20, S.targetKB) * 1024 - (fmt === 'jpg' && metaWrites() ? 1600 : 0));
     blob = fit.blob; outW = fit.w; outH = fit.h;
   } else blob = await encodeBlob(c, fmt, S.quality / 100);
   c.width = c.height = 0;
   if (!blob) throw new Error('Не удалось создать файл (слишком большой холст?)');
+  if (iccOut && (blob.type === 'image/jpeg' || blob.type === 'image/png')) { try { blob = await iccEmbed(blob, iccOut); } catch (e) { console.warn('icc embed', e); } }
   const mo = metaOpts();
   if (blob.type === 'image/jpeg' && metaWrites()) {
     try {
