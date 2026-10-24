@@ -60,3 +60,5 @@ jobs:
         run: node tests/detect.js
       - name: Нейро-шумоподавление (блок P1)
         run: node tests/denoise.js
+      - name: Убрать лишнее (блок P2)
+        run: node tests/erase.js

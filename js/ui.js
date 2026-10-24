@@ -224,6 +224,7 @@ function updateZipLabel() {
   const all = $('#selAll'); if (all) all.textContent = k === n ? 'Снять все' : 'Выбрать все';
 }
 function updateChrome() {
+  if (typeof erSync === 'function') erSync();
   const n = items.length, has = n > 0;
   thumbsRow.hidden = !has;
   previewCard.hidden = !has;

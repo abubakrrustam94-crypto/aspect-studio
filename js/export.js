@@ -211,7 +211,7 @@ async function exportBlob(item, bmp, formatOverride, work) {
   if (blob.type === 'image/jpeg' && metaWrites()) {
     try {
       if (mo.dpi) blob = await setJfifDpi(blob, mo.dpi);
-      const tiff = await buildSafeExif(item.file); if (tiff) blob = await injectExif(blob, tiff);
+      const tiff = await buildSafeExif((item.exifSrc || item.file)); if (tiff) blob = await injectExif(blob, tiff);
     } catch (e) { console.warn('exif', e); }
   } else if (blob.type === 'image/png' && mo.dpi) { try { blob = await setPngDpi(blob, mo.dpi); } catch (e) { console.warn('png dpi', e); } }
   const ext = EXT[blob.type] || fmt;

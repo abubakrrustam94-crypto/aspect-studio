@@ -100,7 +100,7 @@ function restoreFocus(el) {
 }
 addEventListener('keydown', e => {
   if (e.key !== 'Tab') return;
-  const dlg = [cpEl, inspEl, $('#review'), $('#maskEd')].find(el => el && el.classList.contains('show'));
+  const dlg = [cpEl, inspEl, $('#review'), $('#maskEd'), $('#erEd')].find(el => el && el.classList.contains('show'));
   if (!dlg) return;
   const f = [...dlg.querySelectorAll('button, [href], input, select, [tabindex]:not([tabindex="-1"])')].filter(n => !n.disabled && n.offsetParent !== null);
   if (!f.length) { e.preventDefault(); return; }
@@ -722,7 +722,7 @@ async function renderMetaInfo() {
   const tail = parts.length ? `В результат (JPG) попадёт: ${parts.join(', ')}. Геолокация не переносится никогда.` : 'В результат не попадёт ничего: ни геолокация, ни камера, ни дата.';
   if (typeof renderMetaTable === 'function') renderMetaTable(it);
   if (!it) { el.textContent = tail; return; }
-  if (it.metaInfo === undefined) it.metaInfo = await readExifBasics(it.file).catch(() => null);
+  if (it.metaInfo === undefined) it.metaInfo = await readExifBasics((it.exifSrc || it.file)).catch(() => null);
   if (tok !== metaTok) return;
   const i = it.metaInfo;
   const found = !i ? 'В этом фото нет EXIF (или это не JPG).' : `В исходном фото найдено: ${[i.gps ? 'геолокация' : '', i.make || i.model ? 'камера ' + [i.make, i.model].filter(Boolean).join(' ') : '', i.dto ? 'дата ' + i.dto.slice(0, 10).replace(/:/g, '-') : ''].filter(Boolean).join(', ') || 'ничего важного'}.`;

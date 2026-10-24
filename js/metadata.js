@@ -49,7 +49,7 @@ function parseExifSeg(v, p, len, res) {
   if (!res.dpi && typeof i0[0x011A] === 'number' && i0[0x011A] > 1) res.dpi = Math.round(i0[0x0128] === 3 ? i0[0x011A] * 2.54 : i0[0x011A]);
   if (typeof i0[0x8769] === 'number') { const ie = readIFD(i0[0x8769], { 0x9003: 1, 0xA434: 1, 0xA431: 1, 0xA435: 1 }); res.dto = ie[0x9003] || ''; res.lens = ie[0xA434] || ''; res.serial = !!(ie[0xA431] || ie[0xA435]); }
 }
-const ensureMetaFull = it => it.metaFull ? Promise.resolve(it.metaFull) : (it._metaP || (it._metaP = readMetaFull(it.file).then(m => (it.metaFull = m)).catch(() => (it.metaFull = { jpeg: false }))));
+const ensureMetaFull = it => it.metaFull ? Promise.resolve(it.metaFull) : (it._metaP || (it._metaP = readMetaFull(it.exifSrc || it.file).then(m => (it.metaFull = m)).catch(() => (it.metaFull = { jpeg: false }))));
 
 /* ---------- Проверка готового файла: JPEG, PNG, WebP ---------- */
 async function inspectBlob(blob) {
