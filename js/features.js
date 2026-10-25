@@ -10,7 +10,7 @@ addEventListener('keydown', e => {
   switch (e.code) {
     case 'KeyD': e.shiftKey ? exportAll() : downloadCurrent(); break;
     case 'KeyC': copyCurrent(); break;
-    case 'KeyS': if (navigator.share) shareCurrent(); break;
+    case 'KeyS': if (e.shiftKey) { if (SHARE_FILES && items.length > 1) shareAll(); } else if (navigator.share) shareCurrent(); break;
     case 'KeyT': toggleTheme(); break;
     case 'KeyZ': openInspector(); break;
     case 'KeyV': set('view', { slider: 'before', before: 'after', after: 'slider' }[S.view]); break;
@@ -57,7 +57,7 @@ function hslRgb(h, s, l) { s /= 100; l /= 100; const a = s * Math.min(l, 1 - l),
 function relLum(c) { const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; }
 function contrast(a, b) { const x = relLum(a), y = relLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
 function accentPalette(h) {
-  const S_LIGHT = [250, 248, 255], S_DARK = [15, 15, 20], WHITE = [255, 255, 255];
+  const S_LIGHT = [250, 248, 255], WHITE = [255, 255, 255];
   let lp = 36; while (lp > 18 && (contrast(hslRgb(h, 70, lp), WHITE) < 4.8 || contrast(hslRgb(h, 70, lp), S_LIGHT) < 4.8)) lp--;
   let dc = 36; const opcD = hslRgb(h, 100, 97); while (dc > 20 && contrast(hslRgb(h, 65, dc), opcD) < 5) dc--;
   return { lp, dc };
@@ -695,8 +695,9 @@ $('#appVersion').textContent = 'v' + APP_VERSION;
 
 /* ---------- Журнал ошибок в интерфейсе ---------- */
 function errLogText() {
+  const miss = typeof MISSING_IDS !== 'undefined' && MISSING_IDS.size ? `\nНет элементов в index.html: ${[...MISSING_IDS].join(' ')} (файлы сайта разных версий: обнови все файлы разом)` : '';
   const comps = typeof COMPONENTS !== 'undefined' ? COMPONENTS.map(c => c.id + ':' + (compFiles[c.id] ? 'да' : compBad[c.id] ? 'повреждён' : 'нет')).join(' ') : '';
-  return `Aspect Studio v${APP_VERSION}\n${navigator.userAgent}\nЭкран ${innerWidth}×${innerHeight}, память ${DEV_MEM} ГБ, формат ${S.format}, лица ${S.faceAI ? 'вкл' : 'выкл'}, фон ${S.cutOn ? 'вкл' : 'выкл'}\nКомпоненты: ${comps}${typeof compPersisted !== 'undefined' && compPersisted !== null ? ', защита от очистки: ' + (compPersisted ? 'да' : 'нет') : ''}\n\n` + (errLog.length ? errLog.map(e => `[${new Date(e.t).toLocaleString('ru-RU')}] ${e.w}${e.n > 1 ? ' ×' + e.n : ''}\n${e.m}`).join('\n\n') : 'Ошибок нет');
+  return `Aspect Studio v${APP_VERSION}\n${navigator.userAgent}\nЭкран ${innerWidth}×${innerHeight}, память ${DEV_MEM} ГБ, формат ${S.format}, лица ${S.faceAI ? 'вкл' : 'выкл'}, фон ${S.cutOn ? 'вкл' : 'выкл'}\nКомпоненты: ${comps}${typeof compPersisted !== 'undefined' && compPersisted !== null ? ', защита от очистки: ' + (compPersisted ? 'да' : 'нет') : ''}${miss}\n\n` + (errLog.length ? errLog.map(e => `[${new Date(e.t).toLocaleString('ru-RU')}] ${e.w}${e.n > 1 ? ' ×' + e.n : ''}\n${e.m}`).join('\n\n') : 'Ошибок нет');
 }
 function renderErrLog() {
   $('#errLogCount').textContent = errLog.length;

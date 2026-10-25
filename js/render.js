@@ -378,6 +378,7 @@ self.onmessage = e => {
 };`;
 let workerUrl = null;
 
+addEventListener('pagehide', () => { if (workerUrl) { try { URL.revokeObjectURL(workerUrl); } catch (e) {} workerUrl = null; } });
 class Work {
   constructor() { this.w = null; this.pending = null; this.seq = 0; this.ok = false; }
   _spawn() {

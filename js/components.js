@@ -165,7 +165,7 @@ function compBgRun(bgf, chain, total, ctl, onProgress, id, watch = false) {
       if (!bgf.result || checking || finished) return;
       checking = true;
       if (bgf.result === 'success') {
-        const m = compBgDone[bgf.id] || await new Promise(r => { compBgWaiters[bgf.id] = r; setTimeout(() => r({ ok: null }), 180000); });    // service worker пишет файлы и сообщает
+        await (compBgDone[bgf.id] || new Promise(r => { compBgWaiters[bgf.id] = r; setTimeout(() => r({ ok: null }), 180000); }));    // service worker пишет файлы и сообщает
         await compRefresh();
         return end(chain.every(x => compFiles[x]) ? null : new Error('Файлы не записались'));
       }

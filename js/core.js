@@ -3,7 +3,9 @@
 /* ===================================================================
    Aspect Studio v2 — чистый JS, без зависимостей
    =================================================================== */
-const $ = (s, r = document) => r.querySelector(s);
+/* Если в index.html нет нужного элемента (старый файл рядом с новыми скриптами), вместо null отдаём пустую заглушку: страница не падает, а в журнале ошибок появляется строка «Нет элементов» */
+const MISSING_IDS = new Set();
+const $ = (s, r = document) => { const e = r.querySelector(s); if (e || r !== document || s[0] !== '#') return e; MISSING_IDS.add(s); return document.createElement('div'); };
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
 /* ---------- Локальный журнал ошибок: хранится только в этом браузере, никуда не отправляется ---------- */
@@ -25,7 +27,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.33.0';
+const APP_VERSION = '2.34.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -138,22 +140,31 @@ const cur = () => items[idx];
 /* ===================================================================
    Тема
    =================================================================== */
-function applyTheme(t) {
+let themePref = 'auto';
+const THEME_NAMES = { auto: 'как в системе', light: 'светлая', dark: 'тёмная' };
+const sysTheme = () => matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+function applyTheme(t, pref = themePref) {
+  themePref = pref;
   document.documentElement.setAttribute('data-theme', t);
-  $('#themeToggle').innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-${t === 'dark' ? 'moon' : 'sun'}"/></svg>`;
+  const b = $('#themeToggle');
+  b.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-${t === 'dark' ? 'moon' : 'sun'}"/></svg>` + (pref === 'auto' ? '<b class="theme-a" aria-hidden="true">A</b>' : '');
+  b.title = `Тема: ${THEME_NAMES[pref]}. Нажми, чтобы сменить (T)`; b.setAttribute('aria-label', `Сменить тему. Сейчас: ${THEME_NAMES[pref]}`);
   const m = $('meta[name="theme-color"]');
   if (m) m.content = t === 'dark' ? '#0f0f14' : '#faf8ff';
 }
+/* Три состояния: «как в системе» (следует за настройкой телефона), светлая, тёмная */
 function toggleTheme() {
-  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
+  const order = ['auto', 'light', 'dark'], next = order[(order.indexOf(themePref) + 1) % order.length];
+  applyTheme(next === 'auto' ? sysTheme() : next, next);
   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  toast(`Тема: ${THEME_NAMES[next]}`);
 }
 (function initTheme() {
   let t = null;
   try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
-  if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  applyTheme(t);
+  const pref = t === 'dark' || t === 'light' ? t : 'auto';
+  applyTheme(pref === 'auto' ? sysTheme() : pref, pref);
+  try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (themePref === 'auto') applyTheme(sysTheme(), 'auto'); }); } catch (e) {}
 })();
 $('#themeToggle').addEventListener('click', toggleTheme);
 

@@ -19,7 +19,7 @@ function assertComp(id) {
   if (compInstalled(id)) return;
   throw new ComponentMissing(compChain(id).filter(x => compFiles[x] !== true));
 }
-const extOf = n => ((n || '').match(/\.([^.]+)$/) || [, ''])[1].toLowerCase();
+const extOf = n => ((n || '').match(/\.([^.]+)$/) || ['', ''])[1].toLowerCase();
 const checkPixels = (w, h) => { if (!w || !h) throw new FormatError('Пустое изображение'); if (w * h > MAX_INPUT_PIXELS) throw new FormatError(`Слишком большое изображение (${w}×${h}) для браузера`); };
 
 /* ---------- Ленивая загрузка внешних декодеров ---------- */
@@ -252,7 +252,6 @@ async function rawToFile(file, u8, ext, notes) {
   cands.sort((a, b) => b.w * b.h - a.w * a.h);
   const best = cands[0], jpg = u8.subarray(best.start, best.end);
   const rawO = (ext === 'raf' || ext === 'cr3') ? 1 : tiffOrientation(u8);
-  const long = Math.max(best.w, best.h);
   if (notes) notes.push(`RAW ${file.name}: открыто встроенное превью ${best.w}×${best.h} (сами RAW-данные не проявляются)`);
   const blob = new Blob([jpg], { type: 'image/jpeg' });
   if (rawO > 1 && jpegOrientation(jpg) === 1) {
@@ -452,10 +451,10 @@ async function xcfToFile(file, u8, notes) {
   if (String.fromCharCode(...u8.subarray(0, 9)) !== 'gimp xcf ') throw new FormatError('Это не XCF-файл');
   const vs = String.fromCharCode(...u8.subarray(9, 13)), ver = vs === 'file' ? 0 : parseInt(vs.slice(1), 10);
   let p = 14;
-  const u32 = () => { const v = dv.getUint32(p); p += 4; return v; }, i32 = () => { const v = dv.getInt32(p); p += 4; return v; };
+  const u32 = () => { const v = dv.getUint32(p); p += 4; return v; };
   const ptr = () => { if (ver >= 11) { const v = Number(dv.getBigUint64(p)); p += 8; return v; } return u32(); };
   const str = () => { const n = u32(); if (!n) return ''; p += n; return ''; };
-  const W = u32(), H = u32(), base = u32(); checkPixels(W, H);
+  const W = u32(), H = u32(); u32(); checkPixels(W, H);
   let prec = ver >= 4 ? u32() : 0, linear = false;
   if (ver >= 7) { if (prec !== 100 && prec !== 150) throw new FormatError('XCF с 16/32 битами на канал не поддерживается: экспортируй в PNG'); linear = prec === 100; }
   else if (ver >= 4 && prec !== 0) throw new FormatError('XCF с повышенной точностью не поддерживается: экспортируй в PNG');
@@ -482,7 +481,7 @@ async function xcfToFile(file, u8, notes) {
     if (!visible || group || !lw || !lh || !hier) continue;
     if (mode !== 0 && mode !== 28) simplified = true; if (mask) simplified = true;
     checkPixels(lw, lh);
-    p = hier; const hw = u32(), hh = u32(), bpp = u32(); const lvl = ptr();
+    p = hier; u32(); u32(); const bpp = u32(); const lvl = ptr();
     p = lvl; const lvw = u32(), lvh = u32(), tiles = [];
     for (;;) { const o = ptr(); if (!o) break; tiles.push(o); if (tiles.length > 1e6) break; }
     const tx = Math.ceil(lvw / 64), data = new Uint8ClampedArray(lvw * lvh * 4);

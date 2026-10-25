@@ -74,3 +74,5 @@ jobs:
         run: node tests/ui3.js
       - name: Наборы размеров и выбор объекта (блок Q4)
         run: node tests/q4.js
+      - name: Тема, свайпы, галерея, защита привязок (блок Q5)
+        run: node tests/q5.js

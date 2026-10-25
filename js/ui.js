@@ -226,6 +226,7 @@ function updateZipLabel() {
   const n = items.length, k = items.filter(i => !i.skip).length, bd = BUNDLES.find(x => x.id === S.bundle);
   const dest = S.folderOn && FOLDER_OK ? 'В папку' : 'ZIP';
   $('#zipLabel').textContent = (k === n ? `${dest} · ${n}` : `${dest} · ${k} из ${n}`) + (bd ? ` ×${bd.ids.length}` : '');
+  $('#galLabel').textContent = bd ? `В галерею ×${bd.ids.length}` : 'В галерею';
   $('#btnZip').title = S.folderOn && FOLDER_OK ? 'Сохранить всё в папку (Shift+D)' : 'Скачать всё ZIP (Shift+D)';
   $('#btnZip').disabled = busy || !k;
   const all = $('#selAll'); if (all) all.textContent = k === n ? 'Снять все' : 'Выбрать все';
@@ -241,6 +242,7 @@ function updateChrome() {
   $('#btnZip').hidden = n < 2;
   updateZipLabel();
   $('#btnShare').hidden = !navigator.share;
+  $('#btnGallery').hidden = n < 2 || !SHARE_FILES;
   countPill.textContent = n ? `${idx + 1} / ${n}` : '';
   $('#navLabel').textContent = `${idx + 1} / ${n}`;
   $('#prevBtn').disabled = idx <= 0; $('#nextBtn').disabled = idx >= n - 1;

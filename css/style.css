@@ -667,3 +667,8 @@ body.peek-open .progress-sheet { z-index: 260; }
 #progressPause[hidden] { display: none; }
 #dnPeek, #srPeek { margin-top: 10px; }
 #dnPeek[hidden], #srPeek[hidden], .set-search [hidden], #setNone[hidden] { display: none !important; }
+
+/* ---------- Тема «как в системе»: значок A, свайпы ---------- */
+#themeToggle { position: relative; }
+#themeToggle .theme-a { position: absolute; right: 3px; bottom: 3px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; pointer-events: none; }
+.preview-card { touch-action: pan-y; }

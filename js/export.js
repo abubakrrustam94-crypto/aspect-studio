@@ -296,6 +296,61 @@ const shareCurrent = () => withCurrent(async (item, bmp) => {
   else { saveBlob(r.blob, r.name); toast('Поделиться не поддерживается — файл сохранён'); }
 });
 
+/* Можно ли отдавать файлы в системное «Поделиться» (на Android там есть «Фото», «Галерея», Google Фото и «Сохранить на устройство») */
+const SHARE_FILES = (() => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'a.png', { type: 'image/png' })] })); } catch (e) { return false; } })();
+const SHARE_CHUNK = 20, SHARE_MAX_BYTES = 500 * 1048576;
+let shareHold = null;
+/* Все отмеченные фото одним «Поделиться». Готовить файлы долго, поэтому меню открывается по отдельной кнопке: браузер разрешает его только сразу после нажатия */
+async function shareAll() {
+  if (busy || !items.length || !SHARE_FILES) return;
+  const list = bundleExpand(items.filter(i => !i.skip)), total = list.length;
+  if (!total) { toast('Отметь хотя бы одно фото', true); return; }
+  busy = true; cancelFlag = false; setToolbarBusy(true); exporting = true; $('.layout').classList.add('locked');
+  items.forEach(i => { i.status = ''; });
+  const files = [], used = new Set(); let bytes = 0, memFull = false, failed = 0;
+  showProgress('Готовлю файлы для галереи…'); batchBegin(total, 'share');
+  try {
+    let done = 0;
+    await pooledExport(list, exportConcurrency(list), async (item, r, e) => {
+      setProgress(done, total, item.name); await yieldUI();
+      try {
+        if (e) throw e;
+        let name = r.name, n = 2; while (used.has(name)) name = r.name.replace(/(\.[^.]+)$/, `_${n++}$1`);
+        used.add(name); files.push(new File([r.blob], name, { type: r.blob.type })); bytes += r.blob.size; batchStep(files.length); setStatus(item, 'ok');
+        if (bytes > SHARE_MAX_BYTES) { memFull = true; return true; }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return true;
+        console.error(err); failed++; setStatus(item, 'bad');
+        if (err instanceof RangeError || /memory|alloc/i.test(String(err && err.message))) { memFull = true; return true; }
+      }
+      setProgress(++done, total, item.name);
+    });
+  } finally {
+    busy = false; setToolbarBusy(false); exporting = false; $('.layout').classList.remove('locked'); renderThumbs(); updateZipLabel(); hideProgress();
+  }
+  if (cancelFlag || !files.length) { toast(cancelFlag ? 'Отменено' : 'Не удалось подготовить файлы', !cancelFlag); return; }
+  shareHold = files;
+  const note = memFull ? ` Остановился на ${files.length} из ${total}: не хватило памяти, остальное повтори отдельно.` : failed ? ` Ошибок: ${failed}.` : '';
+  shareOffer(0, note);
+}
+function shareOffer(from, note = '') {
+  const files = shareHold; if (!files) return;
+  const part = files.slice(from, from + SHARE_CHUNK), many = files.length > SHARE_CHUNK;
+  const label = many ? `Поделиться ${from + 1}–${from + part.length} из ${files.length}` : `Поделиться (${files.length})`;
+  toast(`Готово: ${files.length} файлов.${note} Нажми кнопку и выбери «Фото» или «Галерея».`, false, { ms: 90000, action: { label, fn: async () => {
+    try {
+      if (!navigator.canShare({ files: part })) throw Object.assign(new Error('format'), { name: 'TypeError' });
+      await navigator.share({ files: part, title: 'Aspect Studio' });
+    } catch (e) {
+      if (e && e.name === 'AbortError') { shareOffer(from, note); return; }                         // закрыл меню: предложим ещё раз
+      console.error(e); shareHold = null;
+      if (typeof saveBlob === 'function') part.forEach(f => saveBlob(f, f.name));
+      toast('Системное меню не приняло эти файлы (формат или размер). Сохранил их в «Загрузки».', true, { ms: 8000 }); return;
+    }
+    if (from + SHARE_CHUNK < files.length) shareOffer(from + SHARE_CHUNK, note); else { shareHold = null; toast('Готово'); }
+  } } });
+}
+
 const copyCurrent = () => withCurrent(async (item, bmp) => {
   if (!navigator.clipboard || !window.ClipboardItem) { toast('Копирование изображений не поддерживается в этом браузере', true); return; }
   const r = await exportBlob(item, bmp, 'png');
@@ -561,5 +616,6 @@ async function exportAll() {
 
 $('#btnDownload').addEventListener('click', downloadCurrent);
 $('#btnShare').addEventListener('click', shareCurrent);
+$('#btnGallery').addEventListener('click', shareAll);
 $('#btnCopy').addEventListener('click', copyCurrent);
 $('#btnZip').addEventListener('click', exportAll);
