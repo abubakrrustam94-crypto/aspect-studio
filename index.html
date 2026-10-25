@@ -142,9 +142,16 @@
           <button type="button" role="tab" data-tab="extra"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></i><span>Ещё</span></button>
           <button type="button" role="tab" data-tab="export"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></i><span>Экспорт</span></button>
           <button type="button" role="tab" data-tab="meta"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></i><span>Метаданные</span></button>
+          <button type="button" role="tab" data-tab="fav" id="tabFav" hidden><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg></i><span>Избранное</span></button>
           <button type="button" role="tab" data-tab="components"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-package"/></svg></i><span>Компоненты</span></button>
           <button type="button" role="tab" data-tab="about"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></i><span>О программе</span></button>
         </nav>
+        <div class="set-search">
+          <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="search" id="setSearch" placeholder="Найти настройку: шум, водяной знак, PNG…" aria-label="Поиск по настройкам" autocomplete="off" enterkeyhint="search">
+          <button type="button" class="icon-btn" id="setSearchClear" aria-label="Очистить поиск" hidden>✕</button>
+        </div>
+        <p class="note set-none" id="setNone" hidden></p>
         <section class="card" id="cardScope" hidden>
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Настройки для</div>
           <div class="seg" id="scopeSeg" role="group" aria-label="Для каких фото настройки">
@@ -457,6 +464,7 @@
                 <button type="button" data-val="2">Средне</button>
                 <button type="button" data-val="3">Сильно</button>
               </div>
+              <button type="button" class="btn btn-tonal btn-sm" id="dnPeek" hidden><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Показать на фрагменте</button>
               <p class="note" id="dnNote"></p>
             </div>
             <div id="srRow">
@@ -467,6 +475,7 @@
                 <button type="button" data-val="general">Обычная</button>
                 <button type="button" data-val="max">Максимум</button>
               </div>
+              <button type="button" class="btn btn-tonal btn-sm" id="srPeek" hidden><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Показать на фрагменте</button>
               <p class="note" id="srNote"></p>
             </div>
             <div>
@@ -679,7 +688,7 @@
   </div>
 
   <div class="progress-sheet" id="progress" role="status" aria-live="polite">
-    <div class="progress-top"><span id="progressTitle">Обработка…</span><button class="btn btn-outlined btn-sm" id="progressCancel" type="button">Отмена</button></div>
+    <div class="progress-top"><span id="progressTitle">Обработка…</span><button class="btn btn-outlined btn-sm" id="progressPause" type="button" hidden>Пауза</button><button class="btn btn-outlined btn-sm" id="progressCancel" type="button">Отмена</button></div>
     <div class="wavy"><div class="wavy-fill" id="progressFill"></div></div>
     <div class="progress-name" id="progressName"></div>
   </div>
@@ -753,6 +762,27 @@
     </div>
   </div>
 
+  <div class="cropper" id="peek" role="dialog" aria-modal="true" aria-label="До и после на фрагменте">
+    <div class="inspect-bar cp-top">
+      <strong class="rv-title" id="peekTitle">До и после</strong>
+      <span class="count-pill" id="peekInfo" aria-live="polite"></span>
+      <button type="button" class="icon-btn" id="peekClose" aria-label="Закрыть" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="peek-body">
+      <div class="peek-view" id="peekView" style="--p:50%">
+        <canvas id="peekBefore" aria-label="Фрагмент до обработки"></canvas>
+        <canvas id="peekAfter" aria-label="Фрагмент после обработки"></canvas>
+        <i class="peek-line" aria-hidden="true"></i><span class="peek-tag l">До</span><span class="peek-tag r">После</span>
+      </div>
+      <input type="range" id="peekSlider" min="0" max="100" value="50" aria-label="Граница между «до» и «после»">
+      <div class="peek-map"><canvas id="peekMap" aria-label="Выбери место на фото"></canvas><span>Нажми на фото, чтобы выбрать другой фрагмент</span></div>
+    </div>
+    <div class="inspect-bar cp-foot">
+      <button type="button" class="btn btn-outlined btn-sm" id="peekRandom"><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Другое место</button>
+      <button type="button" class="btn btn-tonal btn-sm" id="peekDone"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Закрыть</button>
+    </div>
+  </div>
+
   <div class="inspect" id="inspect" role="dialog" aria-modal="true" aria-label="Просмотр результата в масштабе 100%">
     <div class="inspect-bar">
       <div class="seg" id="inspSeg" role="group" aria-label="Версия">
@@ -820,6 +850,8 @@
   <script src="js/enc.js"></script>
   <script src="js/export.js"></script>
   <script src="js/features.js"></script>
+  <script src="js/setsearch.js"></script>
+  <script src="js/peek.js"></script>
   <script src="js/session.js"></script>
   <script src="js/metadata.js"></script>
   <script src="js/onboarding.js"></script>

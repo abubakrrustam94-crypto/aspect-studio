@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.31.0';
+const APP_VERSION = '2.32.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -104,7 +104,7 @@ let items = [];            // {id,name,file,url,thumb,w,h,focus,zoom,sample,dom}
 let idx = 0;
 let uid = 0;
 let busy = false;
-let cancelFlag = false;
+let cancelFlag = false, pauseFlag = false, pauseT0 = 0;
 let sliderPos = 50;
 let wmLogo = null;         // ImageBitmap | HTMLImageElement
 let lastDims = null;
@@ -193,7 +193,16 @@ function setProgress(done, total, name) {
   $('#progressName').textContent = (name || '') + (e ? (name ? ' · ' : '') + e : '');
 }
 function hideProgress() { progressEl.classList.remove('show'); }
-$('#progressCancel').addEventListener('click', () => { cancelFlag = true; (typeof exPool !== 'undefined' ? exPool : [exWork]).forEach(w => w.cancel()); });
+/* Пауза пакетного сохранения: уже начатые фото дорабатываются, новые не берутся, пока не нажмёшь «Продолжить» */
+function setPause(on) {
+  if (on === pauseFlag) return;
+  pauseFlag = on; const b = $('#progressPause');
+  if (on) { pauseT0 = performance.now(); b.textContent = 'Продолжить'; $('#progressTitle').textContent = 'Пауза'; }
+  else { const d = performance.now() - pauseT0; eta.t0 += d; eta.lastT += d; b.textContent = 'Пауза'; }
+  b.setAttribute('aria-pressed', on);
+}
+$('#progressPause').addEventListener('click', () => setPause(!pauseFlag));
+$('#progressCancel').addEventListener('click', () => { cancelFlag = true; if (pauseFlag) setPause(false); (typeof exPool !== 'undefined' ? exPool : [exWork]).forEach(w => w.cancel()); });
 
 const yieldUI = () => new Promise(r => setTimeout(r, 0));
 

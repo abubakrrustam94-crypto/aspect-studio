@@ -234,3 +234,10 @@ Wildberries — 3:4, от 900×1200; Ozon — 3:4, оптимально 1200×16
 ## Многопоточные нейросети (v2.31)
 
 Service worker добавляет к ответам сайта заголовки `Cross-Origin-Opener-Policy: same-origin` и `Cross-Origin-Embedder-Policy: credentialless`. Страница становится `crossOriginIsolated`, а ONNX Runtime получает `SharedArrayBuffer` и считает в нескольких потоках (замеры на 2 ядрах: MI-GAN ×2,3, SCUNet ×1,7, FFDNet без выигрыша). Число потоков: «Ещё → Скорость нейросетей» (Авто, 1, 2, 4; не больше числа ядер). Без изоляции (первый запуск до установки service worker) движок работает в один поток. WebGPU не используется: его нельзя проверить без видеокарты, а нужный wasm ещё на ~25 МБ. Тест: `node tests/threads.js`.
+
+## Поиск, избранное, «до/после» и пауза (v2.32)
+
+- `js/setsearch.js`: поиск по тексту карточек настроек (скрытые части не учитываются) и закрепление карточек (`localStorage` `aspect-studio-pins`).
+- `js/peek.js`: окно «до/после» на фрагменте. Использует те же `dnRun` и `srRun`, что и сохранение, поэтому картинка совпадает с итоговой.
+- Пауза пакета: `pauseFlag`/`setPause` в `core.js`, проверка в `pooledExport`. Журнал `aspect-studio-batch` пишется после каждого готового файла и проверяется при запуске (`batchCheckLeft`).
+- Тест: `node tests/ui3.js`.

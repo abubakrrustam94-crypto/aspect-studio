@@ -1,13 +1,13 @@
 {
   "name": "aspect-studio",
-  "version": "2.31.0",
+  "version": "2.32.0",
   "private": true,
   "description": "Смена формата фото без обрезки — работает полностью в браузере",
   "scripts": {
     "audit": "node tools/audit.js",
     "test": "node tools/run-tests.js",
     "test:fast": "node tools/run-tests.js --fast",
-    "test:seq": "node tests/run.js && node tests/stress.js && node tests/formats.js && node tests/privacy.js && node tests/watermark.js && node tests/large.js && node tests/whatsnew.js && node tests/a11y.js && node tests/faces.js && node tests/cutout.js && node tests/components.js && node tests/session.js && node tests/speed.js && node tests/quality.js && node tests/meta.js && node tests/cutout2.js && node tests/encode.js && node tests/raw.js && node tests/sr.js && node tests/detect.js && node tests/denoise.js && node tests/erase.js && node tests/icc.js && node tests/opfs.js && node tests/threads.js"
+    "test:seq": "node tests/run.js && node tests/stress.js && node tests/formats.js && node tests/privacy.js && node tests/watermark.js && node tests/large.js && node tests/whatsnew.js && node tests/a11y.js && node tests/faces.js && node tests/cutout.js && node tests/components.js && node tests/session.js && node tests/speed.js && node tests/quality.js && node tests/meta.js && node tests/cutout2.js && node tests/encode.js && node tests/raw.js && node tests/sr.js && node tests/detect.js && node tests/denoise.js && node tests/erase.js && node tests/icc.js && node tests/opfs.js && node tests/threads.js && node tests/ui3.js"
   },
   "devDependencies": {
     "playwright": "^1.48.0",

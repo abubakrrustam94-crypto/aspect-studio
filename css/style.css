@@ -634,3 +634,36 @@ button.info-pill:not(:disabled):hover { background: var(--md-sys-color-surface-c
 .meta-check .ok { color: var(--md-sys-color-on-surface); }
 .meta-check .bad { color: var(--md-sys-color-error); font-weight: 700; }
 .thumb-gps { position: absolute; left: 3px; bottom: 3px; z-index: 2; padding: 1px 5px; border-radius: 6px; font-size: .62rem; font-weight: 800; letter-spacing: .03em; background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); pointer-events: none; }
+
+/* ---------- Поиск по настройкам, избранное ---------- */
+.set-search { position: relative; display: flex; align-items: center; gap: 8px; margin: 10px 0 12px; padding: 0 6px 0 14px; border-radius: var(--shape-full); background: var(--md-sys-color-surface-container); border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 55%, transparent); }
+.set-search:focus-within { border-color: var(--md-sys-color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 25%, transparent); }
+.set-search .ic { width: 1.1em; height: 1.1em; color: var(--md-sys-color-on-surface-variant); flex: none; }
+.set-search input { flex: 1; min-width: 0; padding: 12px 0; border: 0; background: transparent; color: var(--md-sys-color-on-surface); font: inherit; font-size: .95rem; outline: none; }
+.set-search input::-webkit-search-cancel-button { display: none; }
+.set-none { text-align: center; padding: 18px 8px; }
+.card-title .pin-btn { margin-left: auto; width: 34px; height: 34px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--md-sys-color-on-surface-variant); cursor: pointer; }
+.card-title .pin-btn:hover { background: var(--md-sys-color-surface-container-high); }
+.card-title .pin-btn .ic { width: 1.05em; height: 1.05em; fill: none; }
+.card-title .pin-btn[aria-pressed="true"] { color: var(--md-sys-color-primary); }
+.card-title .pin-btn[aria-pressed="true"] .ic { fill: currentColor; }
+.col-settings[data-tab="fav"] > .card.pinned:not([hidden]) { display: block !important; }
+.col-settings.searching > .card[data-tab] { display: none !important; }
+.col-settings.searching > .card[data-tab].match:not([hidden]) { display: block !important; }
+
+/* ---------- «До/после» на фрагменте ---------- */
+body.peek-open .progress-sheet { z-index: 260; }
+.peek-body { flex: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 16px 16px; }
+.peek-view { position: relative; width: min(100%, 560px); aspect-ratio: 1; background: #111; border-radius: 12px; overflow: hidden; touch-action: none; cursor: ew-resize; user-select: none; }
+.peek-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.peek-view #peekAfter { clip-path: inset(0 0 0 var(--p)); }
+.peek-line { position: absolute; top: 0; bottom: 0; left: var(--p); width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.45); pointer-events: none; }
+.peek-tag { position: absolute; top: 10px; padding: 3px 9px; border-radius: 12px; background: rgba(0,0,0,.6); color: #fff; font-size: .78rem; font-weight: 600; pointer-events: none; }
+.peek-tag.l { left: 10px; } .peek-tag.r { right: 10px; }
+#peekSlider { width: min(100%, 560px); }
+.peek-map { display: flex; align-items: center; gap: 12px; width: min(100%, 560px); color: #bbb; font-size: .82rem; }
+.peek-map canvas { width: 120px; max-width: 40%; height: auto; border-radius: 8px; cursor: crosshair; background: #111; touch-action: none; flex: none; }
+#peek .cp-foot { grid-template-columns: 1fr 1fr; }
+#progressPause[hidden] { display: none; }
+#dnPeek, #srPeek { margin-top: 10px; }
+#dnPeek[hidden], #srPeek[hidden], .set-search [hidden], #setNone[hidden] { display: none !important; }

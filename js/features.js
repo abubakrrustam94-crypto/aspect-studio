@@ -100,7 +100,7 @@ function restoreFocus(el) {
 }
 addEventListener('keydown', e => {
   if (e.key !== 'Tab') return;
-  const dlg = [cpEl, inspEl, $('#review'), $('#maskEd'), $('#erEd')].find(el => el && el.classList.contains('show'));
+  const dlg = [cpEl, inspEl, $('#review'), $('#maskEd'), $('#erEd'), $('#peek')].find(el => el && el.classList.contains('show'));
   if (!dlg) return;
   const f = [...dlg.querySelectorAll('button, [href], input, select, [tabindex]:not([tabindex="-1"])')].filter(n => !n.disabled && n.offsetParent !== null);
   if (!f.length) { e.preventDefault(); return; }
@@ -408,7 +408,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     b.addEventListener('click', () => setTab(b.dataset.tab));
     b.addEventListener('keydown', e => {
       const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-      if (d) { e.preventDefault(); setTab(tabs[(i + d + tabs.length) % tabs.length].dataset.tab, true); }
+      if (d) { e.preventDefault(); const vis = tabs.filter(x => !x.hidden); setTab(vis[(vis.indexOf(b) + d + vis.length) % vis.length].dataset.tab, true); }
     });
   });
   let t = 'frame'; try { t = localStorage.getItem(KEY) || 'frame'; } catch (e) {}

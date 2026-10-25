@@ -9,3 +9,4 @@ syncUI();
 applyView();
 applyPin();
 updateChrome();
+batchCheckLeft();

@@ -70,3 +70,5 @@ jobs:
         run: node tests/opfs.js
       - name: Многопоточные нейросети (блок Q2)
         run: node tests/threads.js
+      - name: Поиск, избранное, до/после, пауза (блок Q3)
+        run: node tests/ui3.js

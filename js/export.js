@@ -404,10 +404,25 @@ function exportConcurrency(list) {
   if (big > MAX_AREA * 0.45) n = 1;          // большие кадры: две копии в памяти не нужны
   return Math.min(n, list.length);
 }
+/* Журнал пакета: если вкладку убьёт система, при следующем запуске сайт скажет, на чём всё остановилось */
+const BATCH_KEY = 'aspect-studio-batch';
+let batchInfo = null;
+function batchBegin(total, mode) { batchInfo = { t: Date.now(), total, done: 0, mode }; batchWrite(); }
+function batchStep(done) { if (batchInfo) { batchInfo.done = done; batchWrite(); } }
+function batchWrite() { try { localStorage.setItem(BATCH_KEY, JSON.stringify(batchInfo)); } catch (e) {} }
+function batchEnd() { batchInfo = null; try { localStorage.removeItem(BATCH_KEY); } catch (e) {} }
+function batchCheckLeft() {
+  let b = null; try { b = JSON.parse(localStorage.getItem(BATCH_KEY) || 'null'); localStorage.removeItem(BATCH_KEY); } catch (e) {}
+  if (!b || !b.total || batchInfo) return;
+  const tail = b.mode === 'folder' ? `Готовые файлы (${b.done}) остались в выбранной папке, повтори сохранение для остальных.` : 'Архив собирался в памяти и не сохранился: повтори сохранение. Чтобы готовое не терялось при сбое, включи «Сохранять в папку».';
+  setTimeout(() => toast(`Прошлое пакетное сохранение прервалось на ${b.done} из ${b.total} (система закрыла вкладку?). ${tail}`, true, { ms: 14000 }), 1500);
+}
 async function pooledExport(list, conc, consume) {
   const works = [exWork]; while (works.length < conc) works.push(new Work());
   exPool.splice(0, exPool.length, ...works);
   const free = works.slice(), q = []; let next = 0;
+  const pb = $('#progressPause'); pb.hidden = false; pauseFlag = false; pb.textContent = 'Пауза'; pb.setAttribute('aria-pressed', 'false');
+  const waitPause = async () => { while (pauseFlag && !cancelFlag) await sleep(150); };
   const produce = async (item, w) => {
     let bmp; try { bmp = await loadBitmap(item); return await exportBlob(item, bmp, undefined, w); } finally { closeBmp(bmp); }
   };
@@ -422,9 +437,11 @@ async function pooledExport(list, conc, consume) {
     while (q.length) {
       const { item, p } = q.shift(), res = await p;
       if (await consume(item, res.r, res.e) || cancelFlag) break;
+      if (pauseFlag) { await waitPause(); }
       fill();
     }
   } finally {
+    pb.hidden = true; if (pauseFlag) { pauseFlag = false; } batchEnd();
     exPool.forEach(w => w.cancel());          // остановить то, что ещё считается, и дождаться
     for (const x of q) await x.p;
     works.slice(1).forEach(w => w.cancel());
@@ -438,14 +455,14 @@ async function exportToFolder() {
   busy = true; cancelFlag = false; setToolbarBusy(true); exporting = true; $('.layout').classList.add('locked');
   items.forEach(i => { i.status = ''; });
   let ok = 0, unmet = 0, diskFull = false; const failed = [];
-  showProgress('Сохранение в папку…');
+  showProgress('Сохранение в папку…'); batchBegin(total, 'folder');
   try {
     let done = 0;
     await pooledExport(list, exportConcurrency(list), async (item, r, e) => {
       setProgress(done, total, item.name); await yieldUI();
       try {
         if (e) throw e;
-        await writeToFolder(r.blob, r.name); ok++; item.status = 'ok'; if (r.fit && !r.fit.met) unmet++;
+        await writeToFolder(r.blob, r.name); ok++; batchStep(ok); item.status = 'ok'; if (r.fit && !r.fit.met) unmet++;
       } catch (err) {
         if (err && err.name === 'AbortError') return true;
         console.error(err); failed.push(item.name); item.status = 'bad';
@@ -487,7 +504,7 @@ async function exportAll() {
     saveBlob(await z.finish(), name);
     if (z.disk) setTimeout(() => z.remove(), 10 * 60 * 1000);   // файл нужен браузеру, пока идёт скачивание
   };
-  showProgress('Обработка…');
+  showProgress('Обработка…'); batchBegin(total, 'zip');
   try {
     let done = 0;
     await pooledExport(list, exportConcurrency(list), async (item, r, e) => {
@@ -502,7 +519,7 @@ async function exportAll() {
         if (zip.count && zip.offset + data.length > (zip.disk ? ZIP_PART_DISK : ZIP_PART)) {   // часть заполнена — отдаём и освобождаем память
           await flush(false); zip = await newZip(useDisk); await sleep(400);
         }
-        await zip.add(name, data); ok++; item.status = 'ok';
+        await zip.add(name, data); ok++; batchStep(ok); item.status = 'ok';
         if (r.fit && !r.fit.met) unmet++;
       } catch (err) {
         if (err && err.name === 'AbortError') return true;
