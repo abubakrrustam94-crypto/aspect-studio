@@ -19,7 +19,7 @@ function ratioToken(c) {
 }
 const groupKey = c => c.sizeMode === 'fixed' ? `${c.outW}x${c.outH}` : `${c.ratioW}:${c.ratioH}`;
 function makeName(item, w, h, ext) {
-  const total = items.length, i0 = items.indexOf(item), pos = Math.max(0, i0) + 1, start = Number.isFinite(+S.nameStart) ? Math.max(0, Math.floor(+S.nameStart)) : 1;
+  const total = items.length, i0 = items.indexOf(item._o || item), pos = Math.max(0, i0) + 1, start = Number.isFinite(+S.nameStart) ? Math.max(0, Math.floor(+S.nameStart)) : 1;
   const pad = Math.max(2, String(total + start - 1).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
   const c = cfgFor(item), key = groupKey(c);
   const k = 1 + items.slice(0, Math.max(0, i0)).filter(x => groupKey(cfgFor(x)) === key).length;
@@ -417,6 +417,18 @@ function batchCheckLeft() {
   const tail = b.mode === 'folder' ? `Готовые файлы (${b.done}) остались в выбранной папке, повтори сохранение для остальных.` : 'Архив собирался в памяти и не сохранился: повтори сохранение. Чтобы готовое не терялось при сбое, включи «Сохранять в папку».';
   setTimeout(() => toast(`Прошлое пакетное сохранение прервалось на ${b.done} из ${b.total} (система закрыла вкладку?). ${tail}`, true, { ms: 14000 }), 1500);
 }
+/* Набор размеров: на каждое фото — по лёгкой копии с другим размером (общие файл и кэши) */
+function bundleExpand(list) {
+  const b = BUNDLES.find(x => x.id === S.bundle); if (!b) return list;
+  const out = [];
+  for (const it of list) for (const id of b.ids) {
+    const p = PRESETS.find(x => x.id === id); if (!p) continue;
+    const ov = { ...(it.ov || {}), sizeMode: 'fixed', presetId: p.id, outW: p.w, outH: p.h };      // Proxy: чтение и запись идут в само фото (маска, кэши общие), кроме настроек размера
+    out.push(new Proxy(it, { get: (t, k) => k === 'ov' ? ov : k === '_o' ? it : t[k], set: (t, k, val) => { if (k !== 'ov') t[k] = val; return true; } }));
+  }
+  return out;
+}
+const setStatus = (item, s) => { const o = item._o || item; if (s === 'bad' || o.status !== 'bad') o.status = s; };
 async function pooledExport(list, conc, consume) {
   const works = [exWork]; while (works.length < conc) works.push(new Work());
   exPool.splice(0, exPool.length, ...works);
@@ -450,7 +462,7 @@ async function pooledExport(list, conc, consume) {
 }
 
 async function exportToFolder() {
-  const list = items.filter(i => !i.skip), total = list.length;
+  const list = bundleExpand(items.filter(i => !i.skip)), total = list.length;
   if (!total) { toast('Отметь хотя бы одно фото', true); return; }
   busy = true; cancelFlag = false; setToolbarBusy(true); exporting = true; $('.layout').classList.add('locked');
   items.forEach(i => { i.status = ''; });
@@ -462,10 +474,10 @@ async function exportToFolder() {
       setProgress(done, total, item.name); await yieldUI();
       try {
         if (e) throw e;
-        await writeToFolder(r.blob, r.name); ok++; batchStep(ok); item.status = 'ok'; if (r.fit && !r.fit.met) unmet++;
+        await writeToFolder(r.blob, r.name); ok++; batchStep(ok); setStatus(item, 'ok'); if (r.fit && !r.fit.met) unmet++;
       } catch (err) {
         if (err && err.name === 'AbortError') return true;
-        console.error(err); failed.push(item.name); item.status = 'bad';
+        console.error(err); failed.push(item.name); setStatus(item, 'bad');
         if (err && err.name === 'QuotaExceededError') { diskFull = true; return true; }
         if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) { failed.push('(нет доступа)'); return true; }
       }
@@ -490,7 +502,7 @@ async function exportAll() {
   try { useFolder = await ensureFolder(); } catch (e) { if (e && e.name !== 'AbortError') console.error(e); return; }
   if (useFolder) return exportToFolder();
   busy = true; cancelFlag = false; setToolbarBusy(true);
-  const list = items.filter(i => !i.skip), total = list.length, used = new Set(), failed = [];
+  const list = bundleExpand(items.filter(i => !i.skip)), total = list.length, used = new Set(), failed = [];
   if (!total) { busy = false; setToolbarBusy(false); toast('Отметь хотя бы одно фото для ZIP', true); return; }
   exporting = true; $('.layout').classList.add('locked');
   items.forEach(i => { i.status = ''; });
@@ -519,11 +531,11 @@ async function exportAll() {
         if (zip.count && zip.offset + data.length > (zip.disk ? ZIP_PART_DISK : ZIP_PART)) {   // часть заполнена — отдаём и освобождаем память
           await flush(false); zip = await newZip(useDisk); await sleep(400);
         }
-        await zip.add(name, data); ok++; batchStep(ok); item.status = 'ok';
+        await zip.add(name, data); ok++; batchStep(ok); setStatus(item, 'ok');
         if (r.fit && !r.fit.met) unmet++;
       } catch (err) {
         if (err && err.name === 'AbortError') return true;
-        console.error(err); failed.push(item.name); item.status = 'bad';
+        console.error(err); failed.push(item.name); setStatus(item, 'bad');
         if (err && err.name === 'QuotaExceededError') { diskFull = true; return true; }
         if (err instanceof RangeError || /memory|alloc/i.test(String(err && err.message))) { failed.push('(мало памяти)'); return true; }
       }

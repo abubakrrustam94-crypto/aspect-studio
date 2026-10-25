@@ -72,3 +72,5 @@ jobs:
         run: node tests/threads.js
       - name: Поиск, избранное, до/после, пауза (блок Q3)
         run: node tests/ui3.js
+      - name: Наборы размеров и выбор объекта (блок Q4)
+        run: node tests/q4.js

@@ -11,6 +11,8 @@ function buildChips() {
     b.addEventListener('click', () => { const t = tgt(); t.ratioW = w; t.ratioH = h; afterSet(); });
     rc.appendChild(b);
   });
+  const bc = $('#bundleChips');
+  BUNDLES.forEach(bd => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.val = bd.id; b.innerHTML = `${bd.name}<small>${bd.ids.length} файла на фото</small>`; bc.appendChild(b); });
   const pc = $('#presetChips');
   let lastG = null;
   PRESETS.forEach(p => {
@@ -109,6 +111,7 @@ function syncUI() {
   { const sn = $('#srNote'); if (sn) sn.textContent = E.srModel === 'off' ? 'Нейросеть «дорисовывает» детали при увеличении: заметно лучше обычного растягивания. Нужен компонент (вкладка «Компоненты»). Считается при сохранении и в «Проверить на 100%», в предпросмотре её нет.' : (srEstimateText(it0, E) + ' Работает, когда итоговый кадр больше исходного хотя бы в 1,2 раза. После неё резкость лучше снизить.'); }
   { const nn = $('#nnNote'); if (nn) nn.textContent = ORT_ISO() ? `Многопоточный режим включён: сейчас ${ortThreads()} ${ortThreads() === 1 ? 'поток' : 'потока'} из ${navigator.hardwareConcurrency || '?'} ядер. Ускоряет «Убрать лишнее», шумоподавление и увеличение примерно в 1,7–2,3 раза. Если телефон греется или тормозит, поставь 1 или 2.` : 'Многопоточный режим пока выключен: он включается после того, как сайт установит обновление и страница будет открыта заново (закрой вкладку и открой снова). Без него нейросети считают в один поток.'; }
   { const dn = $('#dnNote'); if (dn) dn.textContent = E.dnModel === 'off' ? 'Нейросеть убирает шум и зерно, не стирая детали, как это делает обычный бегунок. Нужен компонент (вкладка «Компоненты»). Считается при сохранении и в «Проверить на 100%».' : (dnEstimateText(it0, E) + (E.dnModel === 'ffd' ? ' Уровень — сила шума на снимке.' : ' Уровень — доля очищенного кадра в результате.')); }
+  { const bn = $('#bundleNote'), bd = BUNDLES.find(x => x.id === S.bundle); if (bn) bn.textContent = bd ? `Каждое фото сохранится ${bd.ids.length} раза: ${bd.ids.map(i => { const p = PRESETS.find(x => x.id === i); return p ? `${p.name} ${p.w}×${p.h}` : i; }).join(', ')}. Работает при сохранении ZIP и в папку; «Скачать» сохраняет только текущий размер. Остальные настройки (вписывание, фон, формат) общие для всех размеров.` : 'Выбери набор, и ZIP или папка получат каждое фото сразу во всех нужных размерах.'; }
   { const dr = $('#dnLvlRow'); if (dr) dr.hidden = E.dnModel === 'off'; }
   { const a = $('#dnPeek'), b = $('#srPeek'); if (a) a.hidden = E.dnModel === 'off'; if (b) b.hidden = E.srModel === 'off'; }
   updateNameExample();
@@ -220,9 +223,9 @@ function renderThumbs() {
 }
 
 function updateZipLabel() {
-  const n = items.length, k = items.filter(i => !i.skip).length;
+  const n = items.length, k = items.filter(i => !i.skip).length, bd = BUNDLES.find(x => x.id === S.bundle);
   const dest = S.folderOn && FOLDER_OK ? 'В папку' : 'ZIP';
-  $('#zipLabel').textContent = k === n ? `${dest} · ${n}` : `${dest} · ${k} из ${n}`;
+  $('#zipLabel').textContent = (k === n ? `${dest} · ${n}` : `${dest} · ${k} из ${n}`) + (bd ? ` ×${bd.ids.length}` : '');
   $('#btnZip').title = S.folderOn && FOLDER_OK ? 'Сохранить всё в папку (Shift+D)' : 'Скачать всё ZIP (Shift+D)';
   $('#btnZip').disabled = busy || !k;
   const all = $('#selAll'); if (all) all.textContent = k === n ? 'Снять все' : 'Выбрать все';

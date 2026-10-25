@@ -517,6 +517,12 @@
           <p class="note" id="resetNote" hidden>Будут удалены настройки, наборы, акцент и тема. Нажми ещё раз, чтобы подтвердить.</p>
         </section>
 
+        <section class="card" data-tab="export" id="cardBundle">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-frame"/></svg> Несколько размеров сразу</div>
+          <div class="chips" data-group="bundle" id="bundleChips" role="group" aria-label="Набор размеров"><button type="button" class="chip" data-val="off">Выкл</button></div>
+          <p class="note" id="bundleNote"></p>
+        </section>
+
         <section class="card" data-tab="export">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Экспорт</div>
           <div class="seg" data-group="format" role="group" aria-label="Формат файла">
@@ -747,6 +753,7 @@
       <div class="seg" id="erTool" role="group" aria-label="Кисть">
         <button type="button" data-t="paint" class="active">Закрасить</button>
         <button type="button" data-t="erase">Стереть метку</button>
+        <button type="button" data-t="pick" title="Нажми на объект: нейросеть выделит его целиком">Выбрать объект</button>
       </div>
       <label class="me-size"><span>Размер</span><input type="range" id="erSize" min="8" max="120" value="36" aria-label="Размер кисти"></label>
     </div>

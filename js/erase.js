@@ -62,14 +62,52 @@ function erStroke(p, q) {
   for (let i = 0; i <= n; i++) { const r = erDab(p.x + dx * i / n, p.y + dy * i / n, rad); b = [Math.min(b[0], r[0]), Math.min(b[1], r[1]), Math.max(b[2], r[2]), Math.max(b[3], r[3])]; }
   erRepaint(b[0], b[1], b[2], b[3]);
 }
+/* «Выбрать объект»: маска главного объекта (модель удаления фона) режется на отдельные предметы, нажатие выделяет тот, что под пальцем */
+async function erPick(e) {
+  const p = erPos(e), W = er.dw, H = er.dh;
+  if (!compInstalled('cutout')) { compWarn(['cutout'], 'Выбор объекта'); return; }
+  if (!er.auto) {
+    if (er.picking) return; er.picking = true; toast('Ищу объекты на фото…', false, { ms: 4000 });
+    try {
+      const m = await computeMask(er.bmp, 'fast'), a = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++) { const sy = Math.min(m.h - 1, (y * m.h / H) | 0); for (let x = 0; x < W; x++) a[y * W + x] = m.data[sy * m.w + Math.min(m.w - 1, (x * m.w / W) | 0)] > 127 ? 1 : 0; }
+      er.auto = a; er.autoCover = m.cover;
+    } catch (err) { console.warn('erPick', err); toast('Не удалось найти объекты. Закрась кистью.', true); return; }
+    finally { er.picking = false; }
+    if (!er.open) return;
+  }
+  const a = er.auto, R = Math.round(Math.max(14, Math.min(W, H) * 0.03)), px = Math.round(p.x), py = Math.round(p.y);
+  let sx = -1, sy = -1, best = 1e9;                                      // ближайшая точка объекта в радиусе R
+  for (let y = Math.max(0, py - R); y <= Math.min(H - 1, py + R); y++) for (let x = Math.max(0, px - R); x <= Math.min(W - 1, px + R); x++) if (a[y * W + x]) { const d = (x - px) ** 2 + (y - py) ** 2; if (d < best) { best = d; sx = x; sy = y; } }
+  if (sx < 0) { toast('Тут объект не найден. Закрась нужное кистью.', false, { ms: 4000 }); return; }
+  const seen = new Uint8Array(W * H), st = [sy * W + sx], blob = []; seen[st[0]] = 1;
+  while (st.length) {
+    const i = st.pop(); blob.push(i); const x = i % W, y = (i / W) | 0;
+    if (x > 0 && a[i - 1] && !seen[i - 1]) { seen[i - 1] = 1; st.push(i - 1); }
+    if (x < W - 1 && a[i + 1] && !seen[i + 1]) { seen[i + 1] = 1; st.push(i + 1); }
+    if (y > 0 && a[i - W] && !seen[i - W]) { seen[i - W] = 1; st.push(i - W); }
+    if (y < H - 1 && a[i + W] && !seen[i + W]) { seen[i + W] = 1; st.push(i + W); }
+  }
+  er.strokes.push(er.mask.slice()); if (er.strokes.length > 20) er.strokes.shift();
+  const g = new Uint8Array(W * H); blob.forEach(i => { g[i] = 1; }); erGrow(g, W, H, Math.max(2, Math.round(Math.max(W, H) / 400)));
+  for (let i = 0; i < g.length; i++) if (g[i]) er.mask[i] = 255;
+  erRepaint(); erInfo();
+}
+/* Расширить область на r пикселей (чтобы закрасить и каёмку по краю объекта) */
+function erGrow(m, W, H, r) {
+  const t = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) { let last = -1e9; for (let x = 0; x < W; x++) { if (m[y * W + x]) last = x; if (x - last <= r) t[y * W + x] = 1; } last = 1e9; for (let x = W - 1; x >= 0; x--) { if (m[y * W + x]) last = x; if (last - x <= r) t[y * W + x] = 1; } }
+  for (let x = 0; x < W; x++) { let last = -1e9; for (let y = 0; y < H; y++) { if (t[y * W + x]) last = y; if (y - last <= r) m[y * W + x] = 1; } last = 1e9; for (let y = H - 1; y >= 0; y--) { if (t[y * W + x]) last = y; if (last - y <= r) m[y * W + x] = 1; } }
+}
 erCv.addEventListener('pointerdown', e => {
   if (!er.open) return; e.preventDefault();
+  if (er.tool === 'pick') { erPick(e); return; }
   er.strokes.push(er.mask.slice()); if (er.strokes.length > 20) er.strokes.shift();
   const p = erPos(e); er.drawing = p; try { erCv.setPointerCapture(e.pointerId); } catch (_) {}
   erStroke(p, p);
 });
 erCv.addEventListener('pointermove', e => {
-  const br = $('#erBrush'), r = erCv.getBoundingClientRect(); br.style.display = 'block';
+  const br = $('#erBrush'), r = erCv.getBoundingClientRect(); br.style.display = er.tool === 'pick' ? 'none' : 'block';
   br.style.width = br.style.height = er.size + 'px'; br.style.left = (e.clientX - r.left) + 'px'; br.style.top = (e.clientY - r.top) + 'px';
   if (!er.drawing) return; const p = erPos(e); erStroke(er.drawing, p); er.drawing = p;
 });
@@ -85,7 +123,7 @@ function erHide() { er.open = false; erEl.classList.remove('show'); restoreFocus
 function erShow() { er.open = true; rememberFocus(erEl); erEl.classList.add('show'); erFit(); $('#erDone').focus(); }
 function erFree() {
   if (er.bmp) closeBmp(er.bmp);
-  er.bmp = er.photo = er.disp = er.mask = null; er.strokes = []; er.item = null; erCv.width = erCv.height = 0; er.dw = er.dh = 0;
+  er.bmp = er.photo = er.disp = er.mask = er.auto = null; er.picking = false; er.strokes = []; er.item = null; erCv.width = erCv.height = 0; er.dw = er.dh = 0;
 }
 function erCancel() { if (!er.open) return; erHide(); erFree(); }
 $('#erCancel').addEventListener('click', erCancel);
@@ -100,7 +138,7 @@ async function openErase() {
     er.bmp = bmp; er.item = item; er.W = w; er.H = h; er.dw = Math.max(1, Math.round(w * k)); er.dh = Math.max(1, Math.round(h * k));
     const c = mkCanvas(er.dw, er.dh), g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, er.dw, er.dh);
     er.photo = g.getImageData(0, 0, er.dw, er.dh); c.width = c.height = 0;
-    er.mask = new Uint8Array(er.dw * er.dh); er.strokes = [];
+    er.mask = new Uint8Array(er.dw * er.dh); er.strokes = []; er.auto = null;
     erCv.width = er.dw; erCv.height = er.dh; er.ctx = erCv.getContext('2d'); er.disp = er.ctx.createImageData(er.dw, er.dh);
     erRepaint(); erInfo(); erShow();
   } catch (e) { console.error(e); erFree(); toast(friendlyError(e), true); }
@@ -144,6 +182,27 @@ async function erPatch(wc, wctx, cs, comp) {
   for (let y = cy0; y < cy1; y++) er.mask.fill(0, y * er.dw + cx0, y * er.dw + cx1);          // всё, что было внутри квадрата, уже закрашено
   return { fits: Math.max(bw, bh) * 1.05 <= m };
 }
+/* Большая область: окно нейросети было бы растянуто на пол-фото и залив вышел бы мыльным. Режем область на клетки (~30% короткой стороны), каждая считается в своём окне, следующая видит уже готовое */
+async function erPatchBig(wc, wctx, cs, comp) {
+  const kd = er.dw / er.W, m = Math.min(er.W, er.H), W = er.dw, cell = Math.max(48, Math.round(m * 0.3 * kd));
+  const bw = comp.x1 - comp.x0, bh = comp.y1 - comp.y0;
+  if (Math.max(bw, bh) <= m * 0.4 * kd) return erPatch(wc, wctx, cs, comp);
+  const full = er.mask, nx = Math.ceil(bw / cell), ny = Math.ceil(bh / cell); let fits = true;
+  try {
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      if (cancelFlag) throw erAbort();
+      const x0 = comp.x0 + i * cell, y0 = comp.y0 + j * cell, x1 = Math.min(comp.x1, x0 + cell), y1 = Math.min(comp.y1, y0 + cell);
+      const sub = new Uint8Array(full.length); let any = 0;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const k = y * W + x; if (full[k] > 127) { sub[k] = full[k]; any++; } }
+      if (!any) continue;
+      er.mask = sub;
+      const r = await erPatch(wc, wctx, cs, { x0, y0, x1, y1 }); if (!r.fits) fits = false;
+      for (let y = y0; y < y1; y++) full.fill(0, y * W + x0, y * W + x1);
+      await yieldUI();
+    }
+  } finally { er.mask = full; }
+  return { fits };
+}
 async function erApply() {
   if (!er.open) return; const item = er.item, comps = erComponents(); if (!comps.length) return;
   erHide(); busy = true; setToolbarBusy(true); cancelFlag = false; showProgress('Убираю лишнее…');
@@ -155,7 +214,7 @@ async function erApply() {
     for (let i = 0; i < total; i++) {
       if (cancelFlag) throw erAbort();
       $('#progressName').textContent = `${item.name} · область ${i + 1} из ${total}`; progressFill.style.width = (i / total * 100) + '%';
-      const r = await erPatch(wc, wctx, cs, comps[i]); if (!r.fits) big = true;
+      const r = await erPatchBig(wc, wctx, cs, comps[i]); if (!r.fits) big = true;
       await yieldUI();
     }
     const blob = await new Promise(r => wc.toBlob(r, 'image/png'));

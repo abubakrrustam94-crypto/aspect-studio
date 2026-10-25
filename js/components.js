@@ -1,4 +1,6 @@
 'use strict';
+/* Привязка к элементу, которого может не быть (старый index.html рядом с новым скриптом): без исключения, вкладка «Компоненты» остаётся рабочей */
+const compOn = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
 /* Aspect Studio — компоненты: тяжёлые модули (декодеры форматов, нейросети) скачиваются только по кнопке на вкладке «Компоненты».
    Файлы лежат в файловой системе сайта (OPFS, папка aspect-components), а не в Cache Storage; service worker отдаёт их оттуда, поэтому они работают без сети.
    Где OPFS недоступна, используется Cache Storage (кэш aspect-studio-components); скачанное раньше в кэш продолжает работать и переносится кнопкой.
@@ -95,7 +97,7 @@ async function compRefresh() {
 }
 const compReady = compRefresh().then(() => compBgResume()).catch(() => {});
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !Object.keys(compBusy).length) compRefresh(); });   // Android мог очистить память, пока вкладка была свёрнута
-document.getElementById('compPersistBtn').addEventListener('click', async () => {
+compOn('compPersistBtn', 'click', async () => {
   let ok = false; try { ok = !!(navigator.storage && navigator.storage.persist && await navigator.storage.persist()); } catch (e) {}
   compPersisted = ok; renderComponents(); toast(ok ? 'Готово: браузер не будет чистить компоненты сам' : 'Браузер не разрешил. Добавь сайт на главный экран (установи как приложение) и попробуй снова', !ok, { ms: 7000 });
 });
@@ -320,15 +322,15 @@ async function compDownloadUI(id) {
 function compInstalledHook(id) {                                // после скачивания: перезапустить то, что ждало компонент
   if (compChain(id).includes('faces') && typeof items !== 'undefined' && S.faceAI) { items.forEach(i => { if (i.an && i.an.faceMissing) i.an = undefined; }); if (typeof renderAnalysis === 'function') renderAnalysis(); }
 }
-document.getElementById('compBg').addEventListener('change', e => { try { localStorage.setItem(COMP_BG_KEY, e.target.checked ? '1' : '0'); } catch (_) {} toast(e.target.checked ? 'Скачивание пойдёт в фоне' : 'Скачивание пойдёт только пока открыта страница'); });
-document.getElementById('compMigrate').addEventListener('click', async e => {
+compOn('compBg', 'change', e => { try { localStorage.setItem(COMP_BG_KEY, e.target.checked ? '1' : '0'); } catch (_) {} toast(e.target.checked ? 'Скачивание пойдёт в фоне' : 'Скачивание пойдёт только пока открыта страница'); });
+compOn('compMigrate', 'click', async e => {
   e.target.disabled = true; try { const n = await compMigrate(); toast(n ? `Перенесено компонентов: ${n}` : 'Переносить нечего'); } catch (err) { toast('Не удалось перенести: ' + err.message, true); } finally { e.target.disabled = false; renderComponents(); }
 });
-document.getElementById('compAll').addEventListener('click', async () => {
+compOn('compAll', 'click', async () => {
   for (const c of COMPONENTS) if (!compFiles[c.id]) { try { await compInstall(c.id, (v, cur) => compSetProgress(c.id, v)); } catch (e) { toast(compCancelled(e) ? 'Скачивание отменено' : `Не удалось скачать «${c.name}»`, !compCancelled(e), { ms: 7000 }); return; } }
   toast('Все компоненты скачаны');
 });
-document.getElementById('compNone').addEventListener('click', async () => {
+compOn('compNone', 'click', async () => {
   for (let pass = 0; pass < 4; pass++) for (const c of COMPONENTS) if (compFiles[c.id] || compBad[c.id]) { try { await compRemove(c.id); } catch (e) {} }   // сначала те, от кого ничего не зависит
   toast('Компоненты удалены');
 });

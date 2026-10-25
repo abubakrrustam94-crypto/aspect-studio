@@ -25,7 +25,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.32.0';
+const APP_VERSION = '2.33.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -62,7 +62,19 @@ const PRESETS = [
   { g: 'Экран', id: '4k', name: '4K UHD', note: '16:9', w: 3840, h: 2160 },
 ];
 
+/* Наборы размеров: одно фото сохраняется сразу в несколько форматов (в ZIP или в папку) */
+const BUNDLES = [
+  { id: 'insta',  name: 'Instagram: пост + 4:5 + Stories', ids: ['igpost', 'ig45', 'story'] },
+  { id: 'video',  name: 'YouTube: ролик + Shorts', ids: ['yt', 'shorts'] },
+  { id: 'social', name: 'Основные соцсети', ids: ['igpost', 'story', 'x', 'fb', 'vk', 'tgava'] },
+  { id: 'mp',     name: 'Маркетплейсы: WB + Ozon + Маркет', ids: ['wb', 'ozon', 'ym'] },
+  { id: 'avito',  name: 'Авито + Ozon Fresh', ids: ['avito', 'ozf'] },
+  { id: 'print',  name: 'Печать: 10×15 + 13×18 + A5', ids: ['p10x15', 'p13x18', 'pa5'] },
+  { id: 'docs',   name: 'Документы: 3×4 + 35×45', ids: ['pdoc', 'p35x45'] }
+];
+
 const DEFAULTS = {
+  bundle: 'off',
   sizeMode: 'auto', ratioW: 16, ratioH: 9,
   presetId: 'yt', outW: 1920, outH: 1080,
   fit: 'fit', align: 'center',
