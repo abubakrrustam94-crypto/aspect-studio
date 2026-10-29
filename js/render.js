@@ -168,12 +168,30 @@ function drawBlurBg(ctx, bmp, iw, ih, cw, ch, c = S) {
   if (c.dim > 0) { ctx.fillStyle = `rgba(0,0,0,${c.dim / 100})`; ctx.fillRect(0, 0, cw, ch); }
 }
 
+/* Зеркальные края: фото отражается за свои границы, поверх лёгкое размытие и затемнение (стык с фото не виден) */
+function drawMirrorBg(ctx, bmp, cw, ch, L, c) {
+  const cs = ctxCS(ctx), t = mkCanvas(cw, ch), tx = t.getContext('2d', { colorSpace: cs }); tx.imageSmoothingQuality = 'high';
+  const nl = Math.ceil(Math.max(0, L.dx) / L.dw), nr = Math.ceil(Math.max(0, cw - L.dx - L.dw) / L.dw), nt = Math.ceil(Math.max(0, L.dy) / L.dh), nb = Math.ceil(Math.max(0, ch - L.dy - L.dh) / L.dh);
+  for (let iy = -nt; iy <= nb; iy++) for (let ix = -nl; ix <= nr; ix++) {
+    const fx = Math.abs(ix) % 2, fy = Math.abs(iy) % 2, x = L.dx + ix * L.dw, y = L.dy + iy * L.dh;
+    tx.save(); tx.translate(fx ? x + L.dw : x, fy ? y + L.dh : y); tx.scale(fx ? -1 : 1, fy ? -1 : 1); tx.drawImage(bmp, 0, 0, L.dw, L.dh); tx.restore();
+  }
+  const r = Math.max(0, c.blur / 100 * Math.min(cw, ch) * 0.05);
+  try { if (r >= 1) ctx.filter = `blur(${r}px)`; } catch (e) {}
+  const m = ctx.filter && ctx.filter !== 'none' ? Math.ceil(r * 2) : 0;
+  ctx.drawImage(t, -m, -m, cw + 2 * m, ch + 2 * m);
+  try { ctx.filter = 'none'; } catch (e) {}
+  t.width = t.height = 0;
+  if (c.dim > 0) { ctx.fillStyle = `rgba(0,0,0,${c.dim / 100})`; ctx.fillRect(0, 0, cw, ch); }
+}
+
 function paintBackground(ctx, bmp, item, cw, ch, L, opaque, c = S) {
   const mode = c.bg;
   if (mode === 'transparent') {
     if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } else ctx.clearRect(0, 0, cw, ch);
   } else if (mode === 'color') { ctx.fillStyle = c.color; ctx.fillRect(0, 0, cw, ch); }
   else if (mode === 'dominant') { ctx.fillStyle = dominantColor(item, bmp); ctx.fillRect(0, 0, cw, ch); }
+  else if (mode === 'mirror' || mode === 'inpaint') drawMirrorBg(ctx, bmp, cw, ch, L, c);
   else if (mode === 'gradient') fillGradient(ctx, cw, ch, c.gradAngle, c.grad1, c.grad2);
   else if (mode === 'edge') {
     const sample = getSample(item, bmp);
@@ -485,7 +503,7 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     ctx.drawImage(tmp, 0, 0); tmp.width = tmp.height = 0;
   } else {
     if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
-    else paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
+    else if (!(c.bg === 'inpaint' && !cap && await ipBackground(ctx, bmp, item, cw, ch, L, c))) paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
   }
   drawWatermark(ctx, cw, ch);

@@ -76,3 +76,5 @@ jobs:
         run: node tests/q4.js
       - name: Тема, свайпы, галерея, защита привязок (блок Q5)
         run: node tests/q5.js
+      - name: Края фона и вставка (блок R1)
+        run: node tests/r1.js

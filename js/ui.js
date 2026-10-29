@@ -37,6 +37,7 @@ function set(key, val) {
   if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
   if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
+  if (key === 'bg' && val === 'inpaint' && !compInstalled('erase')) { compWarn(['erase'], 'Дорисовать края'); syncUI(); return; }
   if (key === 'nnThreads' && typeof ortKill === 'function') { setTimeout(ortKill, 0); }
   if (key === 'colorSpace' && typeof ICC_OUT !== 'undefined' && ICC_OUT[val] && !compInstalled('icc')) { compWarn(['icc'], 'Цветовые профили'); syncUI(); return; }
   if (key === 'dnModel' && val !== 'off' && DN_MODELS[val] && !compInstalled(DN_MODELS[val].comp)) { compWarn([DN_MODELS[val].comp], 'Нейро-шумоподавление'); syncUI(); return; }
@@ -86,7 +87,7 @@ function syncUI() {
   updateZipLabel();
   $('#cardMargins').hidden = E.fit === 'fill';
   $('#bgFillNote').hidden = E.fit !== 'fill';
-  $$('[data-bgpanel]').forEach(p => { p.hidden = p.dataset.bgpanel !== E.bg; });
+  $$('[data-bgpanel]').forEach(p => { p.hidden = !p.dataset.bgpanel.split(' ').includes(E.bg); });
   $('#cutFields').hidden = !E.cutOn;
   $('#metaCustom').hidden = S.meta !== 'custom';
   $('#cutColorRow').hidden = E.cutBg !== 'color';
@@ -290,3 +291,20 @@ $$('#nameTokens .chip').forEach(b => b.addEventListener('click', () => {
   const pos = a + b.dataset.t.length; inp.focus(); try { inp.setSelectionRange(pos, pos); } catch (e) {}
   set('nameTpl', inp.value);
 }));
+
+/* Кнопка «Вставить из буфера»: на телефоне Ctrl+V нет, а читать буфер можно только по нажатию */
+(function () {
+  const row = $('#pasteRow'), btn = $('#pasteBtn');
+  if (!(navigator.clipboard && navigator.clipboard.read)) return;
+  row.hidden = false;
+  btn.addEventListener('click', async () => {
+    try {
+      const out = [];
+      for (const it of await navigator.clipboard.read()) {
+        const t = it.types.find(x => x.startsWith('image/')); if (!t) continue;
+        const blob = await it.getType(t); out.push(new File([blob], `Из буфера ${out.length + 1}.${t.split('/')[1].replace('jpeg', 'jpg')}`, { type: t }));
+      }
+      if (out.length) addFiles(out); else toast('В буфере нет изображения. Скопируй фото и нажми снова', true);
+    } catch (e) { toast(e && e.name === 'NotAllowedError' ? 'Браузер не дал доступ к буферу. Разреши его в запросе или выбери фото вручную' : 'Не удалось прочитать буфер обмена', true); }
+  });
+})();
