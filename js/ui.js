@@ -243,6 +243,7 @@ function updateChrome() {
   $('#btnZip').hidden = n < 2;
   updateZipLabel();
   $('#btnShare').hidden = !navigator.share;
+  $('#fmtCmpBtn').disabled = !has;
   $('#btnGallery').hidden = n < 2 || !SHARE_FILES;
   countPill.textContent = n ? `${idx + 1} / ${n}` : '';
   $('#navLabel').textContent = `${idx + 1} / ${n}`;

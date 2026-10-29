@@ -675,3 +675,16 @@ body.peek-open .progress-sheet { z-index: 260; }
 
 .paste-row { margin: 8px 0 0; text-align: center; }
 .paste-row[hidden] { display: none; }
+
+/* ---------- Сравнение форматов ---------- */
+#fmtCmp .cp-foot { grid-template-columns: 1fr; }
+.fc-body { flex: 1; overflow: auto; padding: 8px 16px 16px; width: min(100%, 640px); margin: 0 auto; }
+.fc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: #1e1e27; color: #e8e8f0; border: 1px solid transparent; }
+.fc-row.best { border-color: var(--md-sys-color-primary); background: color-mix(in srgb, var(--md-sys-color-primary) 14%, #1e1e27); }
+.fc-row.cur strong::after { content: ' · сейчас'; font-weight: 400; color: #aab; }
+.fc-left { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.fc-meta { font-size: .85rem; color: #c8c8d4; }
+.fc-meta b { color: #fff; }
+.fc-row .btn { flex: none; }
+.fc-note { color: #aab; font-size: .8rem; margin: 14px 2px 0; }

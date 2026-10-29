@@ -78,3 +78,5 @@ jobs:
         run: node tests/q5.js
       - name: Края фона и вставка (блок R1)
         run: node tests/r1.js
+      - name: Сравнение форматов (блок R3)
+        run: node tests/r3.js

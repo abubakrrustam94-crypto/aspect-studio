@@ -541,6 +541,7 @@
             <button type="button" data-val="avif">AVIF</button>
             <button type="button" data-val="jxl">JXL</button>
           </div>
+          <button type="button" class="btn btn-tonal btn-sm" id="fmtCmpBtn" style="margin-top:10px" disabled title="Закодировать это фото во все форматы и сравнить размер и точность"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Сравнить форматы</button>
           <div class="stack" id="encBox" style="margin-top:14px">
             <div id="jpgEngRow" hidden>
               <span class="field-label">Кодер JPG</span>
@@ -779,6 +780,19 @@
     </div>
   </div>
 
+  <div class="cropper" id="fmtCmp" role="dialog" aria-modal="true" aria-label="Сравнение форматов">
+    <div class="inspect-bar cp-top">
+      <strong class="rv-title">Сравнение форматов</strong>
+      <span class="count-pill" id="fmtInfo" aria-live="polite"></span>
+      <button type="button" class="icon-btn" id="fmtClose" aria-label="Закрыть" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div class="fc-body">
+      <ul class="fc-list" id="fmtRows"></ul>
+      <p class="fc-note">Точность показывает, насколько файл близок к исходному кадру (чем больше дБ, тем меньше потерь; выше 40 дБ глазом почти не отличить). «Лучший баланс» — самый лёгкий из форматов, чья точность не хуже лучшей больше чем на 2 дБ. Размер указан без метаданных и цветового профиля.</p>
+    </div>
+    <div class="inspect-bar cp-foot"><button type="button" class="btn btn-tonal btn-sm" id="fmtDone"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg> Закрыть</button></div>
+  </div>
+
   <div class="cropper" id="peek" role="dialog" aria-modal="true" aria-label="До и после на фрагменте">
     <div class="inspect-bar cp-top">
       <strong class="rv-title" id="peekTitle">До и после</strong>
@@ -871,6 +885,7 @@
   <script src="js/setsearch.js"></script>
   <script src="js/peek.js"></script>
   <script src="js/gestures.js"></script>
+  <script src="js/fmtcmp.js"></script>
   <script src="js/session.js"></script>
   <script src="js/metadata.js"></script>
   <script src="js/onboarding.js"></script>
