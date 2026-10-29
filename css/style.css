@@ -110,7 +110,8 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   display: grid; place-items: center; box-shadow: var(--elevation-1);
   transition: all .35s var(--motion-spring);
 }
-.icon-btn:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-radius: 16px; transform: scale(1.06); }
+.icon-btn:hover { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+@media (hover: hover) and (pointer: fine) { .icon-btn:hover { border-radius: 16px; transform: scale(1.06); } }
 .icon-btn:active { transform: scale(.92); }
 
 /* ========== Layout ========== */
@@ -284,7 +285,7 @@ input[type="color"]::-webkit-color-swatch { border: 3px solid var(--md-sys-color
   border-radius: var(--shape-full); display: inline-flex; align-items: center; gap: 8px;
   transition: all .35s var(--motion-spring); box-shadow: var(--elevation-1);
 }
-.btn:active { transform: scale(.94); border-radius: 14px; }
+.btn:active { transform: scale(.94); }
 .btn-tonal { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .btn-outlined { background: transparent; color: var(--md-sys-color-primary); border: 2px solid var(--md-sys-color-outline); box-shadow: none; }
 .btn-outlined:hover { background: color-mix(in srgb, var(--md-sys-color-primary) 12%, transparent); border-color: var(--md-sys-color-primary); }
@@ -294,7 +295,8 @@ input[type="color"]::-webkit-color-swatch { border: 3px solid var(--md-sys-color
 .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .nav-group { display: flex; align-items: center; gap: 6px; font-size: .85rem; font-weight: 600; color: var(--md-sys-color-on-surface-variant); }
 .nav-group button { width: 36px; height: 36px; border: none; border-radius: var(--shape-full); background: var(--md-sys-color-surface-container-high); font-size: 18px; transition: all .3s var(--motion-spring); }
-.nav-group button:hover { background: var(--md-sys-color-primary-container); border-radius: 12px; }
+.nav-group button:hover { background: var(--md-sys-color-primary-container); }
+@media (hover: hover) and (pointer: fine) { .nav-group button:hover { border-radius: 12px; } }
 .nav-group button:disabled { opacity: .35; pointer-events: none; }
 .stage { display: flex; justify-content: center; }
 .frame {
@@ -345,7 +347,7 @@ input[type="color"]::-webkit-color-swatch { border: 3px solid var(--md-sys-color
   transition: all .35s var(--motion-spring); color: var(--md-sys-color-on-surface);
 }
 .tb-btn:hover { background: color-mix(in srgb, var(--md-sys-color-primary) 16%, transparent); }
-.tb-btn:active { transform: scale(.92); border-radius: 14px; }
+.tb-btn:active { transform: scale(.92); }
 .tb-btn.primary { background: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
 .tb-btn.primary:hover { background: var(--md-sys-color-primary); box-shadow: var(--elevation-2); transform: scale(1.04); }
 .tb-btn:disabled { opacity: .4; pointer-events: none; }
@@ -353,7 +355,7 @@ input[type="color"]::-webkit-color-swatch { border: 3px solid var(--md-sys-color
 
 /* ========== Toast & progress ========== */
 .toast {
-  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 80;
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 400;
   transform: translate(-50%, 20px) scale(.9); opacity: 0; pointer-events: none;
   background: var(--md-sys-color-on-surface); color: var(--md-sys-color-surface);
   padding: 12px 20px; border-radius: 16px; font-size: .88rem; font-weight: 600; box-shadow: var(--elevation-3);
@@ -688,3 +690,6 @@ body.peek-open .progress-sheet { z-index: 260; }
 .fc-meta b { color: #fff; }
 .fc-row .btn { flex: none; }
 .fc-note { color: #aab; font-size: .8rem; margin: 14px 2px 0; }
+
+/* Пока идёт обработка, уведомления встают над окном прогресса, а не под него */
+body.progress-on .toast { bottom: calc(86px + env(safe-area-inset-bottom) + var(--prog-h, 110px) + 14px); }

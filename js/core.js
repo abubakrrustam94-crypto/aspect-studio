@@ -27,7 +27,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.36.0';
+const APP_VERSION = '2.36.1';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -207,7 +207,8 @@ function showProgress(title) {
   etaStart();
   $('#progressTitle').textContent = title;
   progressFill.style.width = '0%';
-  progressEl.classList.add('show');
+  progressEl.classList.add('show'); document.body.classList.add('progress-on');
+  document.documentElement.style.setProperty('--prog-h', progressEl.offsetHeight + 'px');
 }
 function setProgress(done, total, name) {
   progressFill.style.width = (total ? (done / total) * 100 : 0) + '%';
@@ -215,7 +216,9 @@ function setProgress(done, total, name) {
   const e = etaText(done, total);
   $('#progressName').textContent = (name || '') + (e ? (name ? ' · ' : '') + e : '');
 }
-function hideProgress() { progressEl.classList.remove('show'); }
+function hideProgress() { progressEl.classList.remove('show'); document.body.classList.remove('progress-on'); }
+/* высота окна прогресса нужна уведомлениям, чтобы встать над ним */
+try { new ResizeObserver(() => document.documentElement.style.setProperty('--prog-h', progressEl.offsetHeight + 'px')).observe(progressEl); } catch (e) {}
 /* Пауза пакетного сохранения: уже начатые фото дорабатываются, новые не берутся, пока не нажмёшь «Продолжить» */
 function setPause(on) {
   if (on === pauseFlag) return;

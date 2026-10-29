@@ -64,9 +64,10 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   await p.click('#btnZip'); await p.waitForFunction(() => document.getElementById('progress').classList.contains('show') && !document.getElementById('progressPause').hidden);
   ok(await p.evaluate(() => !!localStorage.getItem('aspect-studio-batch')), 'во время пакета в журнале есть запись');
   await p.click('#progressPause'); ok(await p.evaluate(() => pauseFlag === true) && (await p.textContent('#progressPause')) === 'Продолжить', 'пауза включена, кнопка стала «Продолжить»');
-  let d3 = -1, d4 = -2; for (let i = 0; i < 8 && d3 !== d4; i++) { d3 = await p.evaluate(() => batchInfo && batchInfo.done); await p.waitForTimeout(3000); d4 = await p.evaluate(() => batchInfo && batchInfo.done); }
-  await p.waitForTimeout(2500); const d5 = await p.evaluate(() => batchInfo && batchInfo.done);
-  ok(d3 === d4 && d4 === d5 && d5 < 5, `на паузе (после доработки начатого фото) новые не берутся: готово ${d5} из 5`);
+  let last = await p.evaluate(() => batchInfo && batchInfo.done), since = Date.now(); const d3 = last;    // ждём, пока счётчик не будет стоять 9 секунд подряд: начатое фото может обрабатываться долго
+  for (let i = 0; i < 80; i++) { await p.waitForTimeout(1500); const v = await p.evaluate(() => batchInfo && batchInfo.done); if (v !== last) { last = v; since = Date.now(); } if (Date.now() - since > 9000) break; }
+  const d4 = last; await p.waitForTimeout(2500); const d5 = await p.evaluate(() => batchInfo && batchInfo.done);
+  ok(d4 === d5 && d5 < 5, `на паузе (после доработки начатого фото) новые не берутся: готово ${d5} из 5 (в момент паузы ${d3}, после доработки ${d4}, ещё через 2,5 с ${d5})`);
   await p.click('#progressPause'); ok(await p.evaluate(() => pauseFlag === false), 'продолжили');
   const f = await dl; ok(/\.zip$/.test(f.suggestedFilename()), 'после паузы пакет дошёл до конца: ' + f.suggestedFilename());
   await p.waitForFunction(() => !busy); ok(await p.evaluate(() => !localStorage.getItem('aspect-studio-batch')) && await p.$eval('#progressPause', e => e.hidden), 'по окончании журнал очищен, кнопка паузы скрыта');
