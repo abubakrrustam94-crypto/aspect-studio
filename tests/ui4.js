@@ -42,6 +42,25 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   // уведомление поверх открытых окон (peek/обрезка)
   await p.evaluate(() => { document.getElementById('cropper').classList.add('show'); toast('Проверка слоя', false, { ms: 20000 }); }); await p.waitForTimeout(600);
   ok(await p.evaluate(() => { document.getElementById('toast').style.pointerEvents = 'auto'; const t = document.getElementById('toast').getBoundingClientRect(), top = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2); return document.getElementById('toast').contains(top); }), 'уведомление видно и над полноэкранными окнами');
+  // ---------- обход ВСЕХ кнопок на телефоне: нажатие и наведение не меняют форму ----------
+  await p.evaluate(async () => { for (const t of document.querySelectorAll('#settingsTabs [role=tab]')) { t.click(); await new Promise(r => setTimeout(r, 20)); } document.querySelector('#settingsTabs [data-tab=frame]').click(); });
+  await p.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
+  const cdp2 = await mob.newCDPSession(p); await cdp2.send('DOM.enable'); await cdp2.send('CSS.enable');
+  const root = await cdp2.send('DOM.getDocument', { depth: 0 });
+  const nodes = (await cdp2.send('DOM.querySelectorAll', { nodeId: root.root.nodeId, selector: 'button, [role=button], [role=tab], .chip, .swatch, #uploadZone, .toast-act' })).nodeIds;
+  const changed = [];
+  for (const nodeId of nodes) {
+    const { object } = await cdp2.send('DOM.resolveNode', { nodeId });
+    const read = async () => (await cdp2.send('Runtime.callFunctionOn', { objectId: object.objectId, functionDeclaration: 'function(){ const s = getComputedStyle(this); return [s.borderTopLeftRadius, s.borderTopRightRadius, s.borderBottomRightRadius, s.borderBottomLeftRadius, (this.id ? "#" + this.id : "") + "." + String(this.className).trim().replace(/\\s+/g, ".") + " " + (this.textContent || "").trim().slice(0, 20)].join("|"); }', returnByValue: true })).result.value;
+    const base = await read();
+    for (const st of [['active'], ['hover'], ['focus', 'active', 'hover']]) {
+      await cdp2.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: st }); await p.waitForTimeout(10);
+      const cur = await read(); await cdp2.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
+      if (cur !== base) changed.push(`${base.split('|')[4]} :${st.join('+')} ${base.split('|').slice(0, 4).join('/')} → ${cur.split('|').slice(0, 4).join('/')}`);
+    }
+  }
+  ok(nodes.length > 150 && changed.length === 0, `проверено элементов ${nodes.length}: форма углов при нажатии и наведении не меняется` + (changed.length ? '\n    ' + changed.slice(0, 8).join('\n    ') : ''));
+  ok(await p.evaluate(() => ['#uploadZone', '#fileInput', 'label', 'a', '.thumb'].every(s => { const e = document.querySelector(s); return !e || getComputedStyle(e).webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'; })), 'серая прямоугольная подсветка касания отключена у всех элементов, не только у button');
   await mob.close();
   // ---------- на компьютере наведение мышью сохраняет «морф» формы ----------
   const desk = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: 'block' });

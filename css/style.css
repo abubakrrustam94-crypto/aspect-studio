@@ -78,7 +78,9 @@ body {
   transition: background .4s var(--motion-emphasized), color .4s var(--motion-emphasized);
 }
 button, input, select { font-family: inherit; font-size: inherit; color: inherit; }
-button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* Серая прямоугольная подсветка касания на Android даёт на секунду «острые углы» у круглых элементов: отключаем для всего (фокус с клавиатуры остаётся) */
+* { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--md-sys-color-primary); outline-offset: 2px; }
 
 .app { max-width: 1240px; margin: 0 auto; padding: 16px 16px 130px; }
@@ -156,14 +158,23 @@ button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .upload-zone.compact { padding: 16px 20px; display: flex; align-items: center; justify-content: center; gap: 12px; text-align: left; }
 .upload-zone.compact .upload-icon { font-size: 28px; margin: 0; }
 .upload-zone.compact .upload-hint { display: none; }
-.upload-zone:hover, .upload-zone.dragover {
+.upload-zone.dragover {
   border-color: var(--md-sys-color-primary);
   border-radius: 28px;
   transform: scale(1.01);
   background: color-mix(in srgb, var(--md-sys-color-primary) 13%, transparent);
 }
+@media (hover: hover) and (pointer: fine) {
+  .upload-zone:hover {
+    border-color: var(--md-sys-color-primary);
+    border-radius: 28px;
+    transform: scale(1.01);
+    background: color-mix(in srgb, var(--md-sys-color-primary) 13%, transparent);
+  }
+}
 .upload-icon { font-size: 50px; margin-bottom: 6px; display: inline-block; transition: transform .4s var(--motion-spring); }
-.upload-zone:hover .upload-icon { transform: translateY(-5px) scale(1.1); }
+.upload-zone.dragover .upload-icon { transform: translateY(-5px) scale(1.1); }
+@media (hover: hover) and (pointer: fine) { .upload-zone:hover .upload-icon { transform: translateY(-5px) scale(1.1); } }
 .upload-title { font-size: 1.1rem; font-weight: 600; }
 .upload-hint { font-size: .85rem; color: var(--md-sys-color-on-surface-variant); }
 .upload-zone input { display: none; }
