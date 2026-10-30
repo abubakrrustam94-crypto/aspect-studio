@@ -506,6 +506,7 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     else if (!(c.bg === 'inpaint' && !cap && await ipBackground(ctx, bmp, item, cw, ch, L, c))) paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
   }
+  applyTone(ctx, cw, ch, c);
   drawWatermark(ctx, cw, ch);
   return { cw, ch, L };
 }

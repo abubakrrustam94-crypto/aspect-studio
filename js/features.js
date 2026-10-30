@@ -217,7 +217,7 @@ const clamp01 = v => Math.max(0, Math.min(1, v));
 const CP_MIN = 0.04;
 
 function cpDraw() {
-  const r = cp.rot % 180, sw = r ? cp.item.oh : cp.item.ow, sh = r ? cp.item.ow : cp.item.oh;
+  const r = cp.rot % 180, { tw, th } = tiltDims(cp.item), sw = r ? th : tw, sh = r ? tw : th;
   cp.sw = sw; cp.sh = sh;
   const k = Math.min(1, 1100 / Math.max(sw, sh));
   cpCanvas.width = Math.max(1, Math.round(sw * k)); cpCanvas.height = Math.max(1, Math.round(sh * k));
@@ -331,7 +331,7 @@ async function openCropper() {
   if (!item || busy || cp.open) return;
   busy = true; setToolbarBusy(true);
   try {
-    cp.orig = await decodeBitmap(item);
+    cp.orig = tiltBitmap(await decodeBitmap(item), item);
     Object.assign(cp, { open: true, item, rot: item.rot || 0, flipH: !!item.flipH, flipV: !!item.flipV, crop: item.crop ? { ...item.crop } : FULL(), ratioKey: 'free', drag: null });
     $$('#cpRatio button').forEach(b => b.classList.toggle('active', b.dataset.r === 'free'));
     rememberFocus(cpEl); cpEl.classList.add('show');

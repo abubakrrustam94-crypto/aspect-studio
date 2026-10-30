@@ -98,7 +98,7 @@ async function computeMask(bmp, quality = 'fast') {
   return { w, h, data, cover: sum / data.length };
 }
 
-const coSig = item => `${cfgFor(item).cutQuality === 'precise' ? 'p' : 'f'}|${item.rot || 0}|${item.flipH ? 1 : 0}|${item.flipV ? 1 : 0}|${item.crop ? [item.crop.x, item.crop.y, item.crop.w, item.crop.h].map(v => v.toFixed(4)).join(',') : ''}`;
+const coSig = item => `${cfgFor(item).cutQuality === 'precise' ? 'p' : 'f'}|${item.rot || 0}|${item.tilt || 0}|${item.flipH ? 1 : 0}|${item.flipV ? 1 : 0}|${item.crop ? [item.crop.x, item.crop.y, item.crop.w, item.crop.h].map(v => v.toFixed(4)).join(',') : ''}`;
 const coPending = new Map();
 /* Маска фото (кэшируется на фото; пересчитывается после поворота/обрезки). Ошибка → item.maskFail */
 function ensureMask(item, bmp) {

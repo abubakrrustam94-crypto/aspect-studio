@@ -59,6 +59,7 @@ function set(key, val) {
 }
 
 function syncUI() {
+  if (window.toneSync) window.toneSync();
   const it0 = cur(), E = cfgFor(it0);
   $$('[data-group]').forEach(g => {
     const v = String(E[g.dataset.group]);

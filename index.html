@@ -447,6 +447,40 @@
           <p class="note" style="margin:10px 0 0">Подбор включит или выключит улучшение, выберет увеличение, резкость, шумоподавление и тип фона по этому фото. Результат можно поправить вручную или отменить.</p>
         </section>
 
+        <section class="card" id="cardTone" data-tab="quality">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Тон и цвет</div>
+          <div class="stack">
+            <div class="row" style="margin:0">
+              <button type="button" class="btn btn-tonal btn-sm" id="toneAuto"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Автотон</button>
+              <button type="button" class="btn btn-outlined btn-sm" id="toneReset" hidden><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Сбросить тон</button>
+            </div>
+            <div>
+              <span class="field-label">Стиль</span>
+              <div class="seg" data-group="toneStyle" role="group" aria-label="Цветовой стиль">
+                <button type="button" data-val="none">Нет</button>
+                <button type="button" data-val="bw">Ч/б</button>
+                <button type="button" data-val="warm">Тёплый</button>
+                <button type="button" data-val="cool">Холодный</button>
+                <button type="button" data-val="film">Плёнка</button>
+                <button type="button" data-val="vivid">Яркий</button>
+                <button type="button" data-val="fade">Выцветший</button>
+              </div>
+            </div>
+            <div><span class="field-label">Экспозиция</span><div class="range-row"><input type="range" data-key="toneExp" data-num min="-100" max="100" aria-label="Экспозиция"><output data-out="toneExp"></output></div></div>
+            <div><span class="field-label">Контраст</span><div class="range-row"><input type="range" data-key="toneCon" data-num min="-100" max="100" aria-label="Контраст"><output data-out="toneCon"></output></div></div>
+            <div><span class="field-label">Насыщенность</span><div class="range-row"><input type="range" data-key="toneSat" data-num min="-100" max="100" aria-label="Насыщенность"><output data-out="toneSat"></output></div></div>
+            <div><span class="field-label">Температура (холоднее — теплее)</span><div class="range-row"><input type="range" data-key="toneWarm" data-num min="-100" max="100" aria-label="Температура"><output data-out="toneWarm"></output></div></div>
+            <div>
+              <span class="field-label">Наклон горизонта</span>
+              <div class="range-row"><input type="range" id="tiltRange" min="-15" max="15" step="0.1" value="0" aria-label="Наклон кадра в градусах"><output id="tiltOut">0.0°</output></div>
+              <div class="row" style="margin:8px 0 0">
+                <button type="button" class="btn btn-tonal btn-sm" id="tiltAuto"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Выровнять горизонт</button>
+                <button type="button" class="btn btn-outlined btn-sm" id="tiltReset" hidden><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Сбросить наклон</button>
+              </div>
+              <p class="note">Кадр поворачивается и подрезается, чтобы не было пустых углов. Обрезка сбрасывается.</p>
+            </div>
+          </div>
+        </section>
         <section class="card" id="cardEnhance" data-tab="quality">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшение качества</div>
           <label class="switch"><input type="checkbox" data-key="enhOn"><span class="track"></span><span>Улучшить результат в конце</span></label>
@@ -884,6 +918,7 @@
   <script src="js/features.js"></script>
   <script src="js/setsearch.js"></script>
   <script src="js/peek.js"></script>
+  <script src="js/tone.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/fmtcmp.js"></script>
   <script src="js/session.js"></script>

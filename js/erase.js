@@ -231,7 +231,7 @@ async function erApply() {
 $('#erDone').addEventListener('click', erApply);
 
 /* Подменить файл фото; прежнее состояние кладём в стек «Вернуть как было» */
-const ER_FIELDS = ['file', 'name', 'w', 'h', 'ow', 'oh', 'rot', 'flipH', 'flipV', 'crop', 'load', 'exifSrc'];
+const ER_FIELDS = ['file', 'name', 'w', 'h', 'ow', 'oh', 'rot', 'tilt', 'flipH', 'flipV', 'crop', 'load', 'exifSrc'];
 async function erSwap(item, patch) {
   if (item.url) URL.revokeObjectURL(item.url);
   Object.assign(item, patch); item.url = URL.createObjectURL(item.file);
@@ -242,7 +242,7 @@ async function erSwap(item, patch) {
 }
 async function erReplace(item, file, w, h) {
   (item.erased = item.erased || []).push(Object.fromEntries(ER_FIELDS.map(k => [k, item[k]]))); if (item.erased.length > ER_UNDO) item.erased.shift();
-  await erSwap(item, { file, name: file.name, w, h, ow: w, oh: h, rot: 0, flipH: false, flipV: false, crop: null, load: null, exifSrc: item.exifSrc || item.file });
+  await erSwap(item, { file, name: file.name, w, h, ow: w, oh: h, rot: 0, tilt: 0, flipH: false, flipV: false, crop: null, load: null, exifSrc: item.exifSrc || item.file });
 }
 async function eraseRestore() {
   const item = cur(); if (!item || busy || exporting || !item.erased || !item.erased.length) return;

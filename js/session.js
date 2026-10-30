@@ -5,7 +5,7 @@
    Отмена и повтор: снимок = общие настройки + настройки каждого фото
    =================================================================== */
 const hist = { undo: [], redo: [], lastKey: '', lastT: 0, busy: false }, HIST_MAX = 60;
-const XF_KEYS = ['rot', 'flipH', 'flipV', 'crop', 'focus', 'zoom', 'skip', 'manual'];
+const XF_KEYS = ['rot', 'tilt', 'flipH', 'flipV', 'crop', 'focus', 'zoom', 'skip', 'manual'];
 function histSnap() {
   return JSON.stringify({ S, items: items.map(it => ({ id: it.id, ov: it.ov, ...Object.fromEntries(XF_KEYS.map(k => [k, it[k]])) })) });
 }
@@ -25,7 +25,7 @@ function histButtons() {
   u.disabled = !hist.undo.length; r.disabled = !hist.redo.length;
   const rb = $('#resetPhoto'); if (rb) { const it = cur(); rb.disabled = !it || !photoChanged(it); }
 }
-const photoChanged = it => !!it.ov || !!it.rot || it.flipH || it.flipV || !!it.crop || it.zoom !== 1 || (it.focus && (it.focus.x !== .5 || it.focus.y !== .5) && it.manual);
+const photoChanged = it => !!it.ov || !!it.rot || !!it.tilt || it.flipH || it.flipV || !!it.crop || it.zoom !== 1 || (it.focus && (it.focus.x !== .5 || it.focus.y !== .5) && it.manual);
 async function histApply(json) {
   hist.busy = true;
   try {
@@ -34,7 +34,7 @@ async function histApply(json) {
     const redo = [];
     for (const st of snap.items) {
       const it = items.find(x => x.id === st.id); if (!it) continue;
-      const xfChanged = (it.rot || 0) !== (st.rot || 0) || !!it.flipH !== !!st.flipH || !!it.flipV !== !!st.flipV || JSON.stringify(it.crop) !== JSON.stringify(st.crop);
+      const xfChanged = (it.rot || 0) !== (st.rot || 0) || (it.tilt || 0) !== (st.tilt || 0) || !!it.flipH !== !!st.flipH || !!it.flipV !== !!st.flipV || JSON.stringify(it.crop) !== JSON.stringify(st.crop);
       it.ov = st.ov; XF_KEYS.forEach(k => { it[k] = st[k]; });
       if (xfChanged) { redo.push(it); syncDims(it); if (cache.id === it.id) releaseCache(); }
     }
@@ -51,8 +51,8 @@ function lastKey_reset() { hist.lastKey = ''; }
 async function resetPhoto() {
   const it = cur(); if (!it || exporting) return;
   histPush('reset');
-  const needXf = !!it.rot || it.flipH || it.flipV || !!it.crop;
-  it.ov = null; it.rot = 0; it.flipH = false; it.flipV = false; it.crop = null; it.focus = { x: .5, y: .5 }; it.zoom = 1; it.manual = false;
+  const needXf = !!it.rot || !!it.tilt || it.flipH || it.flipV || !!it.crop;
+  it.ov = null; it.rot = 0; it.tilt = 0; it.flipH = false; it.flipV = false; it.crop = null; it.focus = { x: .5, y: .5 }; it.zoom = 1; it.manual = false;
   if (needXf) { syncDims(it); if (cache.id === it.id) releaseCache(); try { await commitXform(it); } catch (e) { logError(e, 'reset'); } }
   renderThumbs(); syncUI(); applyView(); schedule(); histButtons(); sessSaveSoon(); toast('Фото сброшено: общие настройки, без поворота и обрезки');
 }
@@ -133,7 +133,7 @@ async function sessRestore() {
     syncDims(it);
   });
   if (d.meta.S) { const keep = ['view']; Object.keys(d.meta.S).forEach(k => { if (k in DEFAULTS && typeof d.meta.S[k] === typeof DEFAULTS[k] && !keep.includes(k)) S[k] = d.meta.S[k]; }); save(); }
-  items.slice(before).forEach(it => { if (it.rot || it.flipH || it.flipV || it.crop) { if (cache.id === it.id) releaseCache(); commitXform(it).then(() => { const m = d.meta.items.find(x => x.key === sessKey(it)); if (m) { it.focus = m.focus || it.focus; it.zoom = m.zoom || 1; it.manual = !!m.manual; } schedule(); }).catch(() => {}); } });
+  items.slice(before).forEach(it => { if (it.rot || it.tilt || it.flipH || it.flipV || it.crop) { if (cache.id === it.id) releaseCache(); commitXform(it).then(() => { const m = d.meta.items.find(x => x.key === sessKey(it)); if (m) { it.focus = m.focus || it.focus; it.zoom = m.zoom || 1; it.manual = !!m.manual; } schedule(); }).catch(() => {}); } });
   idx = Math.min(before + Math.max(0, d.meta.idx || 0), items.length - 1); updateChrome(); syncUI(); schedule();
 }
 $('#sessRestore').addEventListener('click', sessRestore);

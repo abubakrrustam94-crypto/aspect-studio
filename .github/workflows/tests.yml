@@ -82,3 +82,5 @@ jobs:
         run: node tests/r3.js
       - name: Кнопки и уведомления (исправления интерфейса)
         run: node tests/ui4.js
+      - name: Тон, стили и горизонт (блок R4)
+        run: node tests/r4.js

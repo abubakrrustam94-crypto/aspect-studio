@@ -27,7 +27,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.36.2';
+const APP_VERSION = '2.37.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -82,6 +82,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
+  toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none',
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,
   view: 'slider', pin: true,
@@ -103,7 +104,7 @@ try {
 for (const k of Object.keys(DEFAULTS)) if (typeof S[k] !== typeof DEFAULTS[k]) S[k] = DEFAULTS[k];
 
 // Настройки на фото: у фото может быть свой набор (item.ov) поверх общих S
-const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'dnModel', 'dnLevel', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality', 'srModel'];
+const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'dnModel', 'dnLevel', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality', 'srModel', 'toneExp', 'toneCon', 'toneSat', 'toneWarm', 'toneStyle'];
 const cfgFor = item => (item && item.ov) ? Object.assign({}, S, item.ov) : S;
 const tgt = () => { const it = items[idx]; return it && it.ov ? it.ov : S; };   // куда писать изменения
 
@@ -277,19 +278,39 @@ async function loadBitmap(src) { return applyXform(await decodeBitmap(src), src)
 const dimsOf = b => ({ w: b.naturalWidth || b.width, h: b.naturalHeight || b.height });
 const closeBmp = b => { if (b && typeof b.close === 'function') b.close(); else if (typeof HTMLCanvasElement !== 'undefined' && b instanceof HTMLCanvasElement) b.width = b.height = 0; };
 
-// Порядок: отражение → поворот (по часовой) → обрезка. crop хранится долями уже повёрнутого изображения.
+// Порядок: наклон (выравнивание горизонта) → отражение → поворот (по часовой) → обрезка. crop хранится долями уже повёрнутого изображения.
+// tilt — малый угол в градусах: кадр вписывается в повёрнутое изображение без пустых углов (та же пропорция).
+function tiltDims(item) {
+  const t = item.tilt || 0;
+  if (!t) return { tw: item.ow, th: item.oh, k: 1 };
+  const a = Math.abs(t) * Math.PI / 180, W = item.ow, H = item.oh;
+  const k = 1 / (Math.cos(a) + Math.sin(a) * Math.max(W / H, H / W));
+  return { tw: Math.max(1, Math.round(W * k)), th: Math.max(1, Math.round(H * k)), k };
+}
+function tiltBitmap(bmp, item) {          // повернуть на item.tilt и обрезать до вписанного кадра
+  if (!item || !item.tilt || item.ow == null) return bmp;
+  const { tw, th } = tiltDims(item), { w, h } = dimsOf(bmp);
+  const c = mkCanvas(tw, th);
+  const g = c.getContext('2d', item.p3 && supportsP3 ? { colorSpace: 'display-p3' } : undefined);
+  g.imageSmoothingQuality = 'high';
+  g.translate(tw / 2, th / 2); g.rotate(item.tilt * Math.PI / 180);
+  g.drawImage(bmp, -w / 2, -h / 2);
+  closeBmp(bmp);
+  return c;
+}
 function xformInfo(item) {
-  const r = item.rot || 0, sw = r % 180 ? item.oh : item.ow, sh = r % 180 ? item.ow : item.oh;
+  const r = item.rot || 0, { tw, th } = tiltDims(item), sw = r % 180 ? th : tw, sh = r % 180 ? tw : th;
   const cr = item.crop || { x: 0, y: 0, w: 1, h: 1 };
   const cx = Math.max(0, Math.min(sw - 1, Math.round(cr.x * sw))), cy = Math.max(0, Math.min(sh - 1, Math.round(cr.y * sh)));
   const cw = Math.max(1, Math.min(sw - cx, Math.round(cr.w * sw))), ch = Math.max(1, Math.min(sh - cy, Math.round(cr.h * sh)));
-  return { sw, sh, cx, cy, cw, ch, same: !r && !item.flipH && !item.flipV && !item.crop };
+  return { sw, sh, cx, cy, cw, ch, same: !r && !item.flipH && !item.flipV && !item.crop && !item.tilt };
 }
 function syncDims(item) { const x = xformInfo(item); item.w = x.cw; item.h = x.ch; }
 function applyXform(bmp, item) {
   if (!item || item.ow == null) return bmp;                    // не фото из очереди (например, логотип)
   const x = xformInfo(item);
   if (x.same) return bmp;
+  bmp = tiltBitmap(bmp, item);
   const { w, h } = dimsOf(bmp);
   const c = mkCanvas(x.cw, x.ch);
   const g = c.getContext('2d', item.p3 && supportsP3 ? { colorSpace: 'display-p3' } : undefined);
@@ -325,7 +346,7 @@ async function makeItem(file) {
     const reduced = load ? { from: pr, to: { w, h } } : null;       // что было в файле и до чего уменьшили
     const thumb = await makeThumb(bmp, w, h);
     const p3 = await detectP3(file);
-    return { id: ++uid, name: file.name || `image-${uid}`, file, url, thumb, w, h, ow: w, oh: h, rot: 0, flipH: false, flipV: false, crop: null, view: null, ov: null, focus: { x: .5, y: .5 }, zoom: 1, sample: null, dom: null, p3, load: load ? { w, h } : null, reduced };
+    return { id: ++uid, name: file.name || `image-${uid}`, file, url, thumb, w, h, ow: w, oh: h, rot: 0, tilt: 0, flipH: false, flipV: false, crop: null, view: null, ov: null, focus: { x: .5, y: .5 }, zoom: 1, sample: null, dom: null, p3, load: load ? { w, h } : null, reduced };
   } catch (e) {
     URL.revokeObjectURL(url);
     throw e;
