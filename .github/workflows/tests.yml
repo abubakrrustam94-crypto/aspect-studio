@@ -14,6 +14,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Утилиты для проверки PDF
+        run: sudo apt-get install -y poppler-utils
       - name: Установка зависимостей
         run: npm install --no-audit --no-fund
       - name: Статический аудит кода (необъявленные имена, дубли, офлайн-список)
@@ -86,3 +88,5 @@ jobs:
         run: node tests/r4.js
       - name: A/B, подсказки, большие фото (блок R5)
         run: node tests/r5.js
+      - name: PDF, иконки, кадры (блок C1)
+        run: node tests/c1.js

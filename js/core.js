@@ -27,7 +27,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.38.0';
+const APP_VERSION = '2.39.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -82,6 +82,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
+  pdfPage: 'a4', multiPages: 'first',
   toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none',
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,
@@ -368,8 +369,12 @@ async function addFiles(list) {
   const failed = [], notes = [], bigNotes = [];
   for (let i = 0; i < files.length; i++) {
     if (files.length > 3) toast(`Загрузка ${i + 1} / ${files.length}…`);
-    try { const it = await makeItem(await normalizeInput(files[i], notes)); items.push(it); if (it.reduced) bigNotes.push(it); }
-    catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: files[i].name, msg: e && e.userMsg, ids: e && e.compIds }); }
+    let parts = [files[i]];
+    try { parts = await expandMulti(files[i], notes); } catch (e) { parts = [files[i]]; }
+    for (const f of parts) {
+      try { const it = await makeItem(await normalizeInput(f, notes)); items.push(it); if (it.reduced) bigNotes.push(it); }
+      catch (e) { if (!(e instanceof FormatError)) console.error(e); failed.push({ name: f.name, msg: e && e.userMsg, ids: e && e.compIds }); }
+    }
   }
   if (items.length > first) { idx = first; updateChrome(); schedule(); }
   const ok = items.length - first, extra = notes.length ? ' · ' + notes.slice(0, 2).join('; ') + (notes.length > 2 ? '…' : '') : '';

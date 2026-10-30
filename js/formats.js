@@ -396,7 +396,7 @@ async function svgToFile(file) {
 }
 
 /* ============================ AI (PDF-совместимый) ============================ */
-async function aiToFile(file, u8, notes) {
+async function aiToFile(file, u8, notes, pageNo) {
   const head = String.fromCharCode(...u8.subarray(0, Math.min(1024, u8.length)));
   if (!head.includes('%PDF')) {
     if (head.startsWith('%!PS-Adobe')) return epsToFile(file, u8, notes);
@@ -409,12 +409,12 @@ async function aiToFile(file, u8, notes) {
   let doc;
   try { doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)) }).promise; } catch (e) { throw new FormatError('Не удалось прочитать AI/PDF'); }
   try {
-    const page = await doc.getPage(1), v1 = page.getViewport({ scale: 1 });
+    const page = await doc.getPage(pageNo || 1), v1 = page.getViewport({ scale: 1 });
     const scale = Math.min(6, Math.max(1, 3000 / Math.max(v1.width, v1.height))), vp = page.getViewport({ scale });
     checkPixels(Math.ceil(vp.width), Math.ceil(vp.height));
     const c = document.createElement('canvas'); c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
     await page.render({ canvasContext: c.getContext('2d'), canvas: c, viewport: vp, background: 'rgba(0,0,0,0)' }).promise;
-    if (notes && doc.numPages > 1) notes.push(`${file.name}: взят только 1-й монтажный стол из ${doc.numPages}`);
+    if (!pageNo && notes && doc.numPages > 1) notes.push(`${file.name}: взят только 1-й монтажный стол из ${doc.numPages}`);
     return canvasToFile(c, file.name);
   } finally { try { await doc.destroy(); } catch (e) {} }
 }
@@ -514,4 +514,55 @@ async function xcfToFile(file, u8, notes) {
   }
   if (notes) notes.push(`XCF ${file.name}: слои собраны упрощённо${simplified ? ' (режимы наложения и маски слоёв не учтены)' : ''}`);
   return canvasToFile(out, file.name);
+}
+
+/* ============================ Страницы PDF и кадры анимации ============================ */
+const MULTI_MAX = 50;
+const pad2 = n => String(n).padStart(2, '0');
+async function pdfPages(file, notes) {
+  const u8 = new Uint8Array(await file.arrayBuffer());
+  let pdfjs;
+  pdfjs = await import(vendorUrl('vendor/pdfjs/pdf.min.mjs'));
+  pdfjs.GlobalWorkerOptions.workerSrc = vendorUrl('vendor/pdfjs/pdf.worker.min.mjs');
+  const doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)) }).promise;
+  const n = doc.numPages; try { await doc.destroy(); } catch (e) {}
+  if (n < 2) return null;
+  const base = file.name.replace(/\.[^.]+$/, ''), out = [], cnt = Math.min(n, MULTI_MAX);
+  for (let p = 1; p <= cnt; p++) { const f = await aiToFile(file, u8, notes, p); out.push(new File([f], `${base}_p${pad2(p)}.${f.type === 'image/jpeg' ? 'jpg' : 'png'}`, { type: f.type })); }
+  if (n > cnt && notes) notes.push(`${file.name}: взяты первые ${cnt} страниц из ${n}`);
+  return out;
+}
+async function animFrames(file, ext, notes) {
+  if (typeof ImageDecoder === 'undefined') return null;
+  const type = file.type || { gif: 'image/gif', webp: 'image/webp', png: 'image/png', apng: 'image/apng' }[ext];
+  if (!type || !(await ImageDecoder.isTypeSupported(type))) return null;
+  const dec = new ImageDecoder({ data: await file.arrayBuffer(), type });
+  try {
+    await dec.tracks.ready; try { await dec.completed; } catch (e) {}
+    const n = dec.tracks.selectedTrack ? dec.tracks.selectedTrack.frameCount : 1;
+    if (!(n > 1)) return null;
+    const base = file.name.replace(/\.[^.]+$/, ''), out = [], cnt = Math.min(n, MULTI_MAX);
+    for (let i = 0; i < cnt; i++) {
+      const { image } = await dec.decode({ frameIndex: i }), c = document.createElement('canvas');
+      c.width = image.displayWidth; c.height = image.displayHeight; checkPixels(c.width, c.height);
+      c.getContext('2d').drawImage(image, 0, 0); image.close();
+      out.push(await canvasToFile(c, `${base}_f${pad2(i + 1)}.png`));
+    }
+    if (n > cnt && notes) notes.push(`${file.name}: взяты первые ${cnt} кадров из ${n}`);
+    return out;
+  } finally { try { dec.close(); } catch (e) {} }
+}
+/* Один файл → один или несколько файлов (страницы PDF, кадры анимации). По умолчанию ничего не меняет. */
+async function expandMulti(file, notes) {
+  if (S.multiPages !== 'all') return [file];
+  const ext = extOf(file.name);
+  try {
+    if (ext === 'pdf' || ext === 'ai') {
+      const head = new Uint8Array(await file.slice(0, 1024).arrayBuffer());
+      if (!String.fromCharCode(...head).includes('%PDF') || !compInstalled('pdf')) return [file];
+      return (await pdfPages(file, notes)) || [file];
+    }
+    if (/^(gif|webp|png|apng)$/.test(ext)) return (await animFrames(file, ext, notes)) || [file];
+  } catch (e) { console.warn('expandMulti', e); }
+  return [file];
 }

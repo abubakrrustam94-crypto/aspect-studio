@@ -361,6 +361,15 @@
           </div>
         </section>
 
+        <section class="card" data-tab="extra" id="cardMulti">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Многостраничные файлы</div>
+          <div class="seg" data-group="multiPages" role="group" aria-label="Страницы и кадры">
+            <button type="button" data-val="first">Только первый</button>
+            <button type="button" data-val="all">Все страницы и кадры</button>
+          </div>
+          <p class="note">Для PDF (нужен компонент «Adobe Illustrator / PDF») и анимаций GIF, WebP, APNG: каждая страница или кадр станет отдельным фото, но не больше 50. Файлы называются «имя_p01», «имя_f01».</p>
+        </section>
+
         <section class="card" data-tab="extra" id="cardSpeed">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Скорость нейросетей</div>
           <span class="field-label">Потоков процессора</span>
@@ -568,6 +577,24 @@
             <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="errLogCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Копировать</button><button type="button" class="btn btn-outlined btn-sm" id="errLogShare">Отправить отчёт</button><button type="button" class="btn btn-outlined btn-sm" id="errLogClear">Очистить</button></div>
           </details>
           <p class="note" id="resetNote" hidden>Будут удалены настройки, наборы, акцент и тема. Нажми ещё раз, чтобы подтвердить.</p>
+        </section>
+
+        <section class="card" data-tab="export" id="cardOther">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> PDF и иконки</div>
+          <div class="stack">
+            <div>
+              <span class="field-label">Страница PDF</span>
+              <div class="seg" data-group="pdfPage" role="group" aria-label="Размер страницы PDF">
+                <button type="button" data-val="a4">A4 с полями</button>
+                <button type="button" data-val="image">По размеру фото</button>
+              </div>
+            </div>
+            <div class="row" style="margin:0">
+              <button type="button" class="btn btn-tonal btn-sm" id="pdfBtn" disabled><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> PDF из отмеченных фото</button>
+              <button type="button" class="btn btn-tonal btn-sm" id="iconsBtn" disabled><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Набор иконок</button>
+            </div>
+            <p class="note" style="margin:0">PDF: каждое отмеченное фото на своей странице (в JPG, с текущим качеством). Иконки: из текущего фото квадраты 16–512 px, favicon.ico, apple-touch-icon и фрагмент для манифеста. Режим «Заполнить» обрезает под квадрат, «Вписать» оставляет прозрачные поля.</p>
+          </div>
         </section>
 
         <section class="card" data-tab="export" id="cardBundle">
@@ -930,6 +957,7 @@
   <script src="js/peek.js"></script>
   <script src="js/tone.js"></script>
   <script src="js/why.js"></script>
+  <script src="js/extras.js"></script>
   <script src="js/ab.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/fmtcmp.js"></script>

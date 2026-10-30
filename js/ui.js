@@ -237,6 +237,7 @@ function updateZipLabel() {
 function updateChrome() {
   if (window.abSync) window.abSync();
   if (window.toneSync) window.toneSync();
+  if (window.exSync) window.exSync();
   if (typeof erSync === 'function') erSync();
   const n = items.length, has = n > 0;
   thumbsRow.hidden = !has;

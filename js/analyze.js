@@ -28,6 +28,19 @@ function anBlur(g, w, h, sigma) {
   return out;
 }
 
+/* Смаз от движения: при смазе пропадают детали вдоль одного направления. Сравниваем энергию градиента по 4 направлениям. */
+function anMotion(g, w, h) {
+  const e = [0, 0, 0, 0]; let cnt = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const o = y * w + x;
+    e[0] += Math.abs(g[o + 1] - g[o - 1]); e[1] += Math.abs(g[o + w] - g[o - w]);
+    e[2] += Math.abs(g[o + w + 1] - g[o - w - 1]) / 1.4142; e[3] += Math.abs(g[o + w - 1] - g[o - w + 1]) / 1.4142; cnt++;
+  }
+  if (!cnt) return { ratio: 1, dir: 0 };
+  let lo = 0, hi = 0; e.forEach((v, i) => { if (v < e[lo]) lo = i; if (v > e[hi]) hi = i; });
+  return { ratio: e[hi] > 1e-6 ? e[lo] / e[hi] : 1, dir: lo };       // dir: 0 — горизонтальный смаз, 1 — вертикальный, 2 и 3 — диагональные
+}
+
 /* Резкость: отношение мелких деталей к средним (не зависит от контраста). Шум: оценка Иммеркера по медиане */
 function anMetrics(g, w, h) {
   const n = w * h, b1 = anBlur(g, w, h, 1), b3 = anBlur(g, w, h, 3);
@@ -43,7 +56,7 @@ function anMetrics(g, w, h) {
     r[k++] = Math.abs(g[o - w - 1] - 2 * g[o - w] + g[o - w + 1] - 2 * g[o - 1] + 4 * g[o] - 2 * g[o + 1] + g[o + w - 1] - 2 * g[o + w] + g[o + w + 1]);
   }
   r.sort();
-  return { sharp, noise: r[r.length >> 1] / 0.6745 / 6 };
+  return { sharp, noise: r[r.length >> 1] / 0.6745 / 6, motion: anMotion(g, w, h) };
 }
 
 /* Разброс яркости у краёв кадра: маленький — фон ровный (товар на белом) */
@@ -122,7 +135,7 @@ async function analyzePhoto(bmp) {
   }
   const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : objBox ? { x: (objBox.x0 + objBox.x1) / 2, y: (objBox.y0 + objBox.y1) / 2 } : anSubject(g, w, h);
   canvas.width = canvas.height = 0;
-  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing), faceXMissing: !!(f && f.xMissing), eyes: has && f.eyes ? f.eyes : null, objects, objBox, objMain, objMissing, objFail };
+  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, motion: m.motion, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing), faceXMissing: !!(f && f.xMissing), eyes: has && f.eyes ? f.eyes : null, objects, objBox, objMain, objMissing, objFail };
 }
 
 const anSharpLabel = r => r < 0.22 ? ['Очень мягкое', 'bad'] : r < 0.36 ? ['Мягковатое', 'warn'] : r < 0.65 ? ['Нормальное', 'ok'] : ['Чёткое', 'ok'];
@@ -153,6 +166,7 @@ function anAdvice(item, an) {
   else if (an.sharp < 0.36) out.push('Фото мягковатое: подойдёт сильная резкость.');
   else if (an.sharp >= 0.65) out.push('Фото и так чёткое: резкость нужна лёгкая.');
   if (an.noise >= 4.5) out.push('Есть заметный шум: включится шумоподавление.');
+  if (an.motion && an.motion.ratio < 0.3) out.push(`Похоже на смаз от движения (${['по горизонтали', 'по вертикали', 'по диагонали', 'по диагонали'][an.motion.dir]}): резкость такое не лечит, лучше взять другой кадр.`);
   if (r.enhScale > 1) out.push(`Фото небольшое (${an.mp.toFixed(1)} Мп): ×${r.enhScale} даст больше деталей при печати и на больших экранах.`);
   if (!r.enhOn) out.push('Улучшение не требуется: фото чистое и чёткое.');
   if (an.flat && cfgFor(item).fit === 'fit') out.push('Края ровные (как у товара на однотонном фоне): подойдёт «Градиент из фото».');
