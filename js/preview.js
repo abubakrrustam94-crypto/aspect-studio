@@ -6,6 +6,25 @@
 let rafId = 0, renderToken = 0;
 function schedule() { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(refresh); }
 
+/* Большие фото: предпросмотр рисуем с уменьшенной копии (длинная сторона PV_SRC), а не с исходных 50 Мп.
+   Копия создаётся один раз на фото; item подменяется прокси, у которого w и h соответствуют копии. */
+const PV_SRC = 2400;
+let PV_OFF = false;          // только для тестов: сравнить с рисованием с полноразмерного битмапа
+function previewSource(item, bmp) {
+  const { w, h } = dimsOf(bmp), m = Math.max(w, h);
+  if (m <= PV_SRC * 1.25 || cache.id !== item.id || cache.bmp !== bmp || cfgFor(item).cutOn) return { item, bmp };
+  let s = cache.small;
+  if (!s || s.src !== bmp) {
+    if (s) closeBmp(s.bmp);
+    const k = PV_SRC / m, cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+    const c = mkCanvas(cw, ch), g = c.getContext('2d', item.p3 && supportsP3 ? { colorSpace: 'display-p3' } : undefined);
+    g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, cw, ch);
+    s = cache.small = { src: bmp, bmp: c, k };
+  }
+  const k = s.k, px = new Proxy(item, { get: (t, key) => key === 'w' ? Math.max(1, Math.round(t.w * k)) : key === 'h' ? Math.max(1, Math.round(t.h * k)) : t[key] });
+  return { item: px, bmp: s.bmp };
+}
+
 async function refresh() {
   const item = cur();
   if (!item) return;
@@ -17,7 +36,8 @@ async function refresh() {
   if (token !== renderToken || cur() !== item) return;
   try {
     const tmp = document.createElement('canvas');    // рисуем во временный холст, чтобы предпросмотр не мигал
-    const r = await render(tmp, item, bmp, { cap: PREVIEW_CAP, work: pvWork });
+    const pv = PV_OFF ? { item, bmp } : previewSource(item, bmp);
+    const r = await render(tmp, pv.item, pv.bmp, { cap: PREVIEW_CAP, work: pvWork });
     if (token !== renderToken || cur() !== item) { tmp.width = tmp.height = 0; return; }
     afterCanvas.width = r.cw; afterCanvas.height = r.ch;
     afterCanvas.getContext('2d').drawImage(tmp, 0, 0);

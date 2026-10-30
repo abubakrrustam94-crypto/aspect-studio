@@ -112,6 +112,7 @@
               <button type="button" data-val="after" title="Только результат">После</button>
             </div>
             <div class="head-right">
+              <button type="button" class="btn btn-tonal btn-sm" id="abBtn" title="Сравнить два набора настроек: A и B" aria-label="Сравнить два набора настроек A/B">A/B</button>
               <div class="nav-group" id="navGroup">
                 <button type="button" id="prevBtn" aria-label="Предыдущее фото">‹</button>
                 <span id="navLabel">1 / 1</span>
@@ -131,6 +132,15 @@
           </div>
           <p class="hint-line" id="panHint" hidden>Перетащи изображение, чтобы сдвинуть кадр</p>
           <div class="info-row" id="infoRow" aria-live="polite"></div>
+          <div class="ab-bar" id="abBar" hidden>
+            <span class="ab-label">Набор настроек:</span>
+            <div class="seg" role="group" aria-label="Набор настроек">
+              <button type="button" data-ab="A" class="active" aria-pressed="true">A</button>
+              <button type="button" data-ab="B" aria-pressed="false">B</button>
+            </div>
+            <button type="button" class="btn btn-tonal btn-sm" id="abKeep">Оставить текущий</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="abCancel">Отменить</button>
+          </div>
         </section>
       </div>
 
@@ -919,6 +929,8 @@
   <script src="js/setsearch.js"></script>
   <script src="js/peek.js"></script>
   <script src="js/tone.js"></script>
+  <script src="js/why.js"></script>
+  <script src="js/ab.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/fmtcmp.js"></script>
   <script src="js/session.js"></script>

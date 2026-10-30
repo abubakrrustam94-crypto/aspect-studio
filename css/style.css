@@ -704,3 +704,12 @@ body.peek-open .progress-sheet { z-index: 260; }
 
 /* Пока идёт обработка, уведомления встают над окном прогресса, а не под него */
 body.progress-on .toast { bottom: calc(86px + env(safe-area-inset-bottom) + var(--prog-h, 110px) + 14px); }
+
+/* Подсказки «Почему так?» и A/B */
+.why-btn { width: 28px; height: 28px; margin-left: 8px; border: none; border-radius: var(--shape-full); background: var(--md-sys-color-surface-container-high); color: var(--md-sys-color-on-surface-variant); font: 700 .8rem/1 inherit; display: inline-grid; place-items: center; vertical-align: middle; cursor: pointer; }
+.why-btn[aria-expanded="true"] { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.why-text { margin: 8px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); }
+.why-text[hidden] { display: none; }
+.ab-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 10px; border-radius: 16px; background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+.ab-bar[hidden] { display: none; }
+.ab-label { font-size: .85rem; font-weight: 600; }

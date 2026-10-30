@@ -84,3 +84,5 @@ jobs:
         run: node tests/ui4.js
       - name: Тон, стили и горизонт (блок R4)
         run: node tests/r4.js
+      - name: A/B, подсказки, большие фото (блок R5)
+        run: node tests/r5.js

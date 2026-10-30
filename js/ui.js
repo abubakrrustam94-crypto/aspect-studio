@@ -60,6 +60,7 @@ function set(key, val) {
 
 function syncUI() {
   if (window.toneSync) window.toneSync();
+  if (window.abSync) window.abSync();
   const it0 = cur(), E = cfgFor(it0);
   $$('[data-group]').forEach(g => {
     const v = String(E[g.dataset.group]);
@@ -234,6 +235,8 @@ function updateZipLabel() {
   const all = $('#selAll'); if (all) all.textContent = k === n ? 'Снять все' : 'Выбрать все';
 }
 function updateChrome() {
+  if (window.abSync) window.abSync();
+  if (window.toneSync) window.toneSync();
   if (typeof erSync === 'function') erSync();
   const n = items.length, has = n > 0;
   thumbsRow.hidden = !has;
