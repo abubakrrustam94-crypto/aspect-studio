@@ -13,7 +13,7 @@ jobs:
       NODE_OPTIONS: --require ./tools/csp-watch.js     # любой тест падает при нарушении политики безопасности
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Утилиты для проверки PDF
