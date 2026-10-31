@@ -44,6 +44,19 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   // после поворота карта пересчитывается
   const sig = await p.evaluate(async () => { const a = items[0].depth.sig; items[0].rot = 90; syncDims(items[0]); if (cache.id === items[0].id) releaseCache(); return a !== dpSig(items[0]); });
   ok(sig, 'подпись карты глубины меняется при повороте кадра');
+  // --- уточнение маски по краям фото ---
+  const ref = await p.evaluate(() => {
+    const n = 256, d = new Float32Array(n * n), lum = new Float32Array(n * n), ideal = new Float32Array(n * n), coarse = new Float32Array(n * n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const i = y * n + x, inC = x >= 80 && x < 170 && y >= 80 && y < 170, inT = x >= 83 && x < 173 && y >= 83 && y < 173;
+      const dx = Math.min(x - 80, 175 - x), dy = Math.min(y - 80, 175 - y), e = Math.min(dx, dy); d[i] = Math.max(0, Math.min(1, (e + 4) / 8)); lum[i] = inT ? .8 : .2; ideal[i] = inT ? 0 : 1; coarse[i] = 1 - d[i];
+    }
+    const q = depthRefineMask({ n, d }, 1, lum, n, n); let eq = 0, ec = 0;
+    for (let i = 0; i < n * n; i++) { eq += Math.abs(q[i] - ideal[i]); ec += Math.abs(coarse[i] - ideal[i]); }
+    return { eq, ec, inside: q[128 * n + 128], outside: q[10 * n + 10] };
+  });
+  ok(ref.eq < ref.ec * .6, `маска подтягивается к краю объекта: ошибка ${ref.eq.toFixed(0)} против ${ref.ec.toFixed(0)} у грубой`);
+  ok(ref.inside < .05 && ref.outside > .95, 'внутри объекта резко, далеко от него размыто');
   // --- OCR ---
   const os = require('os');
   const txtImg = path.join(os.tmpdir(), 'c2_text.png');

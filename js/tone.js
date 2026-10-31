@@ -64,33 +64,44 @@ function applyTone(ctx, cw, ch, c) {
 /* ---------- Автотон ---------- */
 function toneAnalyze(data) {            // data: RGBA маленькой копии кадра
   const hist = new Uint32Array(256);
-  let sr = 0, sb = 0, sc = 0, mid = 0, cnt = 0;
+  let sc = 0, cnt = 0, nr = 0, nb = 0, nn = 0;
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < 128) continue;
     const r = data[i], g = data[i + 1], b = data[i + 2], y = Math.round(.299 * r + .587 * g + .114 * b);
     hist[y]++; cnt++;
-    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
-    sc += mx ? (mx - mn) / mx : 0;
-    if (y > 50 && y < 205) { sr += r; sb += b; mid++; }
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), s = mx ? (mx - mn) / mx : 0;
+    sc += s;
+    if (s < .22 && y > 50 && y < 205) { nr += r; nb += b; nn++; }     // баланс белого — только по почти нейтральным пикселям
   }
   if (!cnt) return null;
   const pct = p => { let a = 0; const t = cnt * p; for (let i = 0; i < 256; i++) { a += hist[i]; if (a >= t) return i / 255; } return 1; };
-  return { p2: pct(.02), p50: pct(.5), p98: pct(.98), sat: sc / cnt, rb: mid > cnt * .05 ? (sr / mid) / Math.max(1, sb / mid) : 1 };
+  let clip = 0; for (let i = 250; i < 256; i++) clip += hist[i];
+  return { p2: pct(.02), p5: pct(.05), p50: pct(.5), p95: pct(.95), p98: pct(.98), p985: pct(.985), clip: clip / cnt, sat: sc / cnt,
+    rb: nn > cnt * .08 ? (nr / nn) / Math.max(1, nb / nn) : 1 };
 }
-function toneSuggest(a) {               // → { toneExp, toneCon, toneSat, toneWarm } (целые, -100…100)
+function toneSuggest(a, o) {            // → { toneExp, toneCon, toneSat, toneWarm } (целые, -100…100); o.faces — на кадре есть люди
   const out = { toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0 };
   if (!a || a.p98 - a.p2 < 0.02) return out;
+  const faces = !!(o && o.faces);
   const med = Math.max(.02, a.p50);
-  let ev = Math.log2(.46 / med) * .85;
-  ev = Math.max(-1, Math.min(1, ev));
-  if (ev > 0) ev = Math.min(ev, Math.max(0, Math.log2(.98 / Math.max(.05, a.p98))));   // не выжигаем света
+  let ev = Math.log2(.46 / med) * .8;
+  const lowKey = a.p95 < .38 && med < .22;                       // намеренно тёмная сцена: не вытягиваем до «серой»
+  ev = Math.max(-.9, Math.min(lowKey ? .3 : .9, ev));
+  if (a.p5 > .62 && ev < 0) ev *= .5;                              // светлая сцена (high-key) — не затемняем
+  if (ev > 0) {                                                    // не выжигаем света
+    ev = Math.min(ev, Math.max(0, Math.log2(.98 / Math.max(.05, a.p985))));
+    if (a.clip > .015) ev = 0;
+  }
+  if (a.clip > .03 && ev > -.3) ev = Math.max(-.3, ev - Math.min(.3, a.clip * 4));
   const hi = Math.min(1, a.p98 * 2 ** ev), lo = Math.min(1, a.p2 * 2 ** ev), spread = Math.max(.05, hi - lo);
-  const con = spread < .85 ? (.85 / spread - 1) / .8 * 100 : (spread > .97 ? -8 : 0);
+  let con = spread < .85 ? (.85 / spread - 1) / .8 * 100 : (spread > .97 ? -8 : 0);
+  if (lowKey) con = Math.min(con, 10);
   const q = 1 / Math.max(.5, Math.min(2, a.rb)), aW = (q - 1) / (q + 1);
-  const warm = Math.abs(aW / .25 * 100) < 6 ? 0 : aW / .25 * 100 * .6;
-  const sat = (.32 - a.sat) * 120;
+  let warm = Math.abs(aW / .25 * 100) < 6 ? 0 : aW / .25 * 100 * .5;
+  let sat = (.32 - a.sat) * 100;
+  if (faces) { warm *= .5; sat *= .5; }                              // кожа легко уходит в красный/оранжевый
   const R = (v, lim) => Math.round(Math.max(-lim, Math.min(lim, v)));
-  out.toneExp = R(ev / 1.5 * 100, 67); out.toneCon = R(con, 60); out.toneWarm = R(warm, 40); out.toneSat = R(sat, 25);
+  out.toneExp = R(ev / 1.5 * 100, 60); out.toneCon = R(con, 40); out.toneWarm = R(warm, faces ? 15 : 25); out.toneSat = R(sat, faces ? 12 : 20);
   if (Math.abs(out.toneExp) < 3) out.toneExp = 0;
   if (Math.abs(out.toneCon) < 4) out.toneCon = 0;
   if (Math.abs(out.toneSat) < 4) out.toneSat = 0;
@@ -102,7 +113,7 @@ async function toneAutoFor(item) {
     const { w, h } = dimsOf(bmp), k = Math.min(1, 160 / Math.max(w, h)), cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
     const c = mkCanvas(cw, ch), g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(bmp, 0, 0, cw, ch);
-    const r = toneSuggest(toneAnalyze(g.getImageData(0, 0, cw, ch).data));
+    const r = toneSuggest(toneAnalyze(g.getImageData(0, 0, cw, ch).data), { faces: !!(item.an && item.an.faces > 0) });
     c.width = c.height = 0; return r;
   } finally { closeBmp(bmp); }
 }

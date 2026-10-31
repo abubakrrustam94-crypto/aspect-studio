@@ -46,20 +46,47 @@ function depthBlurCanvas(src, sx, sy, iw, ih, r) {      // размытие бе
   while (cur.width * 2 < iw) { const [nx, ng] = mk(cur.width * 2, cur.height * 2); ng.drawImage(cur, 0, 0, nx.width, nx.height); cur = nx; }
   const [out, og] = mk(iw, ih); og.drawImage(cur, 0, 0, iw, ih); return out;
 }
+/* Маска «что размыть»: грубая карта глубины 256² растягивается до рабочего размера и подтягивается к краям самого фото
+   направляющим фильтром — размытие перестаёт заходить на объект и оставлять светлый ореол. */
+function depthRefineMask(D, d0, lum, mw, mh) {
+  const n = D.n, p = new Float32Array(mw * mh), T0 = 0.10, T1 = 0.42;
+  for (let y = 0; y < mh; y++) {
+    const fy = Math.max(0, Math.min(n - 1, (y + .5) / mh * n - .5)), y0 = Math.floor(fy), y1 = Math.min(n - 1, y0 + 1), ty = fy - y0;
+    for (let x = 0; x < mw; x++) {
+      const fx = Math.max(0, Math.min(n - 1, (x + .5) / mw * n - .5)), x0 = Math.floor(fx), x1 = Math.min(n - 1, x0 + 1), tx = fx - x0;
+      const v = (D.d[y0 * n + x0] * (1 - tx) + D.d[y0 * n + x1] * tx) * (1 - ty) + (D.d[y1 * n + x0] * (1 - tx) + D.d[y1 * n + x1] * tx) * ty;
+      const t = Math.max(0, Math.min(1, (Math.abs(v - d0) - T0) / (T1 - T0)));
+      p[y * mw + x] = t * t * (3 - 2 * t);
+    }
+  }
+  const r = Math.max(4, Math.round(Math.max(mw, mh) / 60));
+  let q = coGuided(lum, p, mw, mh, r, 2e-4); q = coGuided(lum, q, mw, mh, r, 2e-4);     // два прохода: край садится ближе к границе объекта
+  for (let i = 0; i < q.length; i++) { const v = q[i]; q[i] = v < 0.04 ? 0 : v > 0.96 ? 1 : v; }
+  return q;
+}
 function applyDepthBlur(ctx, item, L, cw, ch, c) {
   const D = item.depth; if (!D || D.sig !== dpSig(item) || !(c.depthBlur > 0)) return;
   const ix = Math.max(0, Math.floor(L.dx)), iy = Math.max(0, Math.floor(L.dy)), ix2 = Math.min(cw, Math.ceil(L.dx + L.dw)), iy2 = Math.min(ch, Math.ceil(L.dy + L.dh)), iw = ix2 - ix, ih = iy2 - iy;
   if (iw < 8 || ih < 8) return;
-  const r = Math.max(1.5, c.depthBlur / 100 * 0.03 * Math.max(L.dw, L.dh));
-  const blur = depthBlurCanvas(ctx.canvas, ix, iy, iw, ih, r);
-  const sub = depthSubject(item), d0 = depthAt(D, sub.x, sub.y), n = D.n;
-  const m = document.createElement('canvas'); m.width = m.height = n; const mg = m.getContext('2d'), id = mg.createImageData(n, n);
-  const T0 = 0.10, T1 = 0.42;
-  for (let i = 0; i < n * n; i++) { const t = Math.max(0, Math.min(1, (Math.abs(D.d[i] - d0) - T0) / (T1 - T0))), a = t * t * (3 - 2 * t); id.data[i * 4 + 3] = Math.round(a * 255); }
+  const mk = (w, h) => { const cv = document.createElement('canvas'); cv.width = Math.max(1, w); cv.height = Math.max(1, h); return [cv, cv.getContext('2d', { willReadFrequently: false })]; };
+  const k = Math.min(1, 1600 / Math.max(iw, ih)), ws = Math.max(8, Math.round(iw * k)), hs = Math.max(8, Math.round(ih * k));
+  const r = Math.max(1.5, c.depthBlur / 100 * 0.03 * Math.max(L.dw, L.dh)) * k;
+  const [ph, pg] = mk(ws, hs); pg.imageSmoothingQuality = 'high'; pg.drawImage(ctx.canvas, ix, iy, iw, ih, 0, 0, ws, hs);
+  // направляющая яркость (≤640 px по длинной стороне)
+  const km = Math.min(1, 640 / Math.max(ws, hs)), mw = Math.max(8, Math.round(ws * km)), mh = Math.max(8, Math.round(hs * km));
+  const [sm, sg] = mk(mw, mh); sg.imageSmoothingQuality = 'high'; sg.drawImage(ph, 0, 0, mw, mh);
+  const px = sg.getImageData(0, 0, mw, mh).data, lum = new Float32Array(mw * mh);
+  for (let i = 0; i < lum.length; i++) lum[i] = (.299 * px[i * 4] + .587 * px[i * 4 + 1] + .114 * px[i * 4 + 2]) / 255;
+  sm.width = sm.height = 0;
+  const sub = depthSubject(item), q = depthRefineMask(D, depthAt(D, sub.x, sub.y), lum, mw, mh);
+  const [mc, mg] = mk(mw, mh), id = mg.createImageData(mw, mh);
+  for (let i = 0; i < q.length; i++) id.data[i * 4 + 3] = Math.round(q[i] * 255);
   mg.putImageData(id, 0, 0);
-  const lay = document.createElement('canvas'); lay.width = iw; lay.height = ih; const lg = lay.getContext('2d');
-  lg.drawImage(blur, 0, 0); lg.globalCompositeOperation = 'destination-in'; lg.imageSmoothingQuality = 'high';
-  lg.drawImage(m, L.dx - ix, L.dy - iy, L.dw, L.dh);
-  ctx.drawImage(lay, ix, iy);
-  blur.width = blur.height = lay.width = lay.height = m.width = m.height = 0;
+  // обычное размытие + размытие только по «фоновым» пикселям (без подмешивания цвета объекта)
+  const plain = depthBlurCanvas(ph, 0, 0, ws, hs, r);
+  const [pm, pmg] = mk(ws, hs); pmg.drawImage(ph, 0, 0); pmg.globalCompositeOperation = 'destination-in'; pmg.imageSmoothingQuality = 'high'; pmg.drawImage(mc, 0, 0, ws, hs);
+  const nb = depthBlurCanvas(pm, 0, 0, ws, hs, r), lg = plain.getContext('2d');
+  lg.drawImage(nb, 0, 0); lg.globalCompositeOperation = 'destination-in'; lg.imageSmoothingQuality = 'high'; lg.drawImage(mc, 0, 0, ws, hs);
+  ctx.imageSmoothingQuality = 'high'; ctx.drawImage(plain, 0, 0, ws, hs, ix, iy, iw, ih);
+  for (const z of [ph, mc, pm, nb, plain]) z.width = z.height = 0;
 }

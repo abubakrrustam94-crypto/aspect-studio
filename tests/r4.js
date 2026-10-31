@@ -20,9 +20,12 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   // --- чистая логика ---
   const logic = await p.evaluate(() => {
     const mk = (n, f) => { const d = new Uint8ClampedArray(n * n * 4); for (let i = 0; i < n * n; i++) { const [r, g, bl] = f(i, i % n, Math.floor(i / n)); d[i * 4] = r; d[i * 4 + 1] = g; d[i * 4 + 2] = bl; d[i * 4 + 3] = 255; } return d; };
-    const dark = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 25 + x * 1.5; return [v, v, v]; })));
+    const dark = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 40 + x * 2; return [v, v, v]; })));
+    const lowKey = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 10 + x * 1.2; return [v, v, v]; })));
+    const clipped = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = x < 30 ? 30 + x * 2 : 255; return [v, v, v]; })));
+    const green = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 40 + x * 4; return [v * .4, v, v * .3]; })));
     const bright = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 190 + x * 1.5; return [v, v, v]; })));
-    const warmC = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 40 + x * 4; return [Math.min(255, v * 1.35), v, v * 0.8]; })));
+    const warmC = toneSuggest(toneAnalyze(mk(40, (i, x) => { const v = 40 + x * 4; return [Math.min(255, v * 1.12), v, v * 0.9]; })));
     const flat = toneSuggest(toneAnalyze(mk(40, () => [120, 120, 120])));
     const norm = toneSuggest(toneAnalyze(mk(40, (i, x, y) => { const v = 15 + (x / 39) * 225; return [v, v * 0.98 + 2, v]; })));
     // горизонт: граница неба и земли, повёрнутая на 4° (по часовой)
@@ -31,9 +34,12 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
     const px = g.getImageData(0, 0, W, H).data, gray = new Float32Array(W * H); for (let i = 0; i < W * H; i++) gray[i] = px[i * 4];
     const tl = tiltFromGray(gray, W, H);
     const blank = tiltFromGray(new Float32Array(W * H).fill(100), W, H);
-    return { dark, bright, warmC, flat, norm, tl, blank };
+    return { dark, lowKey, clipped, green, bright, warmC, flat, norm, tl, blank };
   });
   ok(logic.dark.toneExp > 20, `тёмный кадр: экспозиция вверх (${logic.dark.toneExp})`);
+  ok(logic.lowKey.toneExp <= 20, `тёмная сцена: осветляем сдержанно (${logic.lowKey.toneExp})`);
+  ok(logic.clipped.toneExp <= 0, `пересвеченный кадр: не осветляем (${logic.clipped.toneExp})`);
+  ok(logic.green.toneWarm === 0, `зелёная сцена без нейтральных пикселей: температуру не трогаем (${logic.green.toneWarm})`);
   ok(logic.bright.toneExp < -10, `светлый кадр: экспозиция вниз (${logic.bright.toneExp})`);
   ok(logic.warmC.toneWarm < -8, `жёлто-красный оттенок: температура к холодному (${logic.warmC.toneWarm})`);
   ok(Object.values(logic.flat).every(v => v === 0), 'однотонный кадр: ничего не меняется');
@@ -99,7 +105,7 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   await p.waitForTimeout(400);
   await p.click('#toneAuto'); await p.waitForFunction(() => { const it = cur(); return it && it.ov && it.ov.toneExp > 0; }, null, { timeout: 15000 });
   const au = await p.evaluate(() => { const o = cur().ov; return { e: o.toneExp, c: o.toneCon, s: o.toneSat, w: o.toneWarm, other: items[0].ov ? items[0].ov.toneExp : S.toneExp }; });
-  ok(au.e > 20, `Автотон осветлил тёмное фото (экспозиция ${au.e}, контраст ${au.c})`);
+  ok(au.e >= 15, `Автотон осветлил тёмное фото (экспозиция ${au.e}, контраст ${au.c})`);
   ok(!au.other, 'Автотон меняет только текущее фото');
   ok(!errs.length, 'нет ошибок JS' + (errs.length ? ': ' + errs.join('; ') : ''));
   await b.close(); server.close(); console.log(fail ? `\nПровалено: ${fail}` : '\nВсё прошло'); process.exit(fail ? 1 : 0);

@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v56';
+const VERSION = 'aspect-studio-v57';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
 const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
 const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
