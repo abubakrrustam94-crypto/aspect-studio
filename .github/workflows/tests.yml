@@ -96,3 +96,5 @@ jobs:
         run: node tests/c2.js
       - name: Безопасность (блок S1)
         run: node tests/s1.js
+      - name: Сбой загрузки скриптов
+        run: node tests/boot.js

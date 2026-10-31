@@ -11,6 +11,31 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 /* ---------- Локальный журнал ошибок: хранится только в этом браузере, никуда не отправляется ---------- */
 const ERRLOG_KEY = 'aspect-studio-errlog', ERRLOG_MAX = 30;
 const errLog = (() => { try { const a = JSON.parse(localStorage.getItem(ERRLOG_KEY) || '[]'); return Array.isArray(a) ? a.slice(-ERRLOG_MAX) : []; } catch (e) { return []; } })();
+/* Если часть скриптов не загрузилась (обрыв мобильной сети, сбой раздачи), страница работала бы наполовину: например, «histPush is not defined».
+   Ловим такие ошибки, пробуем догрузить файлы ещё раз, а если не вышло, честно просим обновить страницу. */
+(function () {
+  const failed = [];
+  addEventListener('error', e => { const t = e.target; if (t && t.tagName === 'SCRIPT' && t.src) failed.push(t.src); }, true);
+  const load = src => new Promise(res => {
+    const s = document.createElement('script'); s.src = src.split('?')[0] + '?retry=' + Date.now();
+    s.onload = () => res(true); s.onerror = () => { s.remove(); res(false); }; document.head.appendChild(s);
+  });
+  addEventListener('load', async () => {
+    if (!failed.length) return;
+    let left = failed.slice();
+    for (let attempt = 0; attempt < 3 && left.length; attempt++) {
+      await new Promise(r => setTimeout(r, attempt * 800));
+      const next = []; for (const src of left) if (!(await load(src))) next.push(src); left = next;
+    }
+    try { if (typeof logError === 'function') logError(new Error('Не загрузились файлы: ' + failed.map(f => f.split('/').pop()).join(', ') + (left.length ? ' (так и не загрузились)' : ' (догружены)')), 'boot'); } catch (e) {}
+    if (!left.length) return;
+    const bar = document.createElement('div'); bar.className = 'boot-fail'; bar.setAttribute('role', 'alert');
+    const t = document.createElement('span'); t.textContent = 'Не загрузилась часть файлов сайта (' + left.map(f => f.split('/').pop().split('?')[0]).join(', ') + '). Проверь интернет и обнови страницу.';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-tonal btn-sm'; b.textContent = 'Обновить'; b.addEventListener('click', () => location.reload());
+    bar.append(t, b); document.body.appendChild(bar);
+  });
+})();
+
 function logError(err, where) {
   try {
     const msg = String(err && err.stack ? err.stack : (err && err.message) || err).slice(0, 600);
@@ -27,7 +52,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.41.0';
+const APP_VERSION = '2.41.1';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах

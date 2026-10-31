@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v55';
+const VERSION = 'aspect-studio-v56';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
 const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
 const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
@@ -82,13 +82,22 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Стили и скрипты приложения: сначала сеть, иначе новая страница получала бы старые файлы
+  // Стили и скрипты приложения: сначала сеть, иначе новая страница получала бы старые файлы.
+  // При обрыве сети берём копию из кэша, а если её нет, пробуем ещё раз: незагруженный скрипт ломает страницу целиком.
   if (url.origin === location.origin && /\.(css|js)$/.test(url.pathname) && !url.pathname.includes('/vendor/')) {
-    e.respondWith(
-      fetch(req)
-        .then(res => { if (res && res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); } return res; })
-        .catch(() => caches.match(req))
-    );
+    e.respondWith((async () => {
+      for (let i = 0; i < 2; i++) {
+        try {
+          const res = await fetch(req);
+          if (res && res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; }
+          const hit = await caches.match(req);
+          if (!hit && res && res.status < 500) return res;       // 404 и подобное: это настоящий ответ
+          if (hit) return hit;
+        } catch (err) { const hit = await caches.match(req); if (hit) return hit; }
+        await new Promise(r => setTimeout(r, 400));
+      }
+      return fetch(req);
+    })());
     return;
   }
 
