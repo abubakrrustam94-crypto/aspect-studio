@@ -304,6 +304,15 @@
           <div id="compList"></div>
         </section>
 
+        <section class="card" id="cardDepth" data-tab="bg">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Размытие по глубине</div>
+          <label class="switch"><input type="checkbox" data-key="depthOn"><span class="track"></span><span>Размыть то, что дальше или ближе объекта</span></label>
+          <div class="stack" id="depthFields" style="margin-top:14px" hidden>
+            <div><span class="field-label">Сила</span><div class="range-row"><input type="range" data-key="depthBlur" data-num min="5" max="100" aria-label="Сила размытия по глубине"><output data-out="depthBlur" data-unit="%"></output></div></div>
+            <p class="note" style="margin:0">Нейросеть оценивает глубину кадра, и резкой остаётся та часть, что на одной глубине с объектом (лицо, найденный объект, а если их нет, центр или точка, которую ты выбрал). На плоских фото (документы, рисунки) эффекта не будет, а на сложных сценах границы могут быть неточными. Не работает вместе с удалением фона.</p>
+          </div>
+        </section>
+
         <section class="card" id="cardMargins" data-tab="bg">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg> Поля</div>
           <div class="chips" data-group="bg" role="group" aria-label="Тип фона">
@@ -358,6 +367,30 @@
           </div>
           <div class="panel" data-bgpanel="transparent" hidden>
             <p class="note" style="margin:0">Прозрачность сохранится в PNG и WebP. В JPG прозрачные поля станут чёрными.</p>
+          </div>
+        </section>
+
+        <section class="card" data-tab="extra" id="cardOcr">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Текст на фото</div>
+          <div class="stack">
+            <div>
+              <span class="field-label">Язык</span>
+              <div class="seg" data-group="ocrLang" role="group" aria-label="Язык текста">
+                <button type="button" data-val="rus+eng">Русский и английский</button>
+                <button type="button" data-val="rus">Русский</button>
+                <button type="button" data-val="eng">Английский</button>
+              </div>
+            </div>
+            <div class="row" style="margin:0"><button type="button" class="btn btn-tonal btn-sm" id="ocrBtn" disabled>Распознать текст</button></div>
+            <div id="ocrOut" hidden>
+              <textarea id="ocrText" rows="6" style="width:100%" aria-label="Распознанный текст" readonly></textarea>
+              <p class="note" id="ocrInfo" aria-live="polite"></p>
+              <div class="row" style="margin:8px 0 0">
+                <button type="button" class="btn btn-tonal btn-sm" id="ocrCopy">Копировать текст</button>
+                <button type="button" class="btn btn-outlined btn-sm" id="ocrFocus">Кадр смотрит на текст</button>
+              </div>
+            </div>
+            <p class="note" style="margin:0">Нужен компонент «Распознавание текста» (около 10 МБ, скачивается один раз). Лучше всего читается печатный текст на контрастном фоне: документы, вывески, упаковка. Рукописный и очень мелкий текст распознаётся плохо.</p>
           </div>
         </section>
 
@@ -958,6 +991,8 @@
   <script src="js/tone.js"></script>
   <script src="js/why.js"></script>
   <script src="js/extras.js"></script>
+  <script src="js/depth.js"></script>
+  <script src="js/ocr.js"></script>
   <script src="js/ab.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/fmtcmp.js"></script>

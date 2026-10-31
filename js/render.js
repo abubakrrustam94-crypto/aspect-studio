@@ -505,6 +505,10 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
     else if (!(c.bg === 'inpaint' && !cap && await ipBackground(ctx, bmp, item, cw, ch, L, c))) paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
+    if (c.depthOn && c.depthBlur > 0) {
+      if (!compInstalled('depth')) compWarnOnce('depth', 'Размытие по глубине');
+      else if (await ensureDepth(item, bmp)) applyDepthBlur(ctx, item, L, cw, ch, c);
+    }
   }
   applyTone(ctx, cw, ch, c);
   drawWatermark(ctx, cw, ch);

@@ -27,7 +27,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.39.0';
+const APP_VERSION = '2.40.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
@@ -82,7 +82,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
-  pdfPage: 'a4', multiPages: 'first',
+  pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, ocrLang: 'rus+eng',
   toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none',
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,
@@ -105,7 +105,7 @@ try {
 for (const k of Object.keys(DEFAULTS)) if (typeof S[k] !== typeof DEFAULTS[k]) S[k] = DEFAULTS[k];
 
 // Настройки на фото: у фото может быть свой набор (item.ov) поверх общих S
-const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'dnModel', 'dnLevel', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality', 'srModel', 'toneExp', 'toneCon', 'toneSat', 'toneWarm', 'toneStyle'];
+const OV_KEYS = ['sizeMode', 'ratioW', 'ratioH', 'outW', 'outH', 'presetId', 'fit', 'align', 'bg', 'color', 'blur', 'dim', 'grad1', 'grad2', 'gradAngle', 'enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'dnModel', 'dnLevel', 'smart', 'cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality', 'srModel', 'toneExp', 'toneCon', 'toneSat', 'toneWarm', 'toneStyle', 'depthOn', 'depthBlur'];
 const cfgFor = item => (item && item.ov) ? Object.assign({}, S, item.ov) : S;
 const tgt = () => { const it = items[idx]; return it && it.ov ? it.ov : S; };   // куда писать изменения
 

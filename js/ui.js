@@ -37,6 +37,7 @@ function set(key, val) {
   if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
   if (key === 'jpgEngine' && val === 'moz' && !compInstalled('encjpeg')) { compWarn(['encjpeg'], 'MozJPEG'); syncUI(); return; }
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
+  if (key === 'depthOn' && val && !compInstalled('depth')) { compWarn(['depth'], 'Размытие по глубине'); syncUI(); return; }
   if (key === 'bg' && val === 'inpaint' && !compInstalled('erase')) { compWarn(['erase'], 'Дорисовать края'); syncUI(); return; }
   if (key === 'nnThreads' && typeof ortKill === 'function') { setTimeout(ortKill, 0); }
   if (key === 'colorSpace' && typeof ICC_OUT !== 'undefined' && ICC_OUT[val] && !compInstalled('icc')) { compWarn(['icc'], 'Цветовые профили'); syncUI(); return; }
@@ -99,6 +100,7 @@ function syncUI() {
   $('#wmPosBox').hidden = E.wmMode === 'tile';
   $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
+  $('#depthFields').hidden = !E.depthOn;
   { const f = E.format, jx = f === 'jxl' && +S.quality >= 100;
     $('#jpgEngRow').hidden = f !== 'jpg'; $('#pngOptRow').hidden = f !== 'png'; $('#pngColorsRow').hidden = S.pngOpt !== 'lossy';
     $('#encEffRow').hidden = !(f === 'avif' || f === 'jxl' || (f === 'jpg' && S.jpgEngine === 'moz') || (f === 'png' && S.pngOpt !== 'off'));
@@ -238,6 +240,7 @@ function updateChrome() {
   if (window.abSync) window.abSync();
   if (window.toneSync) window.toneSync();
   if (window.exSync) window.exSync();
+  if (window.ocrSync) window.ocrSync();
   if (typeof erSync === 'function') erSync();
   const n = items.length, has = n > 0;
   thumbsRow.hidden = !has;

@@ -90,3 +90,5 @@ jobs:
         run: node tests/r5.js
       - name: PDF, иконки, кадры (блок C1)
         run: node tests/c1.js
+      - name: Глубина и текст (блок C2)
+        run: node tests/c2.js
