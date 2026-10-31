@@ -7,7 +7,7 @@ const jobs = +(args[args.indexOf('--jobs') + 1]) || 2;
 const HEAVY = ['formats', 'stress', 'large', 'speed', 'quality', 'cutout', 'cutout2', 'sr', 'detect', 'denoise', 'erase', 'raw', 'encode'];
 const all = fs.readdirSync(path.join(ROOT, 'tests')).filter(f => /^[a-z0-9]+\.js$/.test(f)).map(f => f.replace('.js', '')).filter(n => !['make_raw'].includes(n));
 const list = all.filter(n => !(fast && HEAVY.includes(n)));
-const run = (cmd, argv) => new Promise(res => { const t = Date.now(), p = spawn(cmd, argv, { cwd: ROOT, env: process.env }); let out = ''; p.stdout.on('data', d => out += d); p.stderr.on('data', d => out += d); p.on('close', code => res({ code, out, ms: Date.now() - t })); });
+const run = (cmd, argv) => new Promise(res => { const t = Date.now(), p = spawn(cmd, argv, { cwd: ROOT, env: { ...process.env, NODE_OPTIONS: ((process.env.NODE_OPTIONS || '') + ' --require ' + path.join(ROOT, 'tools/csp-watch.js')).trim() } }); let out = ''; p.stdout.on('data', d => out += d); p.stderr.on('data', d => out += d); p.on('close', code => res({ code, out, ms: Date.now() - t })); });
 (async () => {
   const t0 = Date.now(); let bad = 0;
   try { require.resolve('eslint'); const a = await run('node', ['tools/audit.js']); console.log(`${a.code ? '✘' : '✔'} audit (${(a.ms / 1000).toFixed(0)} с)`); if (a.code) { bad++; console.log(a.out); } } catch (e) { console.log('- audit пропущен: eslint не установлен'); }

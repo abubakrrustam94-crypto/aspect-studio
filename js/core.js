@@ -27,9 +27,10 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.40.0';
+const APP_VERSION = '2.41.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
+const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
 const DEV_MEM = navigator.deviceMemory || 4;     // ГБ ОЗУ (Chrome/Android); где API нет (iOS/Firefox) считаем 4
 const MAX_AREA = DEV_MEM <= 2 ? 8000000 : DEV_MEM <= 4 ? 14000000 : 16000000;   // лимит площади холста
@@ -149,6 +150,7 @@ function applyTheme(t, pref = themePref) {
   themePref = pref;
   document.documentElement.setAttribute('data-theme', t);
   const b = $('#themeToggle');
+  // eslint-disable-next-line no-restricted-syntax -- только статичные значения
   b.innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-${t === 'dark' ? 'moon' : 'sun'}"/></svg>` + (pref === 'auto' ? '<b class="theme-a" aria-hidden="true">A</b>' : '');
   b.title = `Тема: ${THEME_NAMES[pref]}. Нажми, чтобы сменить (T)`; b.setAttribute('aria-label', `Сменить тему. Сейчас: ${THEME_NAMES[pref]}`);
   const m = $('meta[name="theme-color"]');
@@ -276,6 +278,8 @@ async function decodeBitmap(src) {
 }
 // Загрузка с применением поворота / отражения / обрезки (если они заданы у фото)
 async function loadBitmap(src) { return applyXform(await decodeBitmap(src), src); }
+/* Любые данные снаружи (имена файлов, текст) перед вставкой в HTML проходят через esc(). Правило ESLint в tools/audit.js требует этого для innerHTML. */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const dimsOf = b => ({ w: b.naturalWidth || b.width, h: b.naturalHeight || b.height });
 const closeBmp = b => { if (b && typeof b.close === 'function') b.close(); else if (typeof HTMLCanvasElement !== 'undefined' && b instanceof HTMLCanvasElement) b.width = b.height = 0; };
 
@@ -363,8 +367,10 @@ function bigPhotoMsg(list) {
 }
 async function addFiles(list) {
   await compReady;
-  const files = Array.from(list || []).filter(isInputFile);
+  let files = Array.from(list || []).filter(isInputFile);
   if (!files.length) { toast('Выбери изображения', true); return; }
+  const huge = files.filter(f => f.size > MAX_INPUT_BYTES);
+  if (huge.length) { files = files.filter(f => f.size <= MAX_INPUT_BYTES); toast(`Слишком большой файл (больше ${Math.round(MAX_INPUT_BYTES / 1048576)} МБ): ${huge.slice(0, 2).map(f => f.name).join(', ')}${huge.length > 2 ? '…' : ''}`, true); if (!files.length) return; }
   const first = items.length;
   const failed = [], notes = [], bigNotes = [];
   for (let i = 0; i < files.length; i++) {

@@ -12,14 +12,20 @@ function buildChips() {
     rc.appendChild(b);
   });
   const bc = $('#bundleChips');
-  BUNDLES.forEach(bd => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.val = bd.id; b.innerHTML = `${bd.name}<small>${bd.ids.length} файла на фото</small>`; bc.appendChild(b); });
+  BUNDLES.forEach(bd => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.val = bd.id;
+    // eslint-disable-next-line no-restricted-syntax -- имя экранировано
+    b.innerHTML = `${esc(bd.name)}<small>${bd.ids.length} файла на фото</small>`;
+    bc.appendChild(b);
+  });
   const pc = $('#presetChips');
   let lastG = null;
   PRESETS.forEach(p => {
     if (p.g !== lastG) { lastG = p.g; const h = document.createElement('div'); h.className = 'chip-title'; h.textContent = p.g; pc.appendChild(h); }
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'chip'; b.dataset.id = p.id;
-    b.innerHTML = `${p.name}<small>${p.w}×${p.h} · ${p.note}</small>`;
+    // eslint-disable-next-line no-restricted-syntax -- значения экранированы
+    b.innerHTML = `${esc(p.name)}<small>${p.w}×${p.h} · ${esc(p.note)}</small>`;
     b.addEventListener('click', () => { const t = tgt(); t.presetId = p.id; t.outW = p.w; t.outH = p.h; afterSet(); });
     pc.appendChild(b);
   });
@@ -211,6 +217,7 @@ function renderThumbs() {
     x.addEventListener('click', ev => { ev.stopPropagation(); removeItem(i); });
     const sl = document.createElement('button'); sl.type = 'button';
     sl.className = 'thumb-sel' + (it.skip ? ' off' : '') + (it.status ? ' ' + it.status : '');
+    // eslint-disable-next-line no-restricted-syntax -- статичные значения
     sl.innerHTML = it.status === 'bad' ? '!' : it.skip ? '' : '<svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>';
     sl.setAttribute('role', 'checkbox'); sl.setAttribute('aria-checked', String(!it.skip));
     sl.setAttribute('aria-label', `Включить в ZIP: ${it.name}`);

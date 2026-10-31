@@ -2,6 +2,8 @@
 <html lang="ru" data-theme="dark">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Aspect Studio — смена формата фото без обрезки</title>
   <meta name="description" content="Меняй соотношение сторон фото без обрезки: размытый фон, градиенты, пресеты для соцсетей, пакетная обработка и ZIP. Всё локально в браузере.">
@@ -729,6 +731,12 @@
           <p class="note">Если закрыть вкладку, предложим продолжить с тем же набором фото и настройками. Копии лежат только в этом браузере и никуда не отправляются; до 400 МБ. Выключишь переключатель или нажмёшь кнопку ниже, и всё сохранённое удалится.</p>
           <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="sessForgetBtn">Удалить сохранённые фото</button></div>
         </section>
+        <section class="card" id="cardWipe" data-tab="meta">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Данные на этом устройстве</div>
+          <p class="note" style="margin-top:0">Сайт хранит в браузере только твои настройки, сохранённую сессию (если она включена) и скачанные компоненты. Ничего не отправляется на серверы. Кнопка ниже стирает всё это и отключает фоновый режим. Фото и результаты, уже сохранённые на устройство, остаются.</p>
+          <div class="row" style="margin:0"><button type="button" class="btn btn-outlined btn-sm danger" id="wipeBtn"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Стереть все данные сайта</button></div>
+        </section>
+
         <section class="card" id="cardPrivacy" data-tab="meta">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Метаданные</div>
           <span class="field-label">Быстрый профиль</span>
@@ -993,6 +1001,7 @@
   <script src="js/extras.js"></script>
   <script src="js/depth.js"></script>
   <script src="js/ocr.js"></script>
+  <script src="js/wipe.js"></script>
   <script src="js/ab.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/fmtcmp.js"></script>

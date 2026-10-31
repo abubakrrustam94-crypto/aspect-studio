@@ -503,10 +503,13 @@ function rvPaint(it) {
   c.classList.toggle('skip', !!it.skip);
   c.setAttribute('aria-pressed', String(!it.skip));
   const meta = c.querySelector('.rv-meta');
-  const name = `<span>${it.name.replace(/[<>&]/g, '')}</span>`;
-  if (!r) meta.innerHTML = `<b>${it.skip ? 'Не входит в ZIP' : 'Считаю…'}</b>${name}`;
-  else if (r.err) meta.innerHTML = `<b class="bad">Ошибка</b>${name}`;
-  else meta.innerHTML = `<b>${r.w}×${r.h}</b>${fmtSize(r.size)}${r.fit && !r.fit.met ? ' <i class="warn">больше лимита</i>' : ''}<br>${name}`;
+  const name = `<span>${esc(it.name)}</span>`;
+  let html;
+  if (!r) html = `<b>${it.skip ? 'Не входит в ZIP' : 'Считаю…'}</b>${name}`;
+  else if (r.err) html = `<b class="bad">Ошибка</b>${name}`;
+  else html = `<b>${r.w}×${r.h}</b>${fmtSize(r.size)}${r.fit && !r.fit.met ? ' <i class="warn">больше лимита</i>' : ''}<br>${name}`;
+  // eslint-disable-next-line no-restricted-syntax -- имя файла экранировано esc(), остальное числа и статичный текст
+  meta.innerHTML = html;
 }
 function rvBuild() {
   rvGrid.replaceChildren(); rv.cells.clear();
@@ -610,8 +613,9 @@ function renderAnalysis() {
   if (!an) { box.replaceChildren(); $('#anAdvice').textContent = 'Не удалось проанализировать это фото.'; return; }
   const [sl, sc] = anSharpLabel(an.sharp), [nl, nc] = anNoiseLabel(an.noise);
   const stat = (name, val, cls) => `<div class="an-stat ${cls || ''}"><small>${name}</small><b>${val}</b></div>`;
+  // eslint-disable-next-line no-restricted-syntax -- stat() получает числа и статичные подписи, имя объекта экранируется
   box.innerHTML = stat('Резкость', sl, sc) + stat('Шум', nl, nc) + stat('Размер', `${an.w}×${an.h}<br>${an.mp.toFixed(1)} Мп`) +
-    stat('Объект', an.subject ? (an.faces ? `лиц: ${an.faces}${an.eyes ? ' · глаза' : ''}` : an.objMain || 'найден') : 'по центру') +
+    stat('Объект', an.subject ? (an.faces ? `лиц: ${an.faces}${an.eyes ? ' · глаза' : ''}` : esc(an.objMain) || 'найден') : 'по центру') +
     (an.objects && an.objects.length ? stat('На фото', [...new Set(an.objects.map(o => o.name))].slice(0, 3).join(', ')) : '');
   $('#anAdvice').textContent = anAdvice(it, an) + (an.faceXMissing ? ' Точный поиск лиц выбран, но не скачан компонент «Лица: точный поиск» (вкладка «Компоненты»).' : '') + (an.objMissing ? ' Поиск объектов выбран, но компонент не скачан (вкладка «Компоненты»).' : an.objFail ? ' Поиск объектов не удался.' : '') + (an.faceMissing ? ' Поиск лиц не работает: не скачан компонент «Поиск лиц» (вкладка «Компоненты»), объект определён по краям.' : an.faceFail ? ' Модель лиц не загрузилась, поэтому объект определён по краям.' : '');
 }

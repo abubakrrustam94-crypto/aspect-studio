@@ -19,34 +19,34 @@ async function opfsSize(path) { try { return (await (await (await opfsDir()).get
 async function opfsRemove(path) { try { await (await opfsDir()).removeEntry(opfsName(path)); } catch (e) {} }            // file:// и http не на localhost: Cache API нет — компоненты грузятся по требованию как раньше
 // files: [путь, размер в байтах]. Размеры сверяет tests/components.js с реальными файлами.
 const COMPONENTS = [
-  { id: 'zlib', group: 'f', name: 'Сжатие zlib', desc: 'Нужен для PSD со сжатием ZIP, XCF и TIFF', files: [['vendor/pako/pako.umd.min.js', 45440]] },
-  { id: 'tiff', group: 'f', name: 'TIFF', desc: 'Файлы .tif и .tiff, превью DOS EPS', files: [['vendor/utif/UTIF.js', 95737]], requires: ['zlib'] },
-  { id: 'heif', group: 'f', name: 'HEIC / HEIF', desc: 'Фото с iPhone и многих телефонов', files: [['vendor/heif/libheif-bundle.js', 2044206]] },
-  { id: 'jxl', group: 'f', name: 'JPEG XL', desc: 'Файлы .jxl (если браузер не открывает их сам)', files: [['vendor/jxl/jxl-decode.js', 20282], ['vendor/jxl/jxl_dec.wasm', 849240]] },
-  { id: 'exr', group: 'f', name: 'OpenEXR', desc: 'Файлы .exr', files: [['vendor/exr/parse-exr.js', 26476]] },
-  { id: 'pdf', group: 'f', name: 'Adobe Illustrator (AI)', desc: 'Файлы .ai с PDF-совместимостью', files: [['vendor/pdfjs/pdf.min.mjs', 523774], ['vendor/pdfjs/pdf.worker.min.mjs', 1321307]] },
-  { id: 'raw', group: 'f', name: 'RAW: полное проявление', desc: 'LibRaw: проявляет настоящие данные матрицы вместо встроенного превью (CR2, CR3, NEF, ARW, RAF, DNG и др.)', files: [['vendor/raw/worker.js', 63682], ['vendor/raw/libraw.wasm', 1385126]] },
-  { id: 'icc', group: 'e', name: 'Цветовые профили ICC', desc: 'LittleCMS: вывод в Adobe RGB, Rec.2020, ProPhoto или в профиль исходного фото (JPG и PNG); профили записываются в файл', files: [['vendor/icc/lcms.js', 41421], ['vendor/icc/lcms.wasm', 315910], ['vendor/icc/adobe-rgb.icc', 374], ['vendor/icc/rec2020.icc', 790], ['vendor/icc/prophoto.icc', 756], ['vendor/icc/display-p3.icc', 736]] },
-  { id: 'encjpeg', group: 'e', name: 'JPG: MozJPEG', desc: 'Файл JPG на 10–20% меньше при том же виде (прогрессивный JPEG)', files: [['vendor/enc/mozjpeg_enc.js', 38422], ['vendor/enc/mozjpeg_enc.wasm', 251524]] },
-  { id: 'encpng', group: 'e', name: 'PNG: оптимизатор', desc: 'oxipng: PNG без потерь на 10–30% меньше; режим «Палитра» уменьшает ещё сильнее', files: [['vendor/enc/squoosh_oxipng.js', 6307], ['vendor/enc/squoosh_oxipng_bg.wasm', 164172]] },
-  { id: 'encavif', group: 'e', name: 'AVIF', desc: 'Формат вывода AVIF: вдвое меньше JPG при том же виде; кодирование медленное', files: [['vendor/enc/avif_enc.js', 39621], ['vendor/enc/avif_enc.wasm', 3485872]] },
-  { id: 'encjxl', group: 'e', name: 'JPEG XL: запись', desc: 'Формат вывода JXL, в том числе без потерь; открывается не везде', files: [['vendor/enc/jxl_enc.js', 47073], ['vendor/enc/jxl_enc.wasm', 1363824]] },
-  { id: 'tfjs', group: 'n', name: 'Движок нейросетей', desc: 'Общая основа для поиска лиц и удаления фона; сам по себе ничего не делает', files: [['vendor/tfjs/runtime.js', 692675], ['vendor/tfjs/tfjs-backend-wasm.wasm', 311123], ['vendor/tfjs/tfjs-backend-wasm-simd.wasm', 424594]] },
-  { id: 'faces', group: 'n', name: 'Поиск лиц', desc: 'Кадр «Заполнить» смотрит на лица', files: [['vendor/blazeface/blazeface-back.json', 79043], ['vendor/blazeface/blazeface-back.bin', 538928]], requires: ['tfjs'] },
-  { id: 'cutout', group: 'n', name: 'Удаление фона', desc: 'Вырезает объект из кадра: товары, люди, животные', files: [['vendor/cutout/u2netp.json', 28572], ['vendor/cutout/u2netp.f16.bin', 2250970]], requires: ['tfjs'] },
-  { id: 'ort', group: 'n', name: 'Движок ONNX', desc: 'Общий движок для точных нейросетей (удаление фона, увеличение и др.)', files: [['vendor/ort/ort.wasm.min.js', 50196], ['vendor/ort/ort-wasm-simd-threaded.mjs', 24381], ['vendor/ort/ort-wasm-simd-threaded.wasm', 14239897]] },
-  { id: 'srfast', group: 'n', name: 'Увеличение ×4: быстрая', desc: 'Real-ESRGAN animevideo v3: самая быстрая, хороша для рисунков и графики; на фото может сглаживать', files: [['vendor/models/sr-fast-x4.onnx', 2489124]], requires: ['ort'] },
-  { id: 'srgen', group: 'n', name: 'Увеличение ×4: обычная', desc: 'Real-ESRGAN general v3: универсальная для фото, добавляет чёткость и убирает шум; мегапиксель считается несколько минут', files: [['vendor/models/sr-general-x4.onnx', 2437741]], requires: ['ort'] },
-  { id: 'srmax', group: 'n', name: 'Увеличение ×4: максимум', desc: 'Real-ESRGAN x4plus: лучшее качество и детали; очень медленно (до часа на мегапиксель), для небольших снимков до 0,4 МП', files: [['vendor/models/sr-max-x4.onnx.p1', 16755589], ['vendor/models/sr-max-x4.onnx.p2', 16755589]], requires: ['ort'] },
-  { id: 'dnffd', group: 'n', name: 'Шумоподавление: быстрая', desc: 'FFDNet (цветной): убирает мелкий шум и зерно; уровень задаётся; около секунды на плитку 256 px', files: [['vendor/models/dn-ffdnet.onnx', 1716209]], requires: ['ort'] },
-  { id: 'dnscu', group: 'n', name: 'Шумоподавление: реальный шум', desc: 'SCUNet: убирает реальный шум камеры, в том числе цветной и от высокого ISO; медленно (минуты на мегапиксель), для небольших снимков до 3 МП', files: [['vendor/models/dn-scunet.onnx.p1', 21310135], ['vendor/models/dn-scunet.onnx.p2', 21310134]], requires: ['ort'] },
-  { id: 'erase', group: 'n', name: 'Убрать лишнее', desc: 'MI-GAN: закрасил кистью лишний предмет или человека, нейросеть дорисует фон на этом месте; около 4 секунд на область', files: [['vendor/models/migan.onnx', 13368043]], requires: ['ort'] },
-  { id: 'facex', group: 'n', name: 'Лица: точный поиск', desc: 'SCRFD: находит мелкие, повёрнутые и боковые лица и ставит 5 точек (глаза, нос, рот): кадр «Заполнить» ставит глаза на линию третей', files: [['vendor/models/scrfd-500m.onnx', 2524817]], requires: ['ort'] },
-  { id: 'objx', group: 'n', name: 'Объекты в кадре', desc: 'YOLOX-nano, 80 классов (люди, животные, предметы): кадр «Заполнить» смотрит на главный объект, а не на середину по краям', files: [['vendor/models/yolox-nano.onnx', 3659407]], requires: ['ort'] },
-  { id: 'objx2', group: 'n', name: 'Объекты: точный', desc: 'YOLOX-s: надёжнее находит мелкие и частично закрытые объекты, считает втрое дольше «nano»', files: [['vendor/models/yolox-s.onnx', 17961858]], requires: ['ort'] },
-  { id: 'ocr', group: 'n', name: 'Распознавание текста', desc: 'Tesseract: находит и копирует текст на фото (русский и английский); кадр «Заполнить» может смотреть на текст', files: [['vendor/tesseract/tesseract.min.js', 62961], ['vendor/tesseract/worker.min.js', 111307], ['vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 3899472], ['vendor/tesseract/eng.traineddata.gz', 2952873], ['vendor/tesseract/rus.traineddata.gz', 2679598]] },
-  { id: 'depth', group: 'n', name: 'Глубина кадра', desc: 'MiDaS small: определяет, что ближе, а что дальше, для размытия фона по глубине («портретный режим»); около 2–5 секунд на фото', files: [['vendor/models/depth-midas-s.onnx.p1', 16746419], ['vendor/models/depth-midas-s.onnx.p2', 16746420]], requires: ['ort'] },
-  { id: 'cutout2', group: 'n', name: 'Удаление фона: точный', desc: 'IS-Net: аккуратнее края, волосы, мелкие детали; считает дольше быстрого', files: [['vendor/models/isnet-int8.onnx.p1', 22171218], ['vendor/models/isnet-int8.onnx.p2', 22171218]], requires: ['ort'] },
+  { id: 'zlib', group: 'f', name: 'Сжатие zlib', desc: 'Нужен для PSD со сжатием ZIP, XCF и TIFF', files: [['vendor/pako/pako.umd.min.js', 45440, '7692e029120a7b93a50e58029ec077688b711909ccfe72f43e6b1fe2ad4da4f7']] },
+  { id: 'tiff', group: 'f', name: 'TIFF', desc: 'Файлы .tif и .tiff, превью DOS EPS', files: [['vendor/utif/UTIF.js', 95737, '290e83d171a73f604b2d1723861b0b55ba7308f79a8bb594360e627474fb30d1']], requires: ['zlib'] },
+  { id: 'heif', group: 'f', name: 'HEIC / HEIF', desc: 'Фото с iPhone и многих телефонов', files: [['vendor/heif/libheif-bundle.js', 2044206, '074b2b55ef3de477ba9f794ca381f3f0324c1cba8c91b4af07395f39c22d54cc']] },
+  { id: 'jxl', group: 'f', name: 'JPEG XL', desc: 'Файлы .jxl (если браузер не открывает их сам)', files: [['vendor/jxl/jxl-decode.js', 20282, '3bedccf639a51f2a7732cc1beed62d698cc18463e415623081e23aa1e89ed1e6'], ['vendor/jxl/jxl_dec.wasm', 849240, '165bde0f48f3bdc39c7806365db5bb3b777df67fefff48050841fb4430062433']] },
+  { id: 'exr', group: 'f', name: 'OpenEXR', desc: 'Файлы .exr', files: [['vendor/exr/parse-exr.js', 26476, '97382a565e3ae3e2dd9116fac4aab93be0fa4b6a8189d58a90960dcffb47cbcd']] },
+  { id: 'pdf', group: 'f', name: 'Adobe Illustrator (AI)', desc: 'Файлы .ai с PDF-совместимостью', files: [['vendor/pdfjs/pdf.min.mjs', 523774, 'bccc24ea711db8e44503629519904a5292d73b9daaa214bbe7cdcc282b0f4259'], ['vendor/pdfjs/pdf.worker.min.mjs', 1321307, '145d2dd3ab0c86151011dba95acfa2d5336e2accd59388ea43dbee0efddaaec6']] },
+  { id: 'raw', group: 'f', name: 'RAW: полное проявление', desc: 'LibRaw: проявляет настоящие данные матрицы вместо встроенного превью (CR2, CR3, NEF, ARW, RAF, DNG и др.)', files: [['vendor/raw/worker.js', 63682, 'f0bd51a370b6a9bf2b1854bb993b96aaf2c31e0eaef01e6cac043c5b1e35cc57'], ['vendor/raw/libraw.wasm', 1385126, '952ad840b341a420d0433979820917bca3716c3d51eefd091c7a1011c84995f4']] },
+  { id: 'icc', group: 'e', name: 'Цветовые профили ICC', desc: 'LittleCMS: вывод в Adobe RGB, Rec.2020, ProPhoto или в профиль исходного фото (JPG и PNG); профили записываются в файл', files: [['vendor/icc/lcms.js', 41421, '64a9de84e747063caf5fcf762285f6db04695177ed3e3409c616c7c5ceb47d2e'], ['vendor/icc/lcms.wasm', 315910, 'dbcbee3fb3a49459a60bb6b29d6ab25fe7c219b0cc0c2b9579c0cc78f7390ddd'], ['vendor/icc/adobe-rgb.icc', 374, '60fb2adecacf82132db0b1c09b303316f3bbd9e2823e7ba096d01627d12d57c9'], ['vendor/icc/rec2020.icc', 790, '9b4e2cbd2bcd0b55b30cf660e6ee79775f714565bf055f1545081ce17a7d592a'], ['vendor/icc/prophoto.icc', 756, '59d1ef4f6b882d0d923bdaed86268f55dd30a8d102f4882aad9c2bbe9fb340c9'], ['vendor/icc/display-p3.icc', 736, '4564e3575b10133dfe34097696ce54eb0c4bb7ad5278d999f7ef68938ba8d372']] },
+  { id: 'encjpeg', group: 'e', name: 'JPG: MozJPEG', desc: 'Файл JPG на 10–20% меньше при том же виде (прогрессивный JPEG)', files: [['vendor/enc/mozjpeg_enc.js', 38422, '93d3b28a4c9d3278acbbe0e23ff244ec3a6bfb13e51647b87eea311a8d747694'], ['vendor/enc/mozjpeg_enc.wasm', 251524, '24d4177f1c4963e2058b107189249651c61fdef125570e79b1dfb63c8bb49326']] },
+  { id: 'encpng', group: 'e', name: 'PNG: оптимизатор', desc: 'oxipng: PNG без потерь на 10–30% меньше; режим «Палитра» уменьшает ещё сильнее', files: [['vendor/enc/squoosh_oxipng.js', 6307, 'ac29a688c0311c09a809e33d06c9702e84c9242169f81a04589d69a8ad6a782b'], ['vendor/enc/squoosh_oxipng_bg.wasm', 164172, '5ea3e53c0b4fc1b4e8d1511d35b89329d9376bec75a9c4d3c054774487e5f9a3']] },
+  { id: 'encavif', group: 'e', name: 'AVIF', desc: 'Формат вывода AVIF: вдвое меньше JPG при том же виде; кодирование медленное', files: [['vendor/enc/avif_enc.js', 39621, 'c6805e62cae5c1b9870fcc0448437da9e4edfc58c3da264af52361281082c63c'], ['vendor/enc/avif_enc.wasm', 3485872, 'd9f2a95164362af48558d176e619becfd49dd97b50b86c679b47100860522b3d']] },
+  { id: 'encjxl', group: 'e', name: 'JPEG XL: запись', desc: 'Формат вывода JXL, в том числе без потерь; открывается не везде', files: [['vendor/enc/jxl_enc.js', 47073, '5bb33d2a204f43035bfca2c581aff28669706aedae93188372c5d5c81532f8a8'], ['vendor/enc/jxl_enc.wasm', 1363824, '3c6c02df45c0dededab146888789d541b23b9a299cb16d497dce412a3a4bc7d3']] },
+  { id: 'tfjs', group: 'n', name: 'Движок нейросетей', desc: 'Общая основа для поиска лиц и удаления фона; сам по себе ничего не делает', files: [['vendor/tfjs/runtime.js', 692675, '9e8bf788fe935bea77e4591fd5c0c7499f11e7075d97787df26c1368e3cc5c15'], ['vendor/tfjs/tfjs-backend-wasm.wasm', 311123, '70a5d516060464e5269f01c74bac1772d6b8ab6cb612acf16b5cdaf61f78d892'], ['vendor/tfjs/tfjs-backend-wasm-simd.wasm', 424594, '77ebb28a6d34f371dbbf2086b7f2de8994acd8ea5a3cf1fa24d2c26c840cac7b']] },
+  { id: 'faces', group: 'n', name: 'Поиск лиц', desc: 'Кадр «Заполнить» смотрит на лица', files: [['vendor/blazeface/blazeface-back.json', 79043, 'a765f7b2a6c1d841ecc0b0686e5f51b141b39b7bcdf2888542dc9d9fc4384a87'], ['vendor/blazeface/blazeface-back.bin', 538928, 'dc9a97fdc50bc43216554bdd69aa3e7b9361a519ee7bdd996a2f69a98a6f9b72']], requires: ['tfjs'] },
+  { id: 'cutout', group: 'n', name: 'Удаление фона', desc: 'Вырезает объект из кадра: товары, люди, животные', files: [['vendor/cutout/u2netp.json', 28572, '4a70e2fed9cbc5875239d953af90a1c6119312811feb0fa9537e580d9b635593'], ['vendor/cutout/u2netp.f16.bin', 2250970, 'e8a78c6435f4b26e5d90fcbdcd1cb50bdaa9e8c654def7fefa0b5c4750f7223e']], requires: ['tfjs'] },
+  { id: 'ort', group: 'n', name: 'Движок ONNX', desc: 'Общий движок для точных нейросетей (удаление фона, увеличение и др.)', files: [['vendor/ort/ort.wasm.min.js', 50196, 'faece07e84faa9001f5104bbe4e5c70861d06cb2376a0dea1fa0ad33a67adc81'], ['vendor/ort/ort-wasm-simd-threaded.mjs', 24381, 'e13f7f94fc51b4ca72b12faeb1ee95f4ace6dfbc8939bc718aabdc0a27c4299b'], ['vendor/ort/ort-wasm-simd-threaded.wasm', 14239897, '3398c10d07d229bd91b364548e130e0e51a8e5704b88c7c083ebbeb78842dee2']] },
+  { id: 'srfast', group: 'n', name: 'Увеличение ×4: быстрая', desc: 'Real-ESRGAN animevideo v3: самая быстрая, хороша для рисунков и графики; на фото может сглаживать', files: [['vendor/models/sr-fast-x4.onnx', 2489124, 'aadc0fd30c9e6d170c41e439dfdf75860aabe9029d35a7beff00d14ed1f58fe0']], requires: ['ort'] },
+  { id: 'srgen', group: 'n', name: 'Увеличение ×4: обычная', desc: 'Real-ESRGAN general v3: универсальная для фото, добавляет чёткость и убирает шум; мегапиксель считается несколько минут', files: [['vendor/models/sr-general-x4.onnx', 2437741, '23faf0ce01243d4a0508742bc53e40de9ccb6f99e373129d6285f487fb587171']], requires: ['ort'] },
+  { id: 'srmax', group: 'n', name: 'Увеличение ×4: максимум', desc: 'Real-ESRGAN x4plus: лучшее качество и детали; очень медленно (до часа на мегапиксель), для небольших снимков до 0,4 МП', files: [['vendor/models/sr-max-x4.onnx.p1', 16755589, '9afceac17c231c51b5fd7c1a35f0885832cefb69687511f48eb3dccd2f540dd3'], ['vendor/models/sr-max-x4.onnx.p2', 16755589, '6f05860704964bacb930eddcd1b26d3d9e0c8f36c73e0129bacca486e2f21e87']], requires: ['ort'] },
+  { id: 'dnffd', group: 'n', name: 'Шумоподавление: быстрая', desc: 'FFDNet (цветной): убирает мелкий шум и зерно; уровень задаётся; около секунды на плитку 256 px', files: [['vendor/models/dn-ffdnet.onnx', 1716209, 'a0fe697c8069d788a2d3adb4346d10e1c401be471c74504de46e8181513e9295']], requires: ['ort'] },
+  { id: 'dnscu', group: 'n', name: 'Шумоподавление: реальный шум', desc: 'SCUNet: убирает реальный шум камеры, в том числе цветной и от высокого ISO; медленно (минуты на мегапиксель), для небольших снимков до 3 МП', files: [['vendor/models/dn-scunet.onnx.p1', 21310135, 'f1e42d4496d84bee18b48590310f8b444685e1ab25a16eba2ad9fde5db4edc84'], ['vendor/models/dn-scunet.onnx.p2', 21310134, 'a1367e57a96ae04ccbee61a795b80ddec9119077ba915188177784cfadd77f07']], requires: ['ort'] },
+  { id: 'erase', group: 'n', name: 'Убрать лишнее', desc: 'MI-GAN: закрасил кистью лишний предмет или человека, нейросеть дорисует фон на этом месте; около 4 секунд на область', files: [['vendor/models/migan.onnx', 13368043, '00442804dfd67866c3992acdde2be0f33c28d388524ee51d3394e7e18ffbbb0c']], requires: ['ort'] },
+  { id: 'facex', group: 'n', name: 'Лица: точный поиск', desc: 'SCRFD: находит мелкие, повёрнутые и боковые лица и ставит 5 точек (глаза, нос, рот): кадр «Заполнить» ставит глаза на линию третей', files: [['vendor/models/scrfd-500m.onnx', 2524817, '5e4447f50245bbd7966bd6c0fa52938c61474a04ec7def48753668a9d8b4ea3a']], requires: ['ort'] },
+  { id: 'objx', group: 'n', name: 'Объекты в кадре', desc: 'YOLOX-nano, 80 классов (люди, животные, предметы): кадр «Заполнить» смотрит на главный объект, а не на середину по краям', files: [['vendor/models/yolox-nano.onnx', 3659407, 'c789161ed43c8269fcd4e67c67eeeb4e80c622da2eb296a20bc6007bd18a0b7d']], requires: ['ort'] },
+  { id: 'objx2', group: 'n', name: 'Объекты: точный', desc: 'YOLOX-s: надёжнее находит мелкие и частично закрытые объекты, считает втрое дольше «nano»', files: [['vendor/models/yolox-s.onnx', 17961858, '9b97adf4219a639dad65fb80a7e6ea1bf5964238e044d18ae87c0bb53f4192b0']], requires: ['ort'] },
+  { id: 'ocr', group: 'n', name: 'Распознавание текста', desc: 'Tesseract: находит и копирует текст на фото (русский и английский); кадр «Заполнить» может смотреть на текст', files: [['vendor/tesseract/tesseract.min.js', 62961, '000c27d9cd0def655f77b36c72a389c0ab13793aa31cb4d7aab56d09c0afbc7e'], ['vendor/tesseract/worker.min.js', 111307, '576b7df7e3393e137e51849357c9adb53fe7ac1bb69bfa06cf3d61520f182c6d'], ['vendor/tesseract/tesseract-core-simd-lstm.wasm.js', 3899472, 'c58b46a4c796c0b8afccf77591d5b875b6896b45d402bbce8caa6f5362447b38'], ['vendor/tesseract/eng.traineddata.gz', 2952873, '45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91'], ['vendor/tesseract/rus.traineddata.gz', 2679598, 'f51f5edc992249ff9b70a227b22f242dfa47b2b1bbc7ae0ea74908640c101f6a']] },
+  { id: 'depth', group: 'n', name: 'Глубина кадра', desc: 'MiDaS small: определяет, что ближе, а что дальше, для размытия фона по глубине («портретный режим»); около 2–5 секунд на фото', files: [['vendor/models/depth-midas-s.onnx.p1', 16746419, 'c5cd539bd08045dc5f1594a971bcc13aabd4e71289baf14a89a41f383315e7f9'], ['vendor/models/depth-midas-s.onnx.p2', 16746420, 'afa6edb0ff8a4f331311edc62062fe0597d743f32136d06fb11be8abfa84da2f']], requires: ['ort'] },
+  { id: 'cutout2', group: 'n', name: 'Удаление фона: точный', desc: 'IS-Net: аккуратнее края, волосы, мелкие детали; считает дольше быстрого', files: [['vendor/models/isnet-int8.onnx.p1', 22171218, 'c6f1cbcc749e75cb6d9d7bbf97501034a2bc09440cc8451839d5eded82fecc81'], ['vendor/models/isnet-int8.onnx.p2', 22171218, '693e4c2b21470c93d23681951aa6b93181b99106f84e3fcb8deba99f516de3e8']], requires: ['ort'] },
 ];
 /* Какой компонент нужен удалению фона при выбранном качестве */
 const cutComp = (cfg = S) => cfg && cfg.cutQuality === 'precise' ? 'cutout2' : 'cutout';
@@ -103,6 +103,23 @@ compOn('compPersistBtn', 'click', async () => {
   let ok = false; try { ok = !!(navigator.storage && navigator.storage.persist && await navigator.storage.persist()); } catch (e) {}
   compPersisted = ok; renderComponents(); toast(ok ? 'Готово: браузер не будет чистить компоненты сам' : 'Браузер не разрешил. Добавь сайт на главный экран (установи как приложение) и попробуй снова', !ok, { ms: 7000 });
 });
+
+/* Проверка целостности: SHA-256 каждого файла записан в COMPONENTS (третий элемент), список обновляет tools/comp-hashes.js */
+async function compReadBuf(path) {
+  try { return await (await (await (await opfsDir()).getFileHandle(opfsName(path))).getFile()).arrayBuffer(); } catch (e) {}
+  try { const r = await (await caches.open(COMP_CACHE)).match(compUrl(path)); if (r) return await r.arrayBuffer(); } catch (e) {}
+  return null;
+}
+const compHex = buf => Array.from(new Uint8Array(buf), x => x.toString(16).padStart(2, '0')).join('');
+async function compVerify(c) {            // возвращает путь файла, не прошедшего проверку, или null
+  if (!(self.crypto && crypto.subtle)) return null;
+  for (const f of c.files) {
+    if (!f[2]) continue;
+    const buf = await compReadBuf(f[0]);
+    if (!buf || compHex(await crypto.subtle.digest('SHA-256', buf)) !== f[2]) return f[0];
+  }
+  return null;
+}
 
 /* Скачивание одного файла с прогрессом: возвращает число байт */
 async function compFetchFileOpfs(path, onBytes, signal) {
@@ -218,14 +235,25 @@ async function compInstall(id, onProgress) {
   chain.forEach(x => { compBusy[x] = true; compAbort[x] = ctl; compProg[x] = { done: 0, total }; }); if (typeof renderComponents === 'function') renderComponents();
   try {
     const bg = await compBgStart(id, chain, total, ctl);                  // фоновое скачивание, если браузер умеет
-    let fg = !bg;
+    let fg = !bg; const verified = new Set();
     if (bg) { try { await compBgRun(bg, chain, total, ctl, onProgress, id, true); } catch (e) { if (e && e.bgStall) fg = true; else throw e; } }   // фон не тронулся с места: качаем из страницы
     if (fg) for (const x of chain) {
       const c = compById(x);
       try {
         for (const f of c.files) await compFetchFile(cache, f[0], n => { done += n; chain.forEach(y => { compProg[y] = { done, total }; }); if (onProgress) onProgress(Math.min(1, done / total), x); }, ctl.signal);
-        compFiles[x] = true; compBad[x] = false;
+        const bp = await compVerify(c);                                     // «установлен» только после проверки хеша
+        if (bp) throw new Error(`Файл не прошёл проверку целостности (${bp}). Скачай компонент ещё раз.`);
+        verified.add(x); compFiles[x] = true; compBad[x] = false;
       } catch (e) { for (const f of c.files) { await cache.delete(compUrl(f[0])); await opfsRemove(f[0]); } compFiles[x] = false; compBad[x] = false; throw e; }
+    }
+    for (const x of chain) {                                               // фоновая загрузка: хеш сверяем после неё
+      if (verified.has(x)) continue;
+      const c = compById(x), badPath = await compVerify(c);
+      if (badPath) {
+        for (const f of c.files) { await cache.delete(compUrl(f[0])); await opfsRemove(f[0]); }
+        compFiles[x] = false; compBad[x] = false;
+        throw new Error(`Файл не прошёл проверку целостности (${badPath}). Скачай компонент ещё раз.`);
+      }
     }
     try { if (navigator.storage && navigator.storage.persist) compPersisted = await navigator.storage.persist(); } catch (e) {}      // просим браузер не вычищать файлы
   } finally { chain.forEach(x => { delete compBusy[x]; delete compAbort[x]; delete compProg[x]; }); if (typeof renderComponents === 'function') renderComponents(); if (typeof updateComponentHints === 'function') updateComponentHints(); }

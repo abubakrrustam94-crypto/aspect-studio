@@ -85,8 +85,9 @@ const idbGetAll = (store, q) => new Promise((res, rej) => { const r = q ? store.
 const idbKeys = store => new Promise((res, rej) => { const r = store.getAllKeys(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 let sessTimer = 0, sessWarned = false, sessSaving = false;
 const sessKey = it => `${it.name}|${it.file.size}|${it.file.lastModified || 0}`;
-function sessSaveSoon() { if (!sessOn()) return; clearTimeout(sessTimer); sessTimer = setTimeout(sessSave, 1500); }
+function sessSaveSoon() { if (!sessOn() || window.wiping) return; clearTimeout(sessTimer); sessTimer = setTimeout(sessSave, 1500); }
 async function sessSave() {
+  if (window.wiping) return;
   if (!sessOn() || sessSaving) { if (sessSaving) sessSaveSoon(); return; }
   sessSaving = true;
   try {
@@ -159,8 +160,8 @@ $('#sessForgetBtn').addEventListener('click', async () => { await sessForget(); 
    Приём фото из меню «Поделиться» (Android, установленное приложение): sw.js кладёт файлы в кэш и открывает ./?shared=N
    =================================================================== */
 (async function takeShared() {
-  const q = new URLSearchParams(location.search), n = +q.get('shared');
-  if (!n || typeof caches === 'undefined') return;
+  const q = new URLSearchParams(location.search), n = Math.min(200, Math.floor(+q.get('shared')));   // число берётся из адреса: ограничиваем, чтобы чужая ссылка не зациклила страницу
+  if (!(n > 0) || typeof caches === 'undefined') return;
   try {
     const c = await caches.open('aspect-share'), files = [];
     for (let i = 0; i < n; i++) {

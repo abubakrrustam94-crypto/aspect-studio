@@ -8,8 +8,10 @@ const ONB_STEPS = [
 let onbStep = 0, onbOpener = null;
 function onbRender() {
   const [ic, t, p] = ONB_STEPS[onbStep];
+  // eslint-disable-next-line no-restricted-syntax -- статичные значения
   $('#onbIc').innerHTML = `<svg class="ic" aria-hidden="true"><use href="#i-${ic}"/></svg>`;
   $('#onbTitle').textContent = t; $('#onbText').textContent = p;
+  // eslint-disable-next-line no-restricted-syntax -- статичные значения
   $('#onbDots').innerHTML = ONB_STEPS.map((_, i) => `<i class="${i === onbStep ? 'on' : ''}"></i>`).join('');
   $('#onbNext').textContent = onbStep === ONB_STEPS.length - 1 ? 'Понятно' : 'Далее';
   $('#onbSkip').hidden = onbStep === ONB_STEPS.length - 1;

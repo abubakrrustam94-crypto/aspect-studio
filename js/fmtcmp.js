@@ -40,6 +40,7 @@ function fcPaint() {
       if (S.targetOn && r.fmt !== 'png') bits.push(r.met ? 'в лимите' : 'не уложился');
       if (r.w && fc.ref && r.w !== fc.ref.w) bits.push(`уменьшено до ${r.w}×${r.h}`);
       if (best === r) bits.push('★ лучший баланс');
+      // eslint-disable-next-line no-restricted-syntax -- в bits только числа и статичный текст
       meta.innerHTML = bits.join(' · ');
     }
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-sm ' + (S.format === r.fmt ? 'btn-tonal' : 'btn-outlined');

@@ -7,7 +7,7 @@ const url = 'file://' + path.resolve(__dirname, '../index.html'), FX = path.join
 let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) fail++; };
 const SHOW = process.argv.includes('-v');
 (async () => {
-  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 } });
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 }, bypassCSP: true });
   await ctx.addInitScript(() => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(url); await p.waitForTimeout(500);

@@ -9,6 +9,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      NODE_OPTIONS: --require ./tools/csp-watch.js     # любой тест падает при нарушении политики безопасности
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,3 +94,5 @@ jobs:
         run: node tests/c1.js
       - name: Глубина и текст (блок C2)
         run: node tests/c2.js
+      - name: Безопасность (блок S1)
+        run: node tests/s1.js
