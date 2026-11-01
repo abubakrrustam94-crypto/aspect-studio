@@ -537,6 +537,15 @@
             </div>
           </div>
         </section>
+        <section class="card" id="cardLow" data-tab="quality">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Ночной свет</div>
+          <label class="switch"><input type="checkbox" data-key="lowOn"><span class="track"></span><span>Осветлить тёмные места, не выжигая света</span></label>
+          <div class="stack" id="lowFields" style="margin-top:14px" hidden>
+            <div><span class="field-label">Сила</span><div class="range-row"><input type="range" data-key="lowAmt" data-num min="10" max="100" aria-label="Сила ночного света"><output data-out="lowAmt" data-unit="%"></output></div></div>
+            <p class="note" style="margin:0">Нейросеть (Zero-DCE++) смотрит на кадр целиком и сама решает, где добавить света: тени и тёмные углы светлеют сильнее, яркие места почти не меняются. Поднятые тени показывают шум, при необходимости включи шумоподавление. Не работает вместе с «Удалить фон».</p>
+          </div>
+        </section>
+
         <section class="card" id="cardEnhance" data-tab="quality">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшение качества</div>
           <label class="switch"><input type="checkbox" data-key="enhOn"><span class="track"></span><span>Улучшить результат в конце</span></label>
@@ -1003,6 +1012,7 @@
   <script src="js/why.js"></script>
   <script src="js/extras.js"></script>
   <script src="js/depth.js"></script>
+  <script src="js/lowlight.js"></script>
   <script src="js/ocr.js"></script>
   <script src="js/wipe.js"></script>
   <script src="js/ab.js"></script>

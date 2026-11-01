@@ -94,6 +94,8 @@ jobs:
         run: node tests/c1.js
       - name: Глубина и текст (блок C2)
         run: node tests/c2.js
+      - name: Ночной свет (блок C3)
+        run: node tests/c3.js
       - name: Безопасность (блок S1)
         run: node tests/s1.js
       - name: Интерфейс на телефоне (UX)
