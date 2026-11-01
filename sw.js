@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v60';
+const VERSION = 'aspect-studio-v61';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
 const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
 const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
@@ -18,7 +18,9 @@ async function opfsPut(path, resp, size) {
     await w.close();
   } catch (e) { try { await w.abort(); } catch (_) {} try { await d.removeEntry(name); } catch (_) {} throw e; }
 }
-const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/uix.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/session.js', './js/maskedit.js', './js/ort.js', './js/detect.js', './js/ort-worker.js', './js/sr.js', './js/dn.js', './js/erase.js', './js/icc.js', './js/enc.js', './js/enc-worker.js', './js/metadata.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/outpaint.js', './js/features.js', './js/setsearch.js', './js/peek.js', './js/tone.js', './js/why.js', './js/extras.js', './js/depth.js', './js/lowlight.js', './js/ocr.js', './js/wipe.js', './js/ab.js', './js/gestures.js', './js/fmtcmp.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
+/* Что нужно для запуска и что подгружается по требованию (грузится в фоне после установки) */
+const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/uix.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/session.js', './js/maskedit.js', './js/ort.js', './js/detect.js', './js/ort-worker.js', './js/sr.js', './js/dn.js', './js/erase.js', './js/icc.js', './js/enc.js', './js/enc-worker.js', './js/metadata.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/outpaint.js', './js/features.js', './js/setsearch.js', './js/peek.js', './js/tone.js', './js/why.js', './js/extras.js', './js/wipe.js', './js/ab.js', './js/gestures.js', './js/fmtcmp.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
+const LATER = ['./js/depth.js', './js/lowlight.js', './js/ocr.js', './js/changelog-data.js', './js/speed.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -27,12 +29,15 @@ self.addEventListener('install', e => {
       .then(() => self.skipWaiting())
   );
 });
+/* Редкие модули докладываем в кэш в фоне — не задерживаем установку; недостающее кэшируется при первом обращении */
+const warmLater = () => caches.open(VERSION).then(c => Promise.all(LATER.map(u => c.match(u).then(h => h || c.add(new Request(u, { cache: 'reload' })).catch(() => {}))))).catch(() => {});
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== COMP_CACHE && k !== 'aspect-share').map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => { warmLater(); })
   );
 });
 

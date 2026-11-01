@@ -7,8 +7,10 @@ if (eslintVer < 9) { console.log('Аудит пропущен: не устано
 const { ESLint } = require('eslint'); const globalsPkg = require('globals'); const espree = require('espree');
 const ROOT = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const main = [...html.matchAll(/<script src="(js\/[^"]+)"/g)].map(m => m[1]);
-const workers = fs.readdirSync(path.join(ROOT, 'js')).map(f => 'js/' + f).filter(f => /worker\.js$/.test(f));
+const inHtml = [...html.matchAll(/<script[^>]*\bsrc="(js\/[^"]+)"/g)].map(m => m[1]);
+const jsAll = fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f);
+const workers = jsAll.filter(f => /worker\.js$/.test(f));
+const main = [...inHtml, ...jsAll.filter(f => !inHtml.includes(f) && !workers.includes(f))];     // подключённые в index.html + загружаемые лениво (lazyLoad)
 // 1. все имена верхнего уровня основных скриптов и их дубли
 const top = new Map(), dups = [];
 for (const f of main) {
@@ -37,7 +39,7 @@ const rules = { 'no-restricted-syntax': ['error', ...HTML_SINK], 'no-undef': 'er
   let errors = 0, warns = 0; const out = [];
   for (const r of res) for (const m of r.messages) { (m.severity === 2 ? errors++ : warns++); out.push(`${m.severity === 2 ? 'ОШИБКА' : 'замечание'} ${path.relative(ROOT, r.filePath)}:${m.line} ${m.ruleId}: ${m.message}`); }
   // 2. офлайн: каждый скрипт и воркер должен быть в списке CORE service worker'а, а каждый файл из CORE — существовать
-  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), core = [...sw.slice(sw.indexOf('const CORE')).split('\n')[0].matchAll(/'\.\/([^']+)'/g)].map(m => m[1]);
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'), core = [...sw.matchAll(/^const (?:CORE|LATER) = \[.*$/gm)].flatMap(m => [...m[0].matchAll(/'\.\/([^']+)'/g)].map(x => x[1]));       // CORE — запуск, LATER — подгружается в фоне
   [...main, ...workers].forEach(f => { if (!core.includes(f)) { errors++; out.push('ОШИБКА офлайн: ' + f + ' нет в CORE service worker\'а'); } });
   core.forEach(f => { if (f && !fs.existsSync(path.join(ROOT, f))) { errors++; out.push('ОШИБКА офлайн: файл из CORE не существует → ' + f); } });
   // 3. утечки ссылок на файлы: на каждый createObjectURL должен быть revokeObjectURL в том же файле

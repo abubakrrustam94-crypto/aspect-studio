@@ -14,6 +14,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   // 2. обновление со старой версии
   p = await mk({ 'aspect-studio-onboarded': '1', 'aspect-studio-seen': '2.0.0' });
   ok(await p.evaluate(() => !document.getElementById('whatsnew').hidden), 'после обновления окно открывается само');
+  await p.waitForFunction(() => document.querySelectorAll('#wnList h3').length >= 5, null, { timeout: 8000 });
   const txt = await p.textContent('#wnList');
   ok(txt.includes('v' + ver) && txt.includes('Большие фото'), 'в окне есть список изменений с текущей версией');
   ok(await p.evaluate(() => document.activeElement.id === 'wnClose'), 'фокус на кнопке «Понятно»');
@@ -24,7 +25,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   await p.evaluate(() => wnOpen()); await p.mouse.click(5, 5); await p.waitForTimeout(200);
   ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'тап по затемнению закрывает окно');
   // 3. кнопка в «О программе»
-  await p.click('#settingsTabs [data-tab=about]'); await p.click('#wnOpenBtn'); await p.waitForTimeout(200);
+  await p.click('#settingsTabs [data-tab=about]'); await p.click('#wnOpenBtn'); await p.waitForFunction(() => document.querySelectorAll('#wnList h3').length >= 5, null, { timeout: 8000 });
   ok(await p.evaluate(() => !document.getElementById('whatsnew').hidden && document.querySelectorAll('#wnList h3').length >= 5), 'кнопка «Что нового» открывает полный список');
   await p.click('#wnClose'); ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'кнопка «Понятно» закрывает окно');
   ok(!p.errs.length, 'нет ошибок JS');
@@ -40,7 +41,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   ok(await p.evaluate(() => document.getElementById('whatsnew').hidden), 'при откате на старую версию окно не показывается');
   // 5. согласованность версий и файлов
   const md = fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8'), pj = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-  const list = await p.evaluate(() => CHANGELOG.map(e => e.v));
+  const list = await p.evaluate(async () => { await lazyLoad('changelog-data'); return CHANGELOG.map(e => e.v); });
   ok(list[0] === ver && pj.version === ver, `версии совпадают: приложение ${ver}, package.json ${pj.version}, список ${list[0]}`);
   ok(list.every(v => md.includes('## ' + v + ' ')), 'CHANGELOG.md содержит все версии из окна');
   ok(/aspect-studio-v\d+/.test(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')) && fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').includes('js/changelog.js'), 'service worker кэширует changelog.js');

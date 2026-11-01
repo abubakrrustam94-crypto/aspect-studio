@@ -36,6 +36,17 @@ const errLog = (() => { try { const a = JSON.parse(localStorage.getItem(ERRLOG_K
   });
 })();
 
+/* Редкие модули (глубина, ночной свет, текст на фото, список изменений) грузятся при первом использовании, а не при старте */
+const lazyP = {};
+function lazyLoad(name) {
+  return lazyP[name] || (lazyP[name] = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'js/' + name + '.js';
+    s.onload = () => res(); s.onerror = () => { delete lazyP[name]; s.remove(); rej(new Error('Не загрузился файл ' + name + '.js. Проверь соединение и повтори.')); };
+    document.head.appendChild(s);
+  }));
+}
+const lazyOk = name => lazyLoad(name).then(() => true, e => { if (typeof toast === 'function') toast(e.message, true); return false; });
+
 function logError(err, where) {
   try {
     const msg = String(err && err.stack ? err.stack : (err && err.message) || err).slice(0, 600);
@@ -52,7 +63,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.45.0';
+const APP_VERSION = '2.46.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах

@@ -34,16 +34,16 @@
 
   /* ---------- Индикатор «занято» с отменой (нейросети без процентов) ---------- */
   const bus = $('#busy'), busText = $('#busyText'), busCancel = $('#busyCancel');
-  let cur = null, tick = 0;
-  function render() { if (cur) busText.textContent = cur.label + (cur.sec > 2 ? ' · ' + cur.sec + ' с' : ''); }
+  let bzCur = null, tick = 0;
+  function render() { if (bzCur) busText.textContent = bzCur.label + (bzCur.sec > 2 ? ' · ' + bzCur.sec + ' с' : ''); }
   window.busy = function (label, onCancel) {
-    const h = { label, sec: 0, onCancel, text(t) { h.label = t; if (cur === h) render(); }, done() { if (cur === h) { clearInterval(tick); cur = null; bus.hidden = true; document.body.classList.remove('busy-on'); } } };
-    if (cur) cur.done();
-    cur = h; busCancel.hidden = !onCancel; bus.hidden = false; document.body.classList.add('busy-on'); render();
+    const h = { label, sec: 0, onCancel, text(t) { h.label = t; if (bzCur === h) render(); }, done() { if (bzCur === h) { clearInterval(tick); bzCur = null; bus.hidden = true; document.body.classList.remove('busy-on'); } } };
+    if (bzCur) bzCur.done();
+    bzCur = h; busCancel.hidden = !onCancel; bus.hidden = false; document.body.classList.add('busy-on'); render();
     tick = setInterval(() => { h.sec++; render(); }, 1000);
     return h;
   };
-  busCancel.addEventListener('click', () => { const h = cur; if (!h) return; h.done(); try { if (h.onCancel) h.onCancel(); } catch (e) { console.warn(e); } });
+  busCancel.addEventListener('click', () => { const h = bzCur; if (!h) return; h.done(); try { if (h.onCancel) h.onCancel(); } catch (e) { console.warn(e); } });
 
   /* ---------- Разовая подсказка про A/B и закрепление ---------- */
   const hint = $('#uiHint'), HK = 'aspect-studio-ui-hint';
@@ -54,6 +54,28 @@
 
   /* ---------- Кнопка «Добавить» в карточке с фото ---------- */
   const add = $('#addMoreBtn'); if (add) add.addEventListener('click', () => $('#fileInput').click());
+
+  /* ---------- Текст на фото: модуль ocr.js подгружается при первом нажатии ---------- */
+  const ocrBtn = $('#ocrBtn');
+  if (ocrBtn) {
+    let ocrLoaded = false;
+    window.ocrSync = () => { ocrBtn.disabled = !cur() || exporting; };           // до загрузки модуля: кнопка активна, когда есть фото
+    ocrBtn.addEventListener('click', async e => {
+      if (ocrLoaded) return;
+      e.stopImmediatePropagation(); ocrBtn.disabled = true;
+      try { await lazyLoad('ocr'); ocrLoaded = true; } catch (x) { toast(x.message, true); window.ocrSync(); return; }
+      window.ocrSync(); ocrBtn.click();                                             // теперь у кнопки есть настоящий обработчик
+    }, true);
+  }
+
+  /* ---------- Проверка скорости (модуль speed.js грузится по кнопке) ---------- */
+  const sp = $('#speedBtn');
+  if (sp) sp.addEventListener('click', async () => {
+    const out = $('#speedOut'); out.hidden = false; out.textContent = 'Измеряю…'; sp.disabled = true;
+    try { await lazyLoad('speed'); out.replaceChildren(...(await window.speedRun())); }
+    catch (e) { out.textContent = 'Не удалось измерить: ' + e.message; }
+    finally { sp.disabled = false; }
+  });
 
   /* ---------- Вибро-отклик ---------- */
   const BUZZ = '#resetPhoto, #toneAuto, #toneReset, #tiltAuto, #tiltReset, #clearAll, #abKeep, .tb-btn.primary';

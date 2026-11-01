@@ -618,8 +618,10 @@
           <div class="row" style="margin-top:12px">
             <a class="btn btn-outlined btn-sm" id="repoLink" href="https://github.com/abubakrrustam94-crypto/aspect-studio" target="_blank" rel="noopener noreferrer">Исходный код на GitHub</a>
             <button type="button" class="btn btn-outlined btn-sm" id="wnOpenBtn"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Что нового</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="speedBtn"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg> Проверить скорость</button>
             <button type="button" class="btn btn-outlined btn-sm danger" id="resetAll">Сбросить все настройки</button>
           </div>
+          <div class="speed-out" id="speedOut" role="status" aria-live="polite" hidden></div>
           <details class="errlog" id="errLogBox">
             <summary>Журнал ошибок (<span id="errLogCount">0</span>)</summary>
             <p class="note" style="margin-top:8px">Хранится только на этом устройстве и никуда не отправляется. Если что-то сломалось, скопируй и пришли разработчику.</p>
@@ -990,43 +992,40 @@
     </div>
   </div>
 </div>
-<script src="js/core.js"></script>
-  <script src="js/components.js"></script>
-  <script src="js/formats.js"></script>
-  <script src="js/render.js"></script>
-  <script src="js/analyze.js"></script>
-  <script src="js/faces.js"></script>
-  <script src="js/ort.js"></script>
-  <script src="js/detect.js"></script>
-  <script src="js/cutout.js"></script>
-  <script src="js/maskedit.js"></script>
-  <script src="js/erase.js"></script>
-  <script src="js/icc.js"></script>
-  <script src="js/preview.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/sr.js"></script>
-  <script src="js/dn.js"></script>
-  <script src="js/outpaint.js"></script>
-  <script src="js/enc.js"></script>
-  <script src="js/export.js"></script>
-  <script src="js/features.js"></script>
-  <script src="js/setsearch.js"></script>
-  <script src="js/peek.js"></script>
-  <script src="js/tone.js"></script>
-  <script src="js/why.js"></script>
-  <script src="js/extras.js"></script>
-  <script src="js/depth.js"></script>
-  <script src="js/lowlight.js"></script>
-  <script src="js/ocr.js"></script>
-  <script src="js/wipe.js"></script>
-  <script src="js/ab.js"></script>
-  <script src="js/gestures.js"></script>
-  <script src="js/uix.js"></script>
-  <script src="js/fmtcmp.js"></script>
-  <script src="js/session.js"></script>
-  <script src="js/metadata.js"></script>
-  <script src="js/onboarding.js"></script>
-  <script src="js/changelog.js"></script>
-<script src="js/main.js"></script>
+<script defer src="js/core.js"></script>
+  <script defer src="js/components.js"></script>
+  <script defer src="js/formats.js"></script>
+  <script defer src="js/render.js"></script>
+  <script defer src="js/analyze.js"></script>
+  <script defer src="js/faces.js"></script>
+  <script defer src="js/ort.js"></script>
+  <script defer src="js/detect.js"></script>
+  <script defer src="js/cutout.js"></script>
+  <script defer src="js/maskedit.js"></script>
+  <script defer src="js/erase.js"></script>
+  <script defer src="js/icc.js"></script>
+  <script defer src="js/preview.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/sr.js"></script>
+  <script defer src="js/dn.js"></script>
+  <script defer src="js/outpaint.js"></script>
+  <script defer src="js/enc.js"></script>
+  <script defer src="js/export.js"></script>
+  <script defer src="js/features.js"></script>
+  <script defer src="js/setsearch.js"></script>
+  <script defer src="js/peek.js"></script>
+  <script defer src="js/tone.js"></script>
+  <script defer src="js/why.js"></script>
+  <script defer src="js/extras.js"></script>
+  <script defer src="js/wipe.js"></script>
+  <script defer src="js/ab.js"></script>
+  <script defer src="js/gestures.js"></script>
+  <script defer src="js/uix.js"></script>
+  <script defer src="js/fmtcmp.js"></script>
+  <script defer src="js/session.js"></script>
+  <script defer src="js/metadata.js"></script>
+  <script defer src="js/onboarding.js"></script>
+  <script defer src="js/changelog.js"></script>
+<script defer src="js/main.js"></script>
 </body>
 </html>

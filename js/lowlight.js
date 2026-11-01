@@ -1,6 +1,7 @@
 'use strict';
 /* Aspect Studio — «Ночной свет»: Zero-DCE++ (Li-Chongyi, только для некоммерческого использования) по кадру 256×256 строит карту кривых
    яркости; сами кривые применяются к фото в полном размере (8 шагов x += r·(x²−x)). Тёмные места светлеют, света не выжигаются. */
+const llSig = it => `${it.rot || 0}|${it.tilt || 0}|${it.flipH ? 1 : 0}|${it.flipV ? 1 : 0}|${it.crop ? [it.crop.x, it.crop.y, it.crop.w, it.crop.h].join(',') : ''}`;
 const LL_MODEL = ['vendor/models/lowlight-zdce.onnx'], LL_N = 256;
 
 async function lowCompute(bmp) {
@@ -13,7 +14,7 @@ async function lowCompute(bmp) {
   return { n: N, r: Float32Array.from(out[Object.keys(out)[0]].data) };
 }
 async function ensureLow(item, bmp) {
-  const sig = dpSig(item);
+  const sig = llSig(item);
   if (item.low && item.low.sig === sig) return item.low;
   if (item.lowP && item.lowP.sig === sig) return item.lowP.p;
   const rec = { sig }; item.lowFail = false;
@@ -49,7 +50,7 @@ function lowApplyData(d, W, H, ox, oy, iw, ih, M, amt) {
   }
 }
 function applyLowLight(ctx, item, L, cw, ch, c) {
-  const M = item.low; if (!M || M.sig !== dpSig(item) || !(c.lowAmt > 0)) return;
+  const M = item.low; if (!M || M.sig !== llSig(item) || !(c.lowAmt > 0)) return;
   const ix = Math.max(0, Math.floor(L.dx)), iy = Math.max(0, Math.floor(L.dy)), ix2 = Math.min(cw, Math.ceil(L.dx + L.dw)), iy2 = Math.min(ch, Math.ceil(L.dy + L.dh)), iw = ix2 - ix, ih = iy2 - iy;
   if (iw < 4 || ih < 4) return;
   const amt = Math.min(1, c.lowAmt / 100), STRIP = 128;

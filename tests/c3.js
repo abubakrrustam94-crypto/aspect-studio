@@ -17,6 +17,7 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('http://localhost:8804/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(700);
   // --- чистая математика ---
+  await p.evaluate(() => lazyLoad('lowlight'));
   const m = await p.evaluate(() => {
     const n = 4, mk = v => ({ n, r: new Float32Array(3 * n * n).fill(v) });
     const d0 = new Uint8ClampedArray([30, 60, 90, 255, 250, 250, 250, 255]), z = d0.slice(); lowApplyData(z, 2, 1, 0, 0, 2, 1, mk(0), 1);

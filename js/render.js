@@ -507,11 +507,11 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
     if (c.lowOn && c.lowAmt > 0) {
       if (!compInstalled('lowlight')) compWarnOnce('lowlight', 'Ночной свет');
-      else if (await ensureLow(item, bmp)) applyLowLight(ctx, item, L, cw, ch, c);
+      else if (await lazyOk('lowlight') && await ensureLow(item, bmp)) applyLowLight(ctx, item, L, cw, ch, c);
     }
     if (c.depthOn && c.depthBlur > 0) {
       if (!compInstalled('depth')) compWarnOnce('depth', 'Размытие по глубине');
-      else if (await ensureDepth(item, bmp)) applyDepthBlur(ctx, item, L, cw, ch, c);
+      else if (await lazyOk('depth') && await ensureDepth(item, bmp)) applyDepthBlur(ctx, item, L, cw, ch, c);
     }
   }
   applyTone(ctx, cw, ch, c);

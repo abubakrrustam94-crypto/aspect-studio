@@ -98,6 +98,10 @@ jobs:
         run: node tests/c3.js
       - name: Тон: дизеринг, стили, зерно (блок T2)
         run: node tests/t2.js
+      - name: Ленивая загрузка и скорость (блок PERF)
+        run: node tests/perf.js
+      - name: Бюджет размера старта
+        run: node tools/size-report.js --check
       - name: Безопасность (блок S1)
         run: node tests/s1.js
       - name: Интерфейс на телефоне (UX)

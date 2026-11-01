@@ -773,3 +773,9 @@ body.progress-on .busy { bottom: calc(86px + env(safe-area-inset-bottom) + var(-
   .thumb-sel { width: 30px; height: 30px; top: -9px; left: -9px; }
   .thumb-x { width: 32px; height: 32px; }
 }
+
+.speed-out { margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: var(--md-sys-color-surface-container); font-size: .85rem; display: grid; gap: 4px; }
+.speed-out[hidden] { display: none; }
+.speed-out .sp-row { display: flex; justify-content: space-between; gap: 12px; }
+.speed-out .sp-row b { font-variant-numeric: tabular-nums; }
+.speed-out .sp-sum { font-weight: 700; margin-top: 4px; }
