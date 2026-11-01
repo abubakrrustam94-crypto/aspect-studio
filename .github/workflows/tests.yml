@@ -96,6 +96,8 @@ jobs:
         run: node tests/c2.js
       - name: Ночной свет (блок C3)
         run: node tests/c3.js
+      - name: Умная ретушь (блок C4)
+        run: node tests/c4.js
       - name: Тон: дизеринг, стили, зерно (блок T2)
         run: node tests/t2.js
       - name: Ленивая загрузка и скорость (блок PERF)

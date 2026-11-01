@@ -505,6 +505,10 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
     else if (!(c.bg === 'inpaint' && !cap && await ipBackground(ctx, bmp, item, cw, ch, L, c))) paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
+    if (c.retouchOn && c.retouchAmt > 0) {
+      if (!compInstalled('retouch')) compWarnOnce('retouch', 'Умная ретушь');
+      else if (await lazyOk('retouch') && await ensureRetouch(item, bmp, c.retouchStyle === 'vivid' ? 'vivid' : 'exp')) applyRetouch(ctx, item, L, cw, ch, c);
+    }
     if (c.lowOn && c.lowAmt > 0) {
       if (!compInstalled('lowlight')) compWarnOnce('lowlight', 'Ночной свет');
       else if (await lazyOk('lowlight') && await ensureLow(item, bmp)) applyLowLight(ctx, item, L, cw, ch, c);

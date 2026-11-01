@@ -541,6 +541,22 @@
             </div>
           </div>
         </section>
+        <section class="card" id="cardRetouch" data-tab="quality">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Умная ретушь</div>
+          <label class="switch"><input type="checkbox" data-key="retouchOn"><span class="track"></span><span>Подобрать цвет и тон, как у ретушёра</span></label>
+          <div class="stack" id="retouchFields" style="margin-top:14px" hidden>
+            <div>
+              <span class="field-label">Стиль</span>
+              <div class="seg" data-group="retouchStyle" role="group" aria-label="Стиль ретуши">
+                <button type="button" data-val="exp">Как у эксперта</button>
+                <button type="button" data-val="vivid">Ярче</button>
+              </div>
+            </div>
+            <div><span class="field-label">Сила</span><div class="range-row"><input type="range" data-key="retouchAmt" data-num min="10" max="100" aria-label="Сила ретуши"><output data-out="retouchAmt" data-unit="%"></output></div></div>
+            <p class="note" style="margin:0">Нейросеть (Image-Adaptive-3DLUT) смотрит на кадр целиком и выбирает цветовую таблицу, как у ретушёра: выравнивает экспозицию, добавляет чистоты и насыщенности. Работает для любых фото: люди, еда, пейзажи, интерьеры. Ручной «Тон и цвет» применяется поверх. Не работает вместе с «Удалить фон».</p>
+          </div>
+        </section>
+
         <section class="card" id="cardLow" data-tab="quality">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Ночной свет</div>
           <label class="switch"><input type="checkbox" data-key="lowOn"><span class="track"></span><span>Осветлить тёмные места, не выжигая света</span></label>

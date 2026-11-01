@@ -45,6 +45,7 @@ function set(key, val) {
   if (key === 'pngOpt' && val !== 'off' && !compInstalled('encpng')) { compWarn(['encpng'], 'Оптимизатор PNG'); syncUI(); return; }
   if (key === 'depthOn' && val && !compInstalled('depth')) { compWarn(['depth'], 'Размытие по глубине'); syncUI(); return; }
   if (key === 'lowOn' && val && !compInstalled('lowlight')) { compWarn(['lowlight'], 'Ночной свет'); syncUI(); return; }
+  if (key === 'retouchOn' && val && !compInstalled('retouch')) { compWarn(['retouch'], 'Умная ретушь'); syncUI(); return; }
   if (key === 'bg' && val === 'inpaint' && !compInstalled('erase')) { compWarn(['erase'], 'Дорисовать края'); syncUI(); return; }
   if (key === 'nnThreads' && typeof ortKill === 'function') { setTimeout(ortKill, 0); }
   if (key === 'colorSpace' && typeof ICC_OUT !== 'undefined' && ICC_OUT[val] && !compInstalled('icc')) { compWarn(['icc'], 'Цветовые профили'); syncUI(); return; }
@@ -109,6 +110,7 @@ function syncUI() {
   $('#enhFields').hidden = !E.enhOn;
   $('#depthFields').hidden = !E.depthOn;
   $('#lowFields').hidden = !E.lowOn;
+  $('#retouchFields').hidden = !E.retouchOn;
   { const f = E.format, jx = f === 'jxl' && +S.quality >= 100;
     $('#jpgEngRow').hidden = f !== 'jpg'; $('#pngOptRow').hidden = f !== 'png'; $('#pngColorsRow').hidden = S.pngOpt !== 'lossy';
     $('#encEffRow').hidden = !(f === 'avif' || f === 'jxl' || (f === 'jpg' && S.jpgEngine === 'moz') || (f === 'png' && S.pngOpt !== 'off'));
