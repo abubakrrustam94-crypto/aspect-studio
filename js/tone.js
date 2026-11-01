@@ -2,17 +2,22 @@
 /* Aspect Studio — тон и цвет: ручные ползунки, готовые стили, «Автотон» по гистограмме и выравнивание горизонта.
    Тон применяется к готовому кадру перед водяным знаком, поэтому одинаково работает в предпросмотре и в экспорте. */
 
+/* Стили: con/sat/warm — как у ползунков; lift — подъём чёрного; curve — S-кривая плёнки (0…1);
+   sh / hi — оттенок теней и светов (в уровнях 0…255 для полного веса); grain — зерно (0…100). */
 const TONE_STYLES = {
   none: {},
   bw: { sat: -100, con: 12 },
   warm: { warm: 32, sat: 8 },
   cool: { warm: -32, sat: 4 },
-  film: { con: -8, sat: -14, warm: 10, lift: 0.07 },
+  film: { con: -8, sat: -14, warm: 10, lift: 0.07, curve: .35, grain: 14 },
   vivid: { sat: 42, con: 16 },
   fade: { con: -14, sat: -22, lift: 0.14 },
+  kodak: { con: 4, sat: 10, warm: 24, lift: 0.04, curve: .45, sh: [6, 2, -6], hi: [10, 4, -8], grain: 18 },
+  cine: { con: 10, sat: -6, lift: 0.03, curve: .3, sh: [-12, 2, 14], hi: [14, 4, -12], grain: 8 },
+  bwfilm: { sat: -100, con: 16, lift: 0.05, curve: .55, grain: 34 },
 };
-const TONE_KEYS = ['toneExp', 'toneCon', 'toneSat', 'toneWarm'];
-const toneIsOn = c => !!(c && (c.toneExp || c.toneCon || c.toneSat || c.toneWarm || (c.toneStyle && c.toneStyle !== 'none')));
+const TONE_KEYS = ['toneExp', 'toneCon', 'toneSat', 'toneWarm', 'toneGrain'];
+const toneIsOn = c => !!(c && (c.toneExp || c.toneCon || c.toneSat || c.toneWarm || c.toneGrain || (c.toneStyle && c.toneStyle !== 'none')));
 
 function toneParams(c) {
   const st = TONE_STYLES[c.toneStyle] || {};
@@ -22,41 +27,62 @@ function toneParams(c) {
     con: cl((c.toneCon || 0) + (st.con || 0), 100),
     sat: cl((c.toneSat || 0) + (st.sat || 0), 100),
     warm: cl((c.toneWarm || 0) + (st.warm || 0), 100),
-    lift: st.lift || 0,
+    lift: st.lift || 0, curve: st.curve || 0,
+    sh: st.sh || null, hi: st.hi || null,
+    grain: Math.max(0, Math.min(100, (c.toneGrain || 0) + (st.grain || 0))),
   };
 }
+/* Таблицы яркости в дробных значениях (0…255): округление делает toneApplyData вместе с дизерингом, поэтому градиенты не рвутся на полосы */
 function toneLUTs(P) {
   const gain = 2 ** P.ev, k = P.con >= 0 ? 1 + P.con / 100 * 0.8 : 1 + P.con / 100 * 0.6;
   const lut = wg => {
-    const t = new Uint8ClampedArray(256);
+    const t = new Float32Array(256);
     for (let i = 0; i < 256; i++) {
       let v = i / 255 * gain * wg;
       v = (v - 0.5) * k + 0.5;
+      if (P.curve) { const u = Math.max(0, Math.min(1, v)); v += P.curve * (u * u * (3 - 2 * u) - u); }       // S-кривая: мягкие тени и света
       v = P.lift + v * (1 - P.lift);
-      t[i] = Math.round(v * 255);
+      t[i] = Math.max(0, Math.min(255, v * 255));
     }
     return t;
   };
   const w = P.warm / 100 * 0.25;
   return [lut(1 + w), lut(1), lut(1 - w)];
 }
-function toneApplyData(d, P, L) {
-  const [lr, lg, lb] = L, s = 1 + P.sat / 100, doSat = P.sat !== 0;
-  for (let i = 0; i < d.length; i += 4) {
+/* Детерминированный шум по координатам: один и тот же кадр даёт один и тот же результат в предпросмотре и в экспорте */
+function toneHash(x, y, salt) {
+  let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(salt, 1274126177) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;                       // [0, 1)
+}
+/* d — RGBA полосы шириной w, начинающейся со строки y0; cell — размер зерна в пикселях (растёт с размером кадра) */
+function toneApplyData(d, P, L, w, y0, cell) {
+  const [lr, lg, lb] = L, s = 1 + P.sat / 100, doSat = P.sat !== 0, tint = !!(P.sh || P.hi), gr = P.grain > 0;
+  w = w || 1; y0 = y0 || 0; cell = Math.max(1, cell | 0);
+  const gsig = P.grain / 100 * 22, sh = P.sh || [0, 0, 0], hi = P.hi || [0, 0, 0];
+  for (let i = 0, px = 0; i < d.length; i += 4, px++) {
+    const x = px % w, y = y0 + (px / w | 0);
     let r = lr[d[i]], g = lg[d[i + 1]], b = lb[d[i + 2]];
-    if (doSat) {
-      const y = .299 * r + .587 * g + .114 * b;
-      r = y + (r - y) * s; g = y + (g - y) * s; b = y + (b - y) * s;
+    if (doSat) { const yy = .299 * r + .587 * g + .114 * b; r = yy + (r - yy) * s; g = yy + (g - yy) * s; b = yy + (b - yy) * s; }
+    if (tint || gr) {
+      const t = (.299 * r + .587 * g + .114 * b) / 255;
+      if (tint) { const ws = (1 - t) * (1 - t), wh = t * t; r += sh[0] * ws + hi[0] * wh; g += sh[1] * ws + hi[1] * wh; b += sh[2] * ws + hi[2] * wh; }
+      if (gr) {
+        const cx = (x / cell) | 0, cy = (y / cell) | 0, n = toneHash(cx, cy, 1) + toneHash(cx, cy, 2) + toneHash(cx, cy, 3) - 1.5;   // примерно нормальный шум
+        const mid = 1 - Math.pow(Math.abs(2 * t - 1), 1.5) * .75, a = n * gsig * mid * 1.15;
+        const mono = doSat && s < .01; r += a; g += mono ? a : a * .92; b += mono ? a : a * 1.05;
+      }
     }
-    d[i] = r; d[i + 1] = g; d[i + 2] = b;       // Uint8ClampedArray сама обрежет и округлит
+    const n = toneHash(x, y, 7) - 0.5;                 // дизеринг на 1/2 уровня: убирает ступеньки на плавных переходах
+    d[i] = r + n; d[i + 1] = g + n; d[i + 2] = b + n;    // Uint8ClampedArray сама обрежет и округлит
   }
 }
 function applyTone(ctx, cw, ch, c) {
   if (!toneIsOn(c)) return;
-  const P = toneParams(c), L = toneLUTs(P), STRIP = 256;
+  const P = toneParams(c), L = toneLUTs(P), STRIP = 256, cell = Math.max(1, Math.round(Math.max(cw, ch) / 1400));
   for (let y = 0; y < ch; y += STRIP) {
     const h = Math.min(STRIP, ch - y), img = ctx.getImageData(0, y, cw, h);
-    toneApplyData(img.data, P, L);
+    toneApplyData(img.data, P, L, cw, y, cell);
     ctx.putImageData(img, 0, y);
   }
 }
