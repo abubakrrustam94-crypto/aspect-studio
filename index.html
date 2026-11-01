@@ -100,6 +100,7 @@
             <div class="thumbs" id="thumbs"></div>
             <div class="row" style="flex-direction:column;align-items:flex-end;gap:6px">
               <span class="count-pill" id="countPill"></span>
+              <button class="btn btn-tonal btn-sm add-more" id="addMoreBtn" type="button" title="Добавить ещё фото">＋ Добавить</button>
               <button class="btn btn-outlined btn-sm" id="selAll" type="button" title="Какие фото попадут в ZIP">Снять все</button>
               <button class="btn btn-outlined btn-sm" id="clearAll" type="button">Очистить</button>
             </div>
@@ -120,9 +121,10 @@
                 <span id="navLabel">1 / 1</span>
                 <button type="button" id="nextBtn" aria-label="Следующее фото">›</button>
               </div>
-              <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg></button>
+              <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр при прокрутке"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg></button>
             </div>
           </div>
+          <p class="hint-line ui-hint" id="uiHint" hidden><span><b>A/B</b> — сравнить два набора настроек. <b>Булавка</b> закрепляет предпросмотр. Свайп листает фото.</span> <button type="button" class="toast-act" id="uiHintOk">Понятно</button></p>
           <div class="stage" id="stage">
             <div class="frame" id="frame">
               <img id="beforeImg" class="before-img" alt="Оригинал">
@@ -953,6 +955,7 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="busy" id="busy" role="status" aria-live="polite" hidden><span class="busy-dot" aria-hidden="true"></span><span id="busyText">Работаю…</span><button type="button" class="toast-act" id="busyCancel">Отмена</button></div>
 
   <div class="modal onb" id="whatsnew" role="dialog" aria-modal="true" aria-labelledby="wnTitle" hidden>
   <div class="onb-card wn-card" style="text-align:left;max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;width:min(100%,460px)">
@@ -1004,6 +1007,7 @@
   <script src="js/wipe.js"></script>
   <script src="js/ab.js"></script>
   <script src="js/gestures.js"></script>
+  <script src="js/uix.js"></script>
   <script src="js/fmtcmp.js"></script>
   <script src="js/session.js"></script>
   <script src="js/metadata.js"></script>
