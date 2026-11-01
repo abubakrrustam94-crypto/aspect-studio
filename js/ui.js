@@ -253,6 +253,7 @@ function updateChrome() {
   thumbsRow.hidden = !has;
   previewCard.hidden = !has;
   uploadZone.classList.toggle('compact', has);
+  document.body.classList.toggle('has-photos', has);
   toolbar.classList.toggle('show', has);
   document.body.classList.toggle('no-toolbar', !has);
   $('#btnZip').hidden = n < 2;

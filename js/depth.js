@@ -22,9 +22,15 @@ async function ensureDepth(item, bmp) {
   if (item.depthP && item.depthP.sig === sig) return item.depthP.p;
   const rec = { sig }; item.depthFail = false;
   rec.p = (async () => {
-    try { toast('Считаю глубину кадра…'); const r = await depthCompute(bmp); item.depth = { sig, ...r }; return item.depth; }
+    let bz = null;
+    try {
+      if (window.busy) bz = window.busy('Считаю глубину кадра…', () => { rec.cancelled = true; }); else toast('Считаю глубину кадра…');
+      const r = await depthCompute(bmp);
+      if (rec.cancelled) { if (S.depthOn) set('depthOn', false); toast('Размытие по глубине отключено'); return null; }
+      item.depth = { sig, ...r }; return item.depth;
+    }
     catch (e) { item.depthFail = true; console.warn('depth', e); return null; }
-    finally { if (item.depthP === rec) item.depthP = null; }
+    finally { if (bz) bz.done(); if (item.depthP === rec) item.depthP = null; }
   })();
   item.depthP = rec;
   return rec.p;

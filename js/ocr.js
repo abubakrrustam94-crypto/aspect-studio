@@ -2,7 +2,7 @@
 /* Aspect Studio — распознавание текста на фото (Tesseract.js в WebAssembly, русский и английский).
    Результат: текст можно скопировать, а кадр «Заполнить» можно повернуть к тексту, чтобы обрезка его не задела. */
 const OCR_DIR = 'vendor/tesseract/', OCR_SIDE = 2200;
-async function ocrRecognize(item, lang, onStatus) {
+async function ocrRecognize(item, lang, onStatus, ctl) {
   await loadScript(OCR_DIR + 'tesseract.min.js');
   const bmp = await loadBitmap(item);
   let canvas;
@@ -16,6 +16,7 @@ async function ocrRecognize(item, lang, onStatus) {
     gzip: true, cacheMethod: 'none', workerBlobURL: false,
     logger: m => { if (onStatus && m && m.status) onStatus(m.status === 'recognizing text' ? Math.round((m.progress || 0) * 100) + '%' : ''); },
   });
+  if (ctl) ctl.cancel = () => { ctl.cancelled = true; try { worker.terminate(); } catch (e) { /* уже остановлен */ } };
   try {
     const { data } = await worker.recognize(canvas, {}, { text: true, blocks: true });
     const words = [];
@@ -38,15 +39,17 @@ async function ocrRecognize(item, lang, onStatus) {
   btn.addEventListener('click', async () => {
     const it = cur(); if (!it || running || exporting) return;
     if (!compInstalled('ocr')) { compWarn(['ocr'], 'Распознавание текста'); return; }
-    running = true; btn.disabled = true; const label = btn.textContent;
+    running = true; btn.disabled = true; const label = btn.textContent, ctl = {};
+    const bz = window.busy ? window.busy('Распознаю текст…', () => { ctl.cancelled = true; if (ctl.cancel) ctl.cancel(); if (ctl.abort) ctl.abort(); }) : null;
     try {
-      const r = await ocrRecognize(it, S.ocrLang, s => { btn.textContent = s ? 'Распознаю… ' + s : 'Готовлю…'; });
+      const r = await Promise.race([new Promise((res, rej) => { ctl.abort = () => rej(new Error('cancel')); }), ocrRecognize(it, S.ocrLang, s => { btn.textContent = s ? 'Распознаю… ' + s : 'Готовлю…'; if (bz && s) bz.text('Распознаю текст… ' + s); }, ctl)]);
+      if (ctl.cancelled) { toast('Распознавание отменено'); return; }
       last = { item: it, ...r };
       out.hidden = false; txt.value = r.text; focus.hidden = !r.box;
       info.textContent = r.text ? `Слов: ${r.words}. Уверенность распознавания: ${Math.round(r.conf || 0)}%.` : 'Текст не найден.';
       if (!r.text) toast('Текст на фото не найден');
-    } catch (e) { console.error(e); toast(e instanceof FormatError ? e.message : 'Не удалось распознать текст: ' + friendlyError(e), true); }
-    finally { running = false; btn.textContent = label; window.ocrSync(); }
+    } catch (e) { if (ctl.cancelled) { toast('Распознавание отменено'); return; } console.error(e); toast(e instanceof FormatError ? e.message : 'Не удалось распознать текст: ' + friendlyError(e), true); }
+    finally { if (bz) bz.done(); running = false; btn.textContent = label; window.ocrSync(); }
   });
   copy.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(txt.value); toast('Текст скопирован'); }
