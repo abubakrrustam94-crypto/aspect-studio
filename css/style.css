@@ -779,3 +779,6 @@ body.progress-on .busy { bottom: calc(86px + env(safe-area-inset-bottom) + var(-
 .speed-out .sp-row { display: flex; justify-content: space-between; gap: 12px; }
 .speed-out .sp-row b { font-variant-numeric: tabular-nums; }
 .speed-out .sp-sum { font-weight: 700; margin-top: 4px; }
+
+.chip[hidden], .chip-title[hidden], .preset-recent[hidden] { display: none; }
+.preset-recent { margin-bottom: 8px; }

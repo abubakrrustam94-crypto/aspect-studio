@@ -217,6 +217,8 @@
           </div>
 
           <div class="panel" id="panelFixed" hidden>
+            <input class="text-input" type="search" id="presetSearch" placeholder="Найти размер: Instagram, паспорт, 10×15…" aria-label="Поиск среди готовых размеров" autocomplete="off" enterkeyhint="search" style="margin-bottom:10px">
+            <p class="note" id="presetNone" hidden>Такого размера в списке нет. Задай свой: ширина и высота ниже.</p>
             <div class="chips" id="presetChips"></div>
             <div class="custom-ratio">
               <input class="num" type="number" inputmode="numeric" data-key="outW" data-num min="16" max="16384" step="1" aria-label="Ширина, px">
@@ -707,6 +709,15 @@
             <div id="nameRow">
               <span class="field-label">Имя файла</span>
               <input class="text-input" type="text" data-key="nameTpl" maxlength="80" spellcheck="false" autocapitalize="off" aria-label="Шаблон имени файла">
+              <select class="sel-sm" id="nameTplSel" aria-label="Готовые шаблоны имени" style="margin-top:8px">
+                <option value="">Готовые шаблоны…</option>
+                <option value="{name}_{w}x{h}">Имя и размер: photo_1080x1350</option>
+                <option value="{n}">Только номер: 01, 02…</option>
+                <option value="{shot}_{name}">Дата съёмки и имя: 2026-05-03_photo</option>
+                <option value="{preset}_{n}">Пресет и номер: ig45_01</option>
+                <option value="{ratio}_{n}">Формат и номер: 4x5_01</option>
+                <option value="{name}">Исходное имя</option>
+              </select>
               <div class="chips" id="nameTokens" style="margin-top:8px">
                 <button type="button" class="chip" data-t="{name}">{name}<small>исходное имя</small></button>
                 <button type="button" class="chip" data-t="{n}">{n}<small>номер 01, 02…</small></button>
@@ -716,6 +727,9 @@
                 <button type="button" class="chip" data-t="{k}">{k}<small>номер в группе</small></button>
                 <button type="button" class="chip" data-t="{ratio}">{ratio}<small>формат</small></button>
                 <button type="button" class="chip" data-t="{preset}">{preset}<small>пресет</small></button>
+                <button type="button" class="chip" data-t="{shot}">{shot}<small>дата съёмки</small></button>
+                <button type="button" class="chip" data-t="{time}">{time}<small>время ЧЧММСС</small></button>
+                <button type="button" class="chip" data-t="{fmt}">{fmt}<small>формат файла</small></button>
               </div>
               <p class="note" id="nameExample"></p>
               <p class="note" style="margin-top:4px">{k} считает фото внутри группы с одним и тем же форматом: 01, 02… отдельно для каждого формата.</p>

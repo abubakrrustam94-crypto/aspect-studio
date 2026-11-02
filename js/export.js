@@ -18,14 +18,24 @@ function ratioToken(c) {
   return `${c.ratioW}x${c.ratioH}`.replace(/\./g, '_');
 }
 const groupKey = c => c.sizeMode === 'fixed' ? `${c.outW}x${c.outH}` : `${c.ratioW}:${c.ratioH}`;
+/* Дата съёмки из EXIF (запасной вариант — дата файла): ГГГГ-ММ-ДД */
+function shotDate(item) {
+  const m = item.metaInfo && item.metaInfo.dto && /^(\d{4})[:\-](\d{2})[:\-](\d{2})/.exec(item.metaInfo.dto);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const t = item.file && item.file.lastModified ? new Date(item.file.lastModified) : new Date(), p2 = v => String(v).padStart(2, '0');
+  return `${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())}`;
+}
+async function ensureShot(item) {
+  if (item.metaInfo === undefined) item.metaInfo = await readExifBasics(item.exifSrc || item.file).catch(() => null);
+}
 function makeName(item, w, h, ext) {
   const total = items.length, i0 = items.indexOf(item._o || item), pos = Math.max(0, i0) + 1, start = Number.isFinite(+S.nameStart) ? Math.max(0, Math.floor(+S.nameStart)) : 1;
   const pad = Math.max(2, String(total + start - 1).length), d = new Date(), p2 = v => String(v).padStart(2, '0');
   const c = cfgFor(item), key = groupKey(c);
   const k = 1 + items.slice(0, Math.max(0, i0)).filter(x => groupKey(cfgFor(x)) === key).length;
-  const vals = { name: baseName(item.name), n: String(pos - 1 + start).padStart(pad, '0'), k: String(k).padStart(2, '0'), w, h, ratio: ratioToken(c), preset: c.presetId || 'custom', date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
+  const vals = { shot: shotDate(item), time: `${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`, fmt: ext, name: baseName(item.name), n: String(pos - 1 + start).padStart(pad, '0'), k: String(k).padStart(2, '0'), w, h, ratio: ratioToken(c), preset: c.presetId || 'custom', date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}` };
   const tpl = (S.nameTpl || '').trim() || DEFAULTS.nameTpl;
-  let s = tpl.replace(/\{(name|n|k|w|h|date|ratio|preset)\}/g, (m, t) => vals[t]);
+  let s = tpl.replace(/\{(name|n|k|w|h|date|ratio|preset|shot|time|fmt)\}/g, (m, t) => vals[t]);
   if (S.nameTranslit) s = translit(s);
   if (S.nameSpaces) s = s.replace(/\s+/g, '_');
   s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').trim().replace(/^\.+/, '').slice(0, 120) || 'image';
@@ -219,6 +229,7 @@ async function exportBlob(item, bmp, formatOverride, work) {
     } catch (e) { console.warn('exif', e); }
   } else if (blob.type === 'image/png' && mo.dpi) { try { blob = await setPngDpi(blob, mo.dpi); } catch (e) { console.warn('png dpi', e); } }
   const ext = EXT[blob.type] || fmt;
+  if (/\{shot\}/.test(S.nameTpl || '')) await ensureShot(item);
   return { blob, w: outW, h: outH, fit, name: makeName(item, outW, outH, ext), fellBack: blob.type !== mime };
 }
 

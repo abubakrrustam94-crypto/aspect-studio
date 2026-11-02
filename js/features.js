@@ -469,16 +469,18 @@ thumbsEl.addEventListener('drop', e => {
 /* ===================================================================
    Копирование настроек на отмеченные ✓
    =================================================================== */
-$('#copyToSel').addEventListener('click', () => {
+$('#copyToSel').addEventListener('click', async () => {
   const src = cur(); if (!src || busy) return;
-  const E = cfgFor(src), pick = {};
-  OV_KEYS.forEach(k => { pick[k] = E[k]; });
-  const targets = items.filter(i => i !== src && !i.skip);
-  if (!targets.length) { toast('Отметь галочкой миниатюры другие фото', true); return; }
-  const prev = targets.map(t => [t, t.ov ? { ...t.ov } : null]);
-  targets.forEach(t => { t.ov = { ...pick }; });
-  renderThumbs(); syncUI(); schedule();
-  toast(`Настройки применены к ${targets.length} фото`, false, { action: { label: 'Отменить', fn: () => { prev.forEach(([t, o]) => { t.ov = o; }); renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
+  if (!(await lazyOk('copyset'))) return;
+  window.csOpen((groups, targets) => {
+    const E = cfgFor(src);
+    if (!targets.length || !groups.length) return;
+    const prev = targets.map(t => [t, t.ov ? { ...t.ov } : null]);
+    histPush('copySettings');
+    targets.forEach(t => { t.ov = csMerge(t.ov, E, groups); });
+    renderThumbs(); syncUI(); schedule();
+    toast(`Настройки применены к ${targets.length} фото`, false, { action: { label: 'Отменить', fn: () => { prev.forEach(([t, o]) => { t.ov = o; }); renderThumbs(); syncUI(); schedule(); } }, ms: 9000 });
+  });
 });
 
 /* ===================================================================

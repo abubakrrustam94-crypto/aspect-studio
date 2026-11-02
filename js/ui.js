@@ -18,16 +18,46 @@ function buildChips() {
     b.innerHTML = `${esc(bd.name)}<small>${bd.ids.length} файла на фото</small>`;
     bc.appendChild(b);
   });
-  const pc = $('#presetChips');
-  let lastG = null;
-  PRESETS.forEach(p => {
-    if (p.g !== lastG) { lastG = p.g; const h = document.createElement('div'); h.className = 'chip-title'; h.textContent = p.g; pc.appendChild(h); }
+  const pc = $('#presetChips'), RK = 'aspect-studio-recent-presets';
+  let recent = []; try { recent = JSON.parse(localStorage.getItem(RK) || '[]'); if (!Array.isArray(recent)) recent = []; } catch (e) { recent = []; }
+  recent = recent.filter(id => PRESETS.some(p => p.id === id)).slice(0, 4);
+  const chip = p => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'chip'; b.dataset.id = p.id;
     // eslint-disable-next-line no-restricted-syntax -- значения экранированы
     b.innerHTML = `${esc(p.name)}<small>${p.w}×${p.h} · ${esc(p.note)}</small>`;
-    b.addEventListener('click', () => { const t = tgt(); t.presetId = p.id; t.outW = p.w; t.outH = p.h; afterSet(); });
-    pc.appendChild(b);
+    b.addEventListener('click', () => {
+      const t = tgt(); t.presetId = p.id; t.outW = p.w; t.outH = p.h;
+      recent = [p.id, ...recent.filter(x => x !== p.id)].slice(0, 4); try { localStorage.setItem(RK, JSON.stringify(recent)); } catch (e) { /* хранилище недоступно */ }
+      afterSet(); paintRecent();
+    });
+    return b;
+  };
+  const rec = document.createElement('div'); rec.id = 'presetRecent'; rec.className = 'preset-recent'; pc.before(rec);
+  function paintRecent() {
+    rec.replaceChildren();
+    if (!recent.length) return;
+    const h = document.createElement('div'); h.className = 'chip-title'; h.textContent = 'Недавние'; rec.appendChild(h);
+    const row = document.createElement('div'); row.className = 'chips'; recent.forEach(id => row.appendChild(chip(PRESETS.find(p => p.id === id)))); rec.appendChild(row);
+    $$('#presetRecent .chip').forEach(c => c.classList.toggle('active', c.dataset.id === (cur() ? cfgFor(cur()).presetId : S.presetId)));
+  }
+  paintRecent(); window.paintRecentPresets = paintRecent;
+  let lastG = null;
+  PRESETS.forEach(p => {
+    if (p.g !== lastG) { lastG = p.g; const h = document.createElement('div'); h.className = 'chip-title'; h.textContent = p.g; pc.appendChild(h); }
+    pc.appendChild(chip(p));
+  });
+  const q = $('#presetSearch');
+  if (q) q.addEventListener('input', () => {
+    const s = q.value.toLowerCase().replace(/ё/g, 'е').replace(/[×x]/g, 'x').trim(), words = s.split(/\s+/).filter(Boolean);
+    let title = null, any = 0, anyTitle = 0;
+    const flush = () => { if (title) title.hidden = !anyTitle; };
+    [...pc.children].forEach(el => {
+      if (el.classList.contains('chip-title')) { flush(); title = el; anyTitle = 0; return; }
+      const t = (el.textContent + ' ' + el.dataset.id).toLowerCase().replace(/ё/g, 'е').replace(/[×x]/g, 'x'), m = !words.length || words.every(w => t.includes(w));
+      el.hidden = !m; if (m) { anyTitle++; any++; }
+    });
+    flush(); rec.hidden = !!words.length; $('#presetNone').hidden = !words.length || any > 0;
   });
 }
 
@@ -134,7 +164,7 @@ function syncUI() {
   if (!OPFS_OK) $('#diskNote').textContent = 'Этот браузер не умеет писать файлы на диск из страницы: ZIP собирается в памяти.';
 
   $$('#ratioChips .chip').forEach(c => c.classList.toggle('active', +c.dataset.w === E.ratioW && +c.dataset.h === E.ratioH));
-  $$('#presetChips .chip').forEach(c => c.classList.toggle('active', c.dataset.id === E.presetId));
+  $$('#presetChips .chip, #presetRecent .chip').forEach(c => c.classList.toggle('active', c.dataset.id === E.presetId));
   $$('#swatches .swatch').forEach(s => s.classList.toggle('active', s.dataset.color.toLowerCase() === String(E.color).toLowerCase()));
 
   syncScope();
@@ -306,6 +336,7 @@ function updateNameExample() {
   const w = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outW : it.w) : 1920, h = it ? (cfgFor(it).sizeMode === 'fixed' ? cfgFor(it).outH : it.h) : 1080;
   ex.textContent = 'Пример: ' + makeName(sample, w, h, ext);
 }
+{ const sel = $('#nameTplSel'); if (sel) sel.addEventListener('change', () => { if (!sel.value) return; const inp = $('#nameRow input'); inp.value = sel.value; set('nameTpl', sel.value); sel.value = ''; }); }
 $$('#nameTokens .chip').forEach(b => b.addEventListener('click', () => {
   const inp = $('#nameRow input'), v = inp.value, a = inp.selectionStart == null ? v.length : inp.selectionStart, z = inp.selectionEnd == null ? v.length : inp.selectionEnd;
   inp.value = v.slice(0, a) + b.dataset.t + v.slice(z);

@@ -63,7 +63,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.47.0';
+const APP_VERSION = '2.48.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -87,18 +87,45 @@ const PRESETS = [
   { g: 'Соцсети', id: 'pin',      name: 'Pinterest',      note: '2:3',    w: 1000, h: 1500 },
   { g: 'Соцсети', id: 'vk',       name: 'VK пост',        note: '1:1',    w: 1080, h: 1080 },
   { g: 'Соцсети', id: 'tgava',    name: 'Telegram аватар',note: '1:1',    w: 640,  h: 640  },
+  { g: 'Соцсети', id: 'wastatus', name: 'WhatsApp статус', note: '9:16',  w: 1080, h: 1920 },
+  { g: 'Соцсети', id: 'waava',    name: 'WhatsApp аватар', note: '1:1',   w: 640,  h: 640  },
+  { g: 'Соцсети', id: 'tgsticker',name: 'Telegram стикер', note: '512 px', w: 512, h: 512  },
+  { g: 'Соцсети', id: 'vkcover',  name: 'VK обложка',     note: '3:1',    w: 1590, h: 530  },
+  { g: 'Соцсети', id: 'vkstory',  name: 'VK история',     note: '9:16',   w: 1080, h: 1920 },
+  { g: 'Соцсети', id: 'ytthumb',  name: 'YouTube превью', note: '16:9',   w: 1280, h: 720  },
+  { g: 'Соцсети', id: 'ytbanner', name: 'YouTube шапка',  note: '16:9',   w: 2560, h: 1440 },
+  { g: 'Соцсети', id: 'fbcover',  name: 'Facebook обложка', note: '2.6:1', w: 820, h: 312  },
+  { g: 'Соцсети', id: 'xheader',  name: 'X шапка',        note: '3:1',    w: 1500, h: 500  },
+  { g: 'Соцсети', id: 'inbanner', name: 'LinkedIn баннер', note: '4:1',   w: 1584, h: 396  },
+  { g: 'Соцсети', id: 'dcava',    name: 'Discord аватар', note: '1:1',    w: 512,  h: 512  },
+  { g: 'Приложения и сайты', id: 'appstore', name: 'App Store иконка', note: '1:1', w: 1024, h: 1024 },
+  { g: 'Приложения и сайты', id: 'gplay',    name: 'Google Play иконка', note: '1:1', w: 512, h: 512 },
+  { g: 'Приложения и сайты', id: 'gpfeature',name: 'Google Play баннер', note: '2:1', w: 1024, h: 500 },
+  { g: 'Приложения и сайты', id: 'fav512',   name: 'Иконка сайта', note: '1:1',  w: 512,  h: 512  },
   { g: 'Маркетплейсы', id: 'wb',  name: 'Wildberries',    note: '3:4',    w: 900,  h: 1200 },
   { g: 'Маркетплейсы', id: 'ozon',name: 'Ozon',           note: '3:4',    w: 1200, h: 1600 },
   { g: 'Маркетплейсы', id: 'ozf', name: 'Ozon Fresh',     note: '1:1',    w: 1000, h: 1000 },
   { g: 'Маркетплейсы', id: 'ym',  name: 'Яндекс Маркет',  note: '3:4',    w: 900,  h: 1200 },
   { g: 'Маркетплейсы', id: 'avito',name: 'Авито',         note: '4:3',    w: 1600, h: 1200 },
+  { g: 'Маркетплейсы', id: 'amazon', name: 'Amazon',       note: '1:1',    w: 2000, h: 2000 },
+  { g: 'Маркетплейсы', id: 'ebay',   name: 'eBay',         note: '1:1',    w: 1600, h: 1600 },
+  { g: 'Документы', id: 'us2x2',  name: 'Виза США / Индия 2×2"', note: '51×51 мм', w: 600, h: 600 },
+  { g: 'Документы', id: 'cn33x48',name: 'Виза Китая 33×48', note: '33×48 мм', w: 390, h: 567 },
   { g: 'Печать (300 dpi)', id: 'p10x15', name: '10×15 см',  note: '2:3',  w: 1181, h: 1772 },
   { g: 'Печать (300 dpi)', id: 'p13x18', name: '13×18 см',  note: '5:7',  w: 1535, h: 2126 },
   { g: 'Печать (300 dpi)', id: 'pa5',    name: 'A5',        note: '148×210 мм', w: 1748, h: 2480 },
   { g: 'Печать (300 dpi)', id: 'pa4',    name: 'A4',        note: '210×297 мм', w: 2480, h: 3508 },
   { g: 'Печать (300 dpi)', id: 'pdoc',   name: 'Документы 3×4', note: '30×40 мм', w: 354, h: 472 },
   { g: 'Печать (300 dpi)', id: 'p35x45', name: 'Паспорт 35×45', note: '35×45 мм', w: 413, h: 531 },
-  { g: 'Экран', id: '4k', name: '4K UHD', note: '16:9', w: 3840, h: 2160 },
+  { g: 'Печать (300 dpi)', id: 'p9x13',  name: '9×13 см',   note: '9×13 см',  w: 1063, h: 1535 },
+  { g: 'Печать (300 dpi)', id: 'p20x30', name: '20×30 см',  note: '2:3',      w: 2362, h: 3543 },
+  { g: 'Печать (300 dpi)', id: 'instax', name: 'Instax mini', note: '54×86 мм', w: 638, h: 1016 },
+  { g: 'Обои и экран', id: '4k', name: '4K UHD', note: '16:9', w: 3840, h: 2160 },
+  { g: 'Обои и экран', id: 'hd',      name: 'HD',            note: '16:9',  w: 1280, h: 720  },
+  { g: 'Обои и экран', id: 'qhd',     name: 'QHD 2K',        note: '16:9',  w: 2560, h: 1440 },
+  { g: 'Обои и экран', id: 'uw',      name: 'Ultrawide',     note: '21:9',  w: 3440, h: 1440 },
+  { g: 'Обои и экран', id: 'iphone',  name: 'iPhone обои',   note: '9:19.5',w: 1170, h: 2532 },
+  { g: 'Обои и экран', id: 'android', name: 'Android обои',  note: '9:20',  w: 1080, h: 2400 },
 ];
 
 /* Наборы размеров: одно фото сохраняется сразу в несколько форматов (в ZIP или в папку) */
