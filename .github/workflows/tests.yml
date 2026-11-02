@@ -100,6 +100,8 @@ jobs:
         run: node tests/a1.js
       - name: Улучшить, маски, шум, фокус (блок B1)
         run: node tests/b1.js
+      - name: Сессия, копия настроек, макеты (блок C5)
+        run: node tests/c5.js
       - name: Умная ретушь (блок C4)
         run: node tests/c4.js
       - name: Тон: дизеринг, стили, зерно (блок T2)

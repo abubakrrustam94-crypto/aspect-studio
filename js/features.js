@@ -826,3 +826,20 @@ $('#oneEnhAll').addEventListener('click', async () => {
   try { await window.ocRun(items.slice(), true); } catch (e) { logError(e, 'oneclick'); toast(friendlyError(e), true); }
   finally { busy = false; exporting = false; $('.layout').classList.remove('locked'); setToolbarBusy(false); }
 });
+
+/* Резервная копия настроек (модуль backup.js грузится при первом нажатии) */
+$('#bkExportBtn').addEventListener('click', async () => { if (await lazyOk('backup')) window.bkExport(); });
+$('#bkImportBtn').addEventListener('click', () => $('#bkFile').click());
+$('#bkFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (f.size > 2e6) { toast('Файл слишком большой для настроек', true); return; }
+  if (!(await lazyOk('backup'))) return;
+  window.bkImportText(await f.text());
+});
+
+/* «Как это будет выглядеть»: макеты телефона, сторис, аватара, ленты и ссылки (mockups.js, лениво) */
+$('#mockBtn').addEventListener('click', async () => {
+  if (!items.length) { toast('Сначала добавь фото'); return; }
+  if (!(await lazyOk('mockups'))) return;
+  window.mkOpen($('#afterCanvas'));
+});

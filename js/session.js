@@ -83,18 +83,35 @@ const sessOpen = () => new Promise((res, rej) => {
 const sessTx = (db, stores, mode, fn) => new Promise((res, rej) => { const tx = db.transaction(stores, mode); const out = fn(tx); tx.oncomplete = () => res(out); tx.onerror = tx.onabort = () => rej(tx.error); });
 const idbGetAll = (store, q) => new Promise((res, rej) => { const r = q ? store.getAll(q) : store.getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const idbKeys = store => new Promise((res, rej) => { const r = store.getAllKeys(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-let sessTimer = 0, sessWarned = false, sessSaving = false;
+const SESS_STAT = 'aspect-studio-sess-stat', SESS_ALIVE = 'aspect-studio-alive';
+let sessTimer = 0, sessWarned = false, sessSaving = false, sessAgain = false;
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* хранилище недоступно */ } };
+function sessStatText() {
+  let st = null; try { st = JSON.parse(lsGet(SESS_STAT) || 'null'); } catch (e) { st = null; }
+  const el = $('#sessInfo'); if (!el) return;
+  if (!sessOn()) { el.textContent = 'Выключено: фото после закрытия вкладки не сохраняются.'; return; }
+  if (!st || !st.n) { el.textContent = 'Включено. Сохранение произойдёт, как только добавишь фото.'; return; }
+  const t = new Date(st.t), hh = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+  el.textContent = `Сохранено в ${hh}: ${st.n} фото, ${(st.bytes / 1048576).toFixed(1)} МБ.` + (st.err ? ' Последняя попытка не удалась: ' + st.err : '');
+}
+function sessStatSet(o) { lsSet(SESS_STAT, JSON.stringify(o)); sessStatText(); }
+/* Закрытие вкладки, сворачивание, переключение приложения: сохраняем сразу, не дожидаясь паузы (на телефоне вкладку могут убрать из памяти без предупреждения) */
+function sessFlush() { if (!sessOn() || window.wiping || !items.length) return; clearTimeout(sessTimer); sessSave(); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sessFlush(); });
+addEventListener('pagehide', () => { sessFlush(); lsSet(SESS_ALIVE, '0'); });
 const sessKey = it => `${it.name}|${it.file.size}|${it.file.lastModified || 0}`;
 function sessSaveSoon() { if (!sessOn() || window.wiping) return; clearTimeout(sessTimer); sessTimer = setTimeout(sessSave, 1500); }
 async function sessSave() {
   if (window.wiping) return;
-  if (!sessOn() || sessSaving) { if (sessSaving) sessSaveSoon(); return; }
+  if (!sessOn() || sessSaving) { if (sessSaving && sessOn()) sessAgain = true; return; }
+  if (!items.length && !$('#sessBanner').hidden) return;          // баннер «Восстановить?» ещё на экране: пустой список не должен стереть сохранённое
   sessSaving = true;
   try {
     const db = await sessOpen();
     const have = new Set(await sessTx(db, ['files'], 'readonly', tx => idbKeys(tx.objectStore('files'))));
     const list = items.filter(it => it.file), keys = list.map(sessKey);
     let total = 0; list.forEach(it => { total += it.file.size; });
+    try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); if (e.quota && e.quota - (e.usage || 0) < total * 1.15 && !sessWarned) { sessWarned = true; toast('В браузере мало места для сохранения сессии: освободи место или удали часть фото', true, { ms: 7000 }); } } } catch (e) { /* оценка недоступна */ }
     if (total > SESS_CAP) { if (!sessWarned) { sessWarned = true; toast('Фото слишком много для запоминания (больше 400 МБ): сессия не сохраняется', true, { ms: 7000 }); } db.close(); return; }
     await sessTx(db, ['files', 'meta'], 'readwrite', tx => {
       const f = tx.objectStore('files'), m = tx.objectStore('meta');
@@ -104,13 +121,15 @@ async function sessSave() {
       else m.put({ t: Date.now(), S, idx, items: list.map((it, i) => ({ key: keys[i], ov: it.ov, ...Object.fromEntries(XF_KEYS.map(k => [k, it[k]])) })) }, 'session');
     });
     db.close();
-  } catch (e) { if (!sessWarned) { sessWarned = true; toast('Не удалось сохранить фото для следующего запуска (мало места или режим без хранилища)', true, { ms: 7000 }); } console.warn('session', e); }
-  finally { sessSaving = false; }
+    sessStatSet({ t: Date.now(), n: list.length, bytes: total });
+  } catch (e) { let o = null; try { o = JSON.parse(lsGet(SESS_STAT) || 'null'); } catch (x) { o = null; } sessStatSet({ ...(o || { t: Date.now(), n: 0, bytes: 0 }), err: (e && e.name) || 'ошибка' }); if (!sessWarned) { sessWarned = true; toast('Не удалось сохранить фото для следующего запуска (мало места или режим без хранилища)', true, { ms: 7000 }); } console.warn('session', e); }
+  finally { sessSaving = false; if (sessAgain) { sessAgain = false; sessSave(); } }
 }
 async function sessForget() {
   clearTimeout(sessTimer);
   await new Promise(res => { try { const r = indexedDB.deleteDatabase(SESS_DB); r.onsuccess = r.onerror = r.onblocked = () => res(); } catch (e) { res(); } });
   const b = $('#sessBanner'); if (b) b.hidden = true;
+  try { localStorage.removeItem(SESS_STAT); } catch (e) { /* без хранилища */ } sessStatText();
 }
 async function sessLoad() {
   const db = await sessOpen();
@@ -143,18 +162,27 @@ const sessSw = $('#sessOn');
 sessSw.checked = sessOn();
 sessSw.addEventListener('change', async () => {
   try { localStorage.setItem(SESS_FLAG, sessSw.checked ? '1' : '0'); } catch (e) {}
-  if (sessSw.checked) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} sessSaveSoon(); toast('Фото будут сохраняться в этом браузере'); }
+  sessStatText();
+  if (sessSw.checked) { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {} sessSaveSoon(); sessStatText(); toast('Фото будут сохраняться в этом браузере'); }
   else { await sessForget(); toast('Запоминание выключено, сохранённое удалено'); }
 });
 $('#sessForgetBtn').addEventListener('click', async () => { await sessForget(); toast('Сохранённые фото удалены'); });
 (async function sessBannerInit() {
+  const crashed = lsGet(SESS_ALIVE) === '1'; lsSet(SESS_ALIVE, '1'); sessStatText();
   if (!sessOn() || typeof indexedDB === 'undefined') return;
   try {
     const d = await sessLoad(); if (!d || items.length) return;
-    const n = d.meta.items.length; $('#sessBannerText').textContent = `Прошлая сессия: ${n} фото. Продолжить с того же места?`;
+    const n = d.meta.items.length, t = new Date(d.meta.t || Date.now()), hh = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+    $('#sessBannerText').textContent = (crashed ? 'Страница закрылась неожиданно. ' : 'Прошлая сессия. ') + `Сохранено в ${hh}: ${n} фото и настройки. Восстановить?`;
     $('#sessBanner').hidden = false;
-  } catch (e) {}
+  } catch (e) { /* сессии нет */ }
 })();
+$('#sessNow').addEventListener('click', async () => {
+  if (!sessOn()) { toast('Сначала включи сохранение'); return; }
+  if (!items.length) { toast('Нет фото для сохранения'); return; }
+  clearTimeout(sessTimer); await sessSave(); toast('Сессия сохранена');
+});
+$('#sessRestoreBtn').addEventListener('click', () => { if (!sessOn()) { toast('Сохранение выключено'); return; } sessRestore(); });
 
 /* ===================================================================
    Приём фото из меню «Поделиться» (Android, установленное приложение): sw.js кладёт файлы в кэш и открывает ./?shared=N

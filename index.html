@@ -80,7 +80,7 @@
             <input type="file" id="fileInput" accept="image/*,.tif,.tiff,.heic,.heif,.jxl,.svg,.ai,.eps,.psd,.psb,.xcf,.exr,.hdr,.ico,.bmp,.gif,.cr2,.cr3,.nef,.nrw,.arw,.raf,.orf,.rw2,.dng,.pef,.rwl" multiple>
           </div>
           <div class="paste-row" id="pasteRow" hidden><button type="button" class="btn btn-outlined btn-sm" id="pasteBtn"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Вставить из буфера</button></div>
-          <div class="note sess-banner" id="sessBanner" role="region" aria-label="Прошлая сессия" hidden><span id="sessBannerText"></span> <button type="button" class="btn btn-tonal btn-sm" id="sessRestore">Продолжить</button> <button type="button" class="btn btn-outlined btn-sm" id="sessDrop">Забыть</button></div>
+          <div class="note sess-banner" id="sessBanner" role="region" aria-label="Прошлая сессия" hidden><span id="sessBannerText"></span> <button type="button" class="btn btn-tonal btn-sm" id="sessRestore">Восстановить</button> <button type="button" class="btn btn-outlined btn-sm" id="sessDrop">Забыть</button></div>
           <div class="order-row" id="orderRow" hidden>
             <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево"><svg class="ic" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
             <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо"><svg class="ic" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
@@ -136,6 +136,7 @@
           </div>
           <p class="hint-line" id="panHint" hidden>Перетащи изображение, чтобы сдвинуть кадр</p>
           <div class="info-row" id="infoRow" aria-live="polite"></div>
+          <div class="row mock-row"><button type="button" class="btn btn-outlined btn-sm" id="mockBtn"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg> Как это будет выглядеть</button></div>
           <div class="ab-bar" id="abBar" hidden>
             <span class="ab-label">Набор настроек:</span>
             <div class="seg" role="group" aria-label="Набор настроек">
@@ -181,6 +182,16 @@
             <button type="button" class="btn btn-outlined btn-sm" id="copyToSel" hidden title="Перенести настройки этого фото на другие отмеченные ✓"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> На отмеченные</button>
           </div>
           <p class="note" id="scopeNote"></p>
+        </section>
+
+        <section class="card" id="cardBackup" data-tab="extra">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Резервная копия настроек</div>
+          <p class="note" style="margin-top:0">Все настройки одним файлом: параметры, мои наборы, водяной знак, тема, акцент. Удобно при смене телефона или браузера. Фото и компоненты в файл не попадают; в файле есть имя автора и копирайт, если ты их вводил.</p>
+          <div class="row">
+            <button type="button" class="btn btn-outlined btn-sm" id="bkExportBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> Сохранить в файл</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="bkImportBtn"><svg class="ic rot180" aria-hidden="true"><use href="#i-download"/></svg> Загрузить из файла</button>
+            <input type="file" id="bkFile" accept=".json,application/json" hidden>
+          </div>
         </section>
 
         <section class="card" id="cardPresets" data-tab="extra">
@@ -799,7 +810,8 @@
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg> Запоминать фото</div>
           <label class="switch"><input type="checkbox" id="sessOn"><span class="track"></span><span>Сохранять фото до следующего запуска</span></label>
           <p class="note">Если закрыть вкладку, предложим продолжить с тем же набором фото и настройками. Копии лежат только в этом браузере и никуда не отправляются; до 400 МБ. Выключишь переключатель или нажмёшь кнопку ниже, и всё сохранённое удалится.</p>
-          <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="sessForgetBtn">Удалить сохранённые фото</button></div>
+          <p class="note" id="sessInfo" aria-live="polite" style="margin-top:0"></p>
+          <div class="row"><button type="button" class="btn btn-tonal btn-sm" id="sessNow">Сохранить сейчас</button><button type="button" class="btn btn-outlined btn-sm" id="sessRestoreBtn">Восстановить сохранённое</button><button type="button" class="btn btn-outlined btn-sm" id="sessForgetBtn">Удалить сохранённые фото</button></div>
         </section>
         <section class="card" id="cardWipe" data-tab="meta">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg> Данные на этом устройстве</div>
