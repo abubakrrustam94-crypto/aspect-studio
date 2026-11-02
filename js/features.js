@@ -354,7 +354,7 @@ async function ensureView(item, bmp) {   // картинка «До» с учё�
 }
 async function commitXform(item) {
   syncDims(item);
-  item.focus = { x: .5, y: .5 }; item.zoom = 1; item.sample = null; item.dom = null; item.an = undefined; item.manual = false;
+  item.focus = { x: .5, y: .5 }; item.zoom = 1; item.sample = null; item.dom = null; item.an = undefined; item.manual = false; item.depthFocus = null; item.skyM = null;
   if (cache.id === item.id) releaseCache();
   try {
     const bmp = await loadBitmap(item);
@@ -603,7 +603,7 @@ function ensureAnalysis(item, bmp) {
 function renderAnalysis() {
   const it = cur(), box = $('#anStats');
   if (!box) return;
-  $('#anTuneAll').hidden = items.length < 2;
+  $('#anTuneAll').hidden = items.length < 2; $('#oneEnhAll').hidden = items.length < 2;
   if (!it) { box.replaceChildren(); $('#anAdvice').textContent = 'Загрузи фото, чтобы увидеть анализ.'; $('#anTuneOne').disabled = true; return; }
   if (it.an === undefined) {
     $('#anAdvice').textContent = 'Анализирую…'; $('#anTuneOne').disabled = true; box.replaceChildren();
@@ -811,3 +811,18 @@ $('#wmTplSave').addEventListener('click', () => {
 });
 $('#wmTplName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#wmTplSave').click(); });
 renderWmTpls();
+
+/* «Улучшить фото» в одно касание (модуль oneclick.js грузится при первом нажатии) */
+$('#oneEnh').addEventListener('click', async () => {
+  const it = cur(); if (!it || busy) return;
+  if (!(await lazyOk('oneclick'))) return;
+  const b = $('#oneEnh'); b.disabled = true;
+  try { await window.ocRun([it], false); } catch (e) { logError(e, 'oneclick'); toast(friendlyError(e), true); } finally { b.disabled = false; }
+});
+$('#oneEnhAll').addEventListener('click', async () => {
+  if (busy || !items.length) return;
+  if (!(await lazyOk('oneclick'))) return;
+  busy = true; exporting = true; $('.layout').classList.add('locked'); setToolbarBusy(true);
+  try { await window.ocRun(items.slice(), true); } catch (e) { logError(e, 'oneclick'); toast(friendlyError(e), true); }
+  finally { busy = false; exporting = false; $('.layout').classList.remove('locked'); setToolbarBusy(false); }
+});

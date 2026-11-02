@@ -161,6 +161,7 @@ function setSlider(clientX) {
 let drag = null;
 frame.addEventListener('pointerdown', e => {
   const item = cur(); if (!item) return;
+  if (window.dpPicking) { e.preventDefault(); dpPickAt(e, item); return; }
   const E = cfgFor(item);
   if (S.view === 'slider' && (e.target === sliderHandle || E.fit === 'fit')) {
     drag = { type: 'slider' }; setSlider(e.clientX);
@@ -198,3 +199,24 @@ sliderHandle.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') { sliderPos = Math.max(3, sliderPos - 5); applyView(); e.preventDefault(); }
   if (e.key === 'ArrowRight') { sliderPos = Math.min(97, sliderPos + 5); applyView(); e.preventDefault(); }
 });
+
+/* Размытие по глубине: фокус касанием — что на кадре должно остаться резким */
+window.dpPicking = false;
+function dpPickEnd() { window.dpPicking = false; frame.classList.remove('picking'); const b = $('#depthPick'); b.classList.remove('active'); b.textContent = 'Выбрать фокус касанием'; }
+function dpPickAt(e, item) {
+  const d = lastDims; dpPickEnd(); if (!d || !d.L) return;
+  const r = frame.getBoundingClientRect(), L = d.L, px = (e.clientX - r.left) / r.width * d.cw, py = (e.clientY - r.top) / r.height * d.ch;
+  item.depthFocus = { x: Math.max(0, Math.min(1, (px - L.dx) / L.dw)), y: Math.max(0, Math.min(1, (py - L.dy) / L.dh)) };
+  const ring = document.createElement('div'); ring.className = 'focus-ring'; ring.style.left = (e.clientX - r.left) + 'px'; ring.style.top = (e.clientY - r.top) + 'px';
+  frame.appendChild(ring); setTimeout(() => ring.remove(), 1100);
+  if (!cfgFor(item).depthOn) set('depthOn', true);
+  syncUI(); schedule(); sessSaveSoon();
+}
+$('#depthPick').addEventListener('click', () => {
+  if (!cur() || exporting) return;
+  if (window.dpPicking) { dpPickEnd(); return; }
+  window.dpPicking = true; frame.classList.add('picking'); const b = $('#depthPick'); b.classList.add('active'); b.textContent = 'Коснись кадра… (отмена)';
+  toast('Коснись того, что должно остаться резким');
+});
+$('#depthPickReset').addEventListener('click', () => { const it = cur(); if (!it) return; it.depthFocus = null; syncUI(); schedule(); sessSaveSoon(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && window.dpPicking) dpPickEnd(); });

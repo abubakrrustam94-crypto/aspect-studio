@@ -313,6 +313,7 @@
         <section class="card" id="cardDepth" data-tab="bg">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Размытие по глубине</div>
           <label class="switch"><input type="checkbox" data-key="depthOn"><span class="track"></span><span>Размыть то, что дальше или ближе объекта</span></label>
+          <div class="row" style="margin-top:12px"><button type="button" class="btn btn-tonal btn-sm" id="depthPick">Выбрать фокус касанием</button><button type="button" class="btn btn-outlined btn-sm" id="depthPickReset" hidden>Сбросить фокус</button></div>
           <div class="stack" id="depthFields" style="margin-top:14px" hidden>
             <div><span class="field-label">Сила</span><div class="range-row"><input type="range" data-key="depthBlur" data-num min="5" max="100" aria-label="Сила размытия по глубине"><output data-out="depthBlur" data-unit="%"></output></div></div>
             <p class="note" style="margin:0">Нейросеть оценивает глубину кадра, и резкой остаётся та часть, что на одной глубине с объектом (лицо, найденный объект, а если их нет, центр или точка, которую ты выбрал). На плоских фото (документы, рисунки) эффекта не будет, а на сложных сценах границы могут быть неточными. Не работает вместе с удалением фона.</p>
@@ -480,6 +481,15 @@
           </div>
         </section>
 
+        <section class="card" id="cardOne" data-tab="quality">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшить фото</div>
+          <p class="note" style="margin:0 0 10px">Одна кнопка: смотрит на фото (тёмное, с людьми, шумное) и сама включает подходящие тон, ретушь, ночной свет и шумоподавление. Всё можно поправить ниже или отменить.</p>
+          <div class="row">
+            <button type="button" class="btn btn-main btn-sm" id="oneEnh"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшить это фото</button>
+            <button type="button" class="btn btn-outlined btn-sm" id="oneEnhAll" hidden>Улучшить все</button>
+          </div>
+        </section>
+
         <section class="card" id="cardAnalysis" data-tab="quality">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg> Анализ фото</div>
           <div class="an-stats" id="anStats"></div>
@@ -564,8 +574,21 @@
           <label class="switch"><input type="checkbox" data-key="lowOn"><span class="track"></span><span>Осветлить тёмные места, не выжигая света</span></label>
           <div class="stack" id="lowFields" style="margin-top:14px" hidden>
             <div><span class="field-label">Сила</span><div class="range-row"><input type="range" data-key="lowAmt" data-num min="10" max="100" aria-label="Сила ночного света"><output data-out="lowAmt" data-unit="%"></output></div></div>
+            <div><span class="field-label">Шум в осветлённых местах</span><div class="range-row"><input type="range" data-key="lowDn" data-num min="0" max="100" aria-label="Шумоподавление в осветлённых местах"><output data-out="lowDn" data-unit="%"></output></div></div>
             <p class="note" style="margin:0">Нейросеть (Zero-DCE++) смотрит на кадр целиком и сама решает, где добавить света: тени и тёмные углы светлеют сильнее, яркие места почти не меняются. Поднятые тени показывают шум, при необходимости включи шумоподавление. Не работает вместе с «Удалить фон».</p>
           </div>
+        </section>
+
+        <section class="card" id="cardMask" data-tab="quality">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Где применять</div>
+          <div class="chips" data-group="fxMask" role="group" aria-label="Где применять тон, ретушь и ночной свет">
+            <button type="button" class="chip" data-val="all">Везде</button>
+            <button type="button" class="chip" data-val="subject">Объект</button>
+            <button type="button" class="chip" data-val="bg">Фон</button>
+            <button type="button" class="chip" data-val="face">Лица</button>
+            <button type="button" class="chip" data-val="sky">Небо</button>
+          </div>
+          <p class="note" style="margin:8px 0 0">Тон и цвет, ретушь и ночной свет достанутся только выбранной части кадра, края мягкие. «Объект» и «Фон» используют компонент «Удаление фона», «Лица» — «Поиск лиц», небо ищется по цвету (приблизительно). Если нужного нет на фото, эффект идёт на весь кадр.</p>
         </section>
 
         <section class="card" id="cardEnhance" data-tab="quality">

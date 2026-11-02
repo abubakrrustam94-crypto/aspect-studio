@@ -782,3 +782,10 @@ body.progress-on .busy { bottom: calc(86px + env(safe-area-inset-bottom) + var(-
 
 .chip[hidden], .chip-title[hidden], .preset-recent[hidden] { display: none; }
 .preset-recent { margin-bottom: 8px; }
+
+/* Блок B: фокус касанием */
+.frame.picking, .picking { cursor: crosshair; }
+.frame.picking::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 3px var(--md-primary, #6750a4); border-radius: inherit; pointer-events: none; }
+.focus-ring { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0,0,0,.45), inset 0 0 0 2px rgba(0,0,0,.35); pointer-events: none; animation: focusRing 1.1s ease-out forwards; z-index: 5; }
+@keyframes focusRing { 0% { transform: scale(1.8); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .focus-ring { animation: none; opacity: .9; } }

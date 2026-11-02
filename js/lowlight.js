@@ -49,14 +49,49 @@ function lowApplyData(d, W, H, ox, oy, iw, ih, M, amt) {
     }
   }
 }
+/* Шум после осветления: тёмные места на фото шумят, а кривые усиливают этот шум в разы. Лёгкое сглаживание с защитой краёв включается
+   только там, где пиксель заметно посветлел (gain), и тем сильнее, чем сильнее подъём. Светлые и нетронутые места не размываются. */
+function lowBoxRGB(d, W, H, r) {
+  const n = 2 * r + 1, tmp = new Float32Array(W * H * 3), out = new Float32Array(W * H * 3);
+  for (let y = 0; y < H; y++) for (let k = 0; k < 3; k++) {
+    let a = 0; for (let x = -r; x <= r; x++) a += d[(y * W + Math.min(W - 1, Math.max(0, x))) * 4 + k];
+    for (let x = 0; x < W; x++) { tmp[(y * W + x) * 3 + k] = a / n; a += d[(y * W + Math.min(W - 1, x + r + 1)) * 4 + k] - d[(y * W + Math.max(0, x - r)) * 4 + k]; }
+  }
+  for (let x = 0; x < W; x++) for (let k = 0; k < 3; k++) {
+    let a = 0; for (let y = -r; y <= r; y++) a += tmp[(Math.min(H - 1, Math.max(0, y)) * W + x) * 3 + k];
+    for (let y = 0; y < H; y++) { out[(y * W + x) * 3 + k] = a / n; a += tmp[(Math.min(H - 1, y + r + 1) * W + x) * 3 + k] - tmp[(Math.max(0, y - r) * W + x) * 3 + k]; }
+  }
+  return out;
+}
+/* d — данные ПОСЛЕ кривых; lum0 — яркость каждого пикселя ДО них (0…255); dn 0…1 — сила; r — радиус (1…3) */
+function lowDenoiseData(d, lum0, W, H, r, dn) {
+  if (!(dn > 0) || W < 3 || H < 3) return 0;
+  const blur = lowBoxRGB(d, W, H, r); let touched = 0;
+  for (let i = 0, p = 0; i < W * H; i++, p += 4) {
+    const l1 = .299 * d[p] + .587 * d[p + 1] + .114 * d[p + 2], gain = (l1 + 3) / (lum0[i] + 3);
+    const w = Math.max(0, Math.min(1, (gain - 1.25) / .9));
+    if (w <= 0) continue;
+    const sig = 6 + 5 * gain;
+    let df = 0; for (let k = 0; k < 3; k++) df = Math.max(df, Math.abs(blur[i * 3 + k] - d[p + k]));
+    const t = Math.min(1, w * dn * 1.6) * Math.exp(-(df / sig) * (df / sig));
+    if (t < .01) continue; touched++;
+    for (let k = 0; k < 3; k++) d[p + k] = Math.round(d[p + k] + (blur[i * 3 + k] - d[p + k]) * t);
+  }
+  return touched;
+}
 function applyLowLight(ctx, item, L, cw, ch, c) {
   const M = item.low; if (!M || M.sig !== llSig(item) || !(c.lowAmt > 0)) return;
   const ix = Math.max(0, Math.floor(L.dx)), iy = Math.max(0, Math.floor(L.dy)), ix2 = Math.min(cw, Math.ceil(L.dx + L.dw)), iy2 = Math.min(ch, Math.ceil(L.dy + L.dh)), iw = ix2 - ix, ih = iy2 - iy;
   if (iw < 4 || ih < 4) return;
-  const amt = Math.min(1, c.lowAmt / 100), STRIP = 128;
+  const amt = Math.min(1, c.lowAmt / 100), dn = Math.max(0, Math.min(1, (c.lowDn === undefined ? 50 : c.lowDn) / 100)), STRIP = 128;
+  const r = dn > 0 ? Math.max(1, Math.min(3, Math.round(iw / 1500))) + (dn > .75 ? 1 : 0) : 0;
   for (let y = 0; y < ih; y += STRIP) {
-    const h = Math.min(STRIP, ih - y), img = ctx.getImageData(ix, iy + y, iw, h);
-    lowApplyData(img.data, iw, h, ix - L.dx, iy + y - L.dy, L.dw, L.dh, M, amt);
-    ctx.putImageData(img, ix, iy + y);
+    const h = Math.min(STRIP, ih - y), y0 = Math.max(0, y - r), y1 = Math.min(ih, y + h + r), hh = y1 - y0;
+    const img = ctx.getImageData(ix, iy + y0, iw, hh), d = img.data;
+    let lum0 = null;
+    if (dn > 0) { lum0 = new Float32Array(iw * hh); for (let i = 0, p = 0; i < lum0.length; i++, p += 4) lum0[i] = .299 * d[p] + .587 * d[p + 1] + .114 * d[p + 2]; }
+    lowApplyData(d, iw, hh, ix - L.dx, iy + y0 - L.dy, L.dw, L.dh, M, amt);
+    if (dn > 0) lowDenoiseData(d, lum0, iw, hh, r, dn);
+    ctx.putImageData(img, ix, iy + y0, 0, y - y0, iw, h);
   }
 }

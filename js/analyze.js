@@ -135,7 +135,7 @@ async function analyzePhoto(bmp) {
   }
   const subject = has ? { x: (union.x0 + union.x1) / 2, y: (union.y0 + union.y1) / 2 } : objBox ? { x: (objBox.x0 + objBox.x1) / 2, y: (objBox.y0 + objBox.y1) / 2 } : anSubject(g, w, h);
   canvas.width = canvas.height = 0;
-  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, motion: m.motion, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing), faceXMissing: !!(f && f.xMissing), eyes: has && f.eyes ? f.eyes : null, objects, objBox, objMain, objMissing, objFail };
+  return { w: bmp.width, h: bmp.height, mp: bmp.width * bmp.height / 1e6, sharp: m.sharp, noise: m.noise, motion: m.motion, edgeStd, flat: edgeStd < 14, subject, faces: has ? f.boxes.length : 0, faceBox: union, faceList: has ? f.boxes.map(b => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 })) : [], faceFail: !!(f && f.fail), faceMissing: !!(f && f.missing), faceXMissing: !!(f && f.xMissing), eyes: has && f.eyes ? f.eyes : null, objects, objBox, objMain, objMissing, objFail };
 }
 
 const anSharpLabel = r => r < 0.22 ? ['Очень мягкое', 'bad'] : r < 0.36 ? ['Мягковатое', 'warn'] : r < 0.65 ? ['Нормальное', 'ok'] : ['Чёткое', 'ok'];

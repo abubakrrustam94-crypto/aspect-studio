@@ -6,7 +6,8 @@ const CS_GROUPS = [
   { id: 'cut', name: 'Удаление фона', keys: ['cutOn', 'cutBg', 'cutColor', 'cutEdge', 'cutQuality'] },
   { id: 'tone', name: 'Тон и цвет', keys: ['toneExp', 'toneCon', 'toneSat', 'toneWarm', 'toneGrain', 'toneStyle'] },
   { id: 'retouch', name: 'Умная ретушь', keys: ['retouchOn', 'retouchStyle', 'retouchAmt'] },
-  { id: 'low', name: 'Ночной свет', keys: ['lowOn', 'lowAmt'] },
+  { id: 'low', name: 'Ночной свет', keys: ['lowOn', 'lowAmt', 'lowDn'] },
+  { id: 'mask', name: 'Где применять тон и ретушь', keys: ['fxMask'] },
   { id: 'depth', name: 'Размытие по глубине', keys: ['depthOn', 'depthBlur'] },
   { id: 'qual', name: 'Улучшение, шум, увеличение', keys: ['enhOn', 'enhScale', 'enhLevel', 'sharp', 'denoise', 'dnModel', 'dnLevel', 'smart', 'srModel'] },
 ];

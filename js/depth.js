@@ -36,6 +36,7 @@ async function ensureDepth(item, bmp) {
   return rec.p;
 }
 function depthSubject(item) {          // где главный объект: ручной фокус, найденное лицо/объект или центр
+  if (item.depthFocus) return item.depthFocus;
   if (item.manual && item.focus) return item.focus;
   const an = item.an; if (an && an.subject) return an.subject;
   return item.focus || { x: .5, y: .5 };

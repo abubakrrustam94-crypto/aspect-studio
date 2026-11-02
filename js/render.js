@@ -505,20 +505,25 @@ async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = 
     if (c.fit === 'fill') { if (opaque) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cw, ch); } }
     else if (!(c.bg === 'inpaint' && !cap && await ipBackground(ctx, bmp, item, cw, ch, L, c))) paintBackground(ctx, bmp, item, cw, ch, L, opaque, c);
     await drawPhoto(ctx, bmp, item, L, cw, ch, (enh ?? c.enhOn) && !quick, work, c, !cap);
-    if (c.retouchOn && c.retouchAmt > 0) {
-      if (!compInstalled('retouch')) compWarnOnce('retouch', 'Умная ретушь');
-      else if (await lazyOk('retouch') && await ensureRetouch(item, bmp, c.retouchStyle === 'vivid' ? 'vivid' : 'exp')) applyRetouch(ctx, item, L, cw, ch, c);
-    }
-    if (c.lowOn && c.lowAmt > 0) {
-      if (!compInstalled('lowlight')) compWarnOnce('lowlight', 'Ночной свет');
-      else if (await lazyOk('lowlight') && await ensureLow(item, bmp)) applyLowLight(ctx, item, L, cw, ch, c);
-    }
+    const fxOn = c.fxMask && c.fxMask !== 'all' && await lazyOk('fxmask');
+    const fxRun = fn => fxOn ? fxApply(ctx, item, bmp, L, cw, ch, c, fn) : fn();
+    if ((c.retouchOn && c.retouchAmt > 0) || (c.lowOn && c.lowAmt > 0)) await fxRun(async () => {
+      if (c.retouchOn && c.retouchAmt > 0) {
+        if (!compInstalled('retouch')) compWarnOnce('retouch', 'Умная ретушь');
+        else if (await lazyOk('retouch') && await ensureRetouch(item, bmp, c.retouchStyle === 'vivid' ? 'vivid' : 'exp')) applyRetouch(ctx, item, L, cw, ch, c);
+      }
+      if (c.lowOn && c.lowAmt > 0) {
+        if (!compInstalled('lowlight')) compWarnOnce('lowlight', 'Ночной свет');
+        else if (await lazyOk('lowlight') && await ensureLow(item, bmp)) applyLowLight(ctx, item, L, cw, ch, c);
+      }
+    });
     if (c.depthOn && c.depthBlur > 0) {
       if (!compInstalled('depth')) compWarnOnce('depth', 'Размытие по глубине');
       else if (await lazyOk('depth') && await ensureDepth(item, bmp)) applyDepthBlur(ctx, item, L, cw, ch, c);
     }
   }
-  applyTone(ctx, cw, ch, c);
+  if (!cut && toneIsOn(c) && c.fxMask && c.fxMask !== 'all' && await lazyOk('fxmask')) await fxApply(ctx, item, bmp, L, cw, ch, c, async () => { applyTone(ctx, cw, ch, c); });
+  else applyTone(ctx, cw, ch, c);
   drawWatermark(ctx, cw, ch);
   return { cw, ch, L };
 }

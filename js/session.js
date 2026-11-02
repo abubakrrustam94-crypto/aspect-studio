@@ -5,7 +5,7 @@
    Отмена и повтор: снимок = общие настройки + настройки каждого фото
    =================================================================== */
 const hist = { undo: [], redo: [], lastKey: '', lastT: 0, busy: false }, HIST_MAX = 60;
-const XF_KEYS = ['rot', 'tilt', 'flipH', 'flipV', 'crop', 'focus', 'zoom', 'skip', 'manual'];
+const XF_KEYS = ['rot', 'tilt', 'flipH', 'flipV', 'crop', 'focus', 'zoom', 'skip', 'manual', 'depthFocus'];
 function histSnap() {
   return JSON.stringify({ S, items: items.map(it => ({ id: it.id, ov: it.ov, ...Object.fromEntries(XF_KEYS.map(k => [k, it[k]])) })) });
 }
@@ -40,7 +40,7 @@ async function histApply(json) {
     }
     save(); renderThumbs(); syncUI(); applyView(); schedule();
     for (const it of redo) {                       // кадр изменился: обновить миниатюру и просмотр
-      try { const f = { ...it.focus }, z = it.zoom, m = it.manual; await commitXform(it); it.focus = f; it.zoom = z; it.manual = m; } catch (e) { logError(e, 'undo'); }
+      try { const f = { ...it.focus }, z = it.zoom, m = it.manual, df = it.depthFocus; await commitXform(it); it.focus = f; it.zoom = z; it.manual = m; it.depthFocus = df; } catch (e) { logError(e, 'undo'); }
     }
     updateChrome();
   } finally { hist.busy = false; histButtons(); sessSaveSoon(); }
@@ -52,7 +52,7 @@ async function resetPhoto() {
   const it = cur(); if (!it || exporting) return;
   histPush('reset');
   const needXf = !!it.rot || !!it.tilt || it.flipH || it.flipV || !!it.crop;
-  it.ov = null; it.rot = 0; it.tilt = 0; it.flipH = false; it.flipV = false; it.crop = null; it.focus = { x: .5, y: .5 }; it.zoom = 1; it.manual = false;
+  it.ov = null; it.rot = 0; it.tilt = 0; it.flipH = false; it.flipV = false; it.crop = null; it.focus = { x: .5, y: .5 }; it.zoom = 1; it.manual = false; it.depthFocus = null;
   if (needXf) { syncDims(it); if (cache.id === it.id) releaseCache(); try { await commitXform(it); } catch (e) { logError(e, 'reset'); } }
   renderThumbs(); syncUI(); applyView(); schedule(); histButtons(); sessSaveSoon(); toast('Фото сброшено: общие настройки, без поворота и обрезки');
 }

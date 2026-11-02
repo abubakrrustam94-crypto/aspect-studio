@@ -63,7 +63,7 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   ok(pure.o[0] === 55 && pure.o[1] === 'auto', 'csMerge: переносит только выбранную группу');
   ok(pure.o2[0] === 'fixed' && pure.keys, 'csMerge: у фото без своих настроек создаёт полный набор');
   await p.click('#settingsTabs [data-tab=frame]'); await p.click('#copyToSel'); await p.waitForSelector('#copyset:not([hidden])', { timeout: 8000 });
-  ok(await p.evaluate(() => document.querySelectorAll('#csList input').length === 8 && /1 фото/.test(document.querySelector('#csInfo').textContent)), 'окно открылось: 8 групп, получит 1 фото');
+  ok(await p.evaluate(() => document.querySelectorAll('#csList input').length === 9 && /1 фото/.test(document.querySelector('#csInfo').textContent)), 'окно открылось: 8 групп, получит 1 фото');
   await p.evaluate(() => { document.querySelector('#csList input[data-g=frame]').click(); });          // снимаем «Формат и размер кадра»
   await p.click('#csOk'); await p.waitForTimeout(400);
   const cp = await p.evaluate(() => { const o = items[1].ov; return { ov: !!o, tone: o && o.toneExp, style: o && o.toneStyle, mode: o && o.sizeMode, preset: o && o.presetId, hidden: document.querySelector('#copyset').hidden }; });
