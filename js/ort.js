@@ -5,7 +5,7 @@ const ORT_IDLE_MS = 45000;
 /* Сколько потоков отдать нейросетям. Нужна изоляция страницы (crossOriginIsolated): её включает service worker после перезагрузки. */
 const ORT_ISO = () => typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated === true;
 function ortThreads() {
-  if (!ORT_ISO()) return 1;
+  if (!ORT_ISO() || (typeof liteOn === 'function' && liteOn())) return 1;
   const v = typeof S !== 'undefined' ? S.nnThreads : 'auto', hc = navigator.hardwareConcurrency || 2;
   if (v === '1' || v === '2' || v === '4') return Math.min(+v, Math.max(1, hc));
   return hc >= 2 ? Math.min(4, hc) : 1;

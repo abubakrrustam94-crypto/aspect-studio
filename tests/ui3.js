@@ -28,7 +28,7 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   // ---------- избранное ----------
   ok(await p.$eval('#tabFav', e => e.hidden), 'пока ничего не закреплено, вкладки «Избранное» нет');
   await p.click('#settingsTabs [data-tab=quality]');
-  const title = await p.evaluate(() => { const c = document.querySelector('#colSettings > .card[data-tab="quality"]'); c.querySelector('.pin-btn').click(); return c.querySelector('.card-title').textContent.trim(); });
+  const title = await p.evaluate(() => { const c = document.querySelector('#colSettings > .card[data-tab="quality"]:not([hidden])'); c.querySelector('.pin-btn').click(); return c.querySelector('.card-title').textContent.trim(); });
   ok(!(await p.$eval('#tabFav', e => e.hidden)), 'после закрепления появилась вкладка «Избранное»');
   await p.click('#tabFav'); v = await vis(); ok(v.length === 1 && v[0] === title, 'во вкладке только закреплённая карточка: ' + v.join(' | '));
   await p.reload(); await p.waitForTimeout(600);

@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="no-toolbar">
+<a class="skip-link" href="#colSettings">К настройкам</a><a class="skip-link" href="#stage">К превью</a>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
 <symbol id="i-ratio" viewBox="0 0 24 24"><rect width="12" height="20" x="6" y="2" rx="2"/><rect width="20" height="12" x="2" y="6" rx="2"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol>
@@ -61,6 +62,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <button class="icon-btn" id="startBtn" title="Начало работы" aria-label="Начало работы"><svg class="ic" aria-hidden="true"><use href="#i-wand"/></svg></button>
         <button class="icon-btn" id="helpBtn" title="Как пользоваться" aria-label="Как пользоваться"><svg class="ic" aria-hidden="true"><use href="#i-help"/></svg></button>
         <button class="icon-btn" id="installBtn" hidden title="Установить приложение" aria-label="Установить приложение"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg></button>
         <button class="icon-btn" id="themeToggle" title="Сменить тему (T)" aria-label="Сменить тему"></button>
@@ -125,7 +127,7 @@
             </div>
           </div>
           <p class="hint-line ui-hint" id="uiHint" hidden><span><b>A/B</b> — сравнить два набора настроек. <b>Булавка</b> закрепляет предпросмотр. Свайп листает фото.</span> <button type="button" class="toast-act" id="uiHintOk">Понятно</button></p>
-          <div class="stage" id="stage">
+          <div class="stage" id="stage" tabindex="-1">
             <div class="frame" id="frame">
               <img id="beforeImg" class="before-img" alt="Оригинал">
               <canvas id="afterCanvas" aria-label="Результат"></canvas>
@@ -150,7 +152,7 @@
       </div>
 
       <!-- ============ Настройки ============ -->
-      <div class="col-settings" id="colSettings" data-tab="frame">
+      <div class="col-settings" id="colSettings" tabindex="-1" data-tab="frame">
         <nav class="tabs" id="settingsTabs" role="tablist" aria-label="Разделы настроек">
           <button type="button" role="tab" data-tab="frame"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-frame"/></svg></i><span>Кадр</span></button>
           <button type="button" role="tab" data-tab="bg"><i aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-palette"/></svg></i><span>Фон</span></button>
@@ -182,6 +184,39 @@
             <button type="button" class="btn btn-outlined btn-sm" id="copyToSel" hidden title="Перенести настройки этого фото на другие отмеченные ✓"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> На отмеченные</button>
           </div>
           <p class="note" id="scopeNote"></p>
+        </section>
+
+        <section class="card" id="cardLang" data-tab="extra">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg> Язык / Language</div>
+          <div class="seg" data-group="lang" role="group" aria-label="Язык интерфейса / Interface language">
+            <button type="button" data-val="ru">Русский</button>
+            <button type="button" data-val="en">English</button>
+          </div>
+          <p class="note" id="langNote" style="margin:8px 0 0">Переключение мгновенное, ничего не перезагружается. Редкие сообщения могут остаться на русском.</p>
+        </section>
+
+        <section class="card" id="cardAccess" data-tab="extra">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg> Удобство чтения</div>
+          <span class="field-label">Размер текста</span>
+          <div class="seg" data-group="uiScale" role="group" aria-label="Размер текста">
+            <button type="button" data-val="100">Обычный</button>
+            <button type="button" data-val="115">Крупнее</button>
+            <button type="button" data-val="130">Очень крупный</button>
+          </div>
+          <label class="switch" style="margin-top:14px"><input type="checkbox" data-key="uiContrast"><span class="track"></span><span>Высокий контраст</span></label>
+          <label class="switch"><input type="checkbox" data-key="uiMotion"><span class="track"></span><span>Без анимации</span></label>
+          <p class="note" style="margin:8px 0 0">Всё управляется с клавиатуры: Tab и Shift+Tab, Enter и пробел. Граница «до/после»: стрелки, Home и End, PageUp и PageDown. Экранные дикторы озвучивают кнопки, ползунки и сообщения.</p>
+        </section>
+
+        <section class="card" id="cardLite" data-tab="extra">
+          <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg> Режим слабого телефона</div>
+          <div class="seg" data-group="liteMode" role="group" aria-label="Режим слабого телефона">
+            <button type="button" data-val="auto">Авто</button>
+            <button type="button" data-val="on">Включён</button>
+            <button type="button" data-val="off">Выключен</button>
+          </div>
+          <p class="note" id="liteInfo" role="status" aria-live="polite" style="margin:8px 0 0"></p>
+          <p class="note" style="margin:6px 0 0">В этом режиме отключаются нейросети (глубина, ретушь, ночной свет, увеличение, шумоподавление, точный поиск лиц и объектов), результат ограничивается 3000 px, а фото обрабатываются по одному. Так сайт не зависает на старых телефонах. «Авто» включает режим при памяти меньше 3 ГБ, при медленной проверке скорости (вкладка «О программе») или нехватке места.</p>
         </section>
 
         <section class="card" id="cardBackup" data-tab="extra">
@@ -492,6 +527,10 @@
           </div>
         </section>
 
+        <section class="card" id="cardLiteNote" data-tab="quality" hidden>
+          <p class="note warn" role="status" style="margin:0"><b>Режим слабого телефона.</b> <span id="liteWhy"></span> Нейросети отключены, результат не больше 3000 px. Выключить: вкладка «Ещё».</p>
+        </section>
+
         <section class="card" id="cardOne" data-tab="quality">
           <div class="card-title"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg> Улучшить фото</div>
           <p class="note" style="margin:0 0 10px">Одна кнопка: смотрит на фото (тёмное, с людьми, шумное) и сама включает подходящие тон, ретушь, ночной свет и шумоподавление. Всё можно поправить ниже или отменить.</p>
@@ -677,7 +716,7 @@
           <details class="errlog" id="errLogBox">
             <summary>Журнал ошибок (<span id="errLogCount">0</span>)</summary>
             <p class="note" style="margin-top:8px">Хранится только на этом устройстве и никуда не отправляется. Если что-то сломалось, скопируй и пришли разработчику.</p>
-            <pre id="errLogText" tabindex="0"></pre>
+            <pre id="errLogText" data-no-i18n tabindex="0"></pre>
             <div class="row"><button type="button" class="btn btn-outlined btn-sm" id="errLogCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Копировать</button><button type="button" class="btn btn-outlined btn-sm" id="errLogShare">Отправить отчёт</button><button type="button" class="btn btn-outlined btn-sm" id="errLogClear">Очистить</button></div>
           </details>
           <p class="note" id="resetNote" hidden>Будут удалены настройки, наборы, акцент и тема. Нажми ещё раз, чтобы подтвердить.</p>

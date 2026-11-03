@@ -1,5 +1,5 @@
 /* Aspect Studio — service worker (офлайн-режим) */
-const VERSION = 'aspect-studio-v65';
+const VERSION = 'aspect-studio-v66';
 const COMP_CACHE = 'aspect-studio-components';          // компоненты: кладёт страница по кнопке (js/components.js), здесь только отдаём
 const COMP_DIR = 'aspect-components', COMP_BC = 'aspect-studio-comp';
 const CTYPE = { js: 'text/javascript', mjs: 'text/javascript', wasm: 'application/wasm', json: 'application/json' };
@@ -20,7 +20,7 @@ async function opfsPut(path, resp, size) {
 }
 /* Что нужно для запуска и что подгружается по требованию (грузится в фоне после установки) */
 const CORE = ['./', './index.html', './manifest.json', './css/style.css', './js/core.js', './js/uix.js', './js/formats.js', './js/render.js', './js/analyze.js', './js/components.js', './js/session.js', './js/maskedit.js', './js/ort.js', './js/detect.js', './js/ort-worker.js', './js/sr.js', './js/dn.js', './js/erase.js', './js/icc.js', './js/enc.js', './js/enc-worker.js', './js/metadata.js', './js/faces.js', './js/faces-worker.js', './js/cutout.js', './js/cutout-worker.js', './js/preview.js', './js/ui.js', './js/export.js', './js/outpaint.js', './js/features.js', './js/setsearch.js', './js/peek.js', './js/tone.js', './js/why.js', './js/extras.js', './js/wipe.js', './js/ab.js', './js/gestures.js', './js/fmtcmp.js', './js/onboarding.js', './js/changelog.js', './js/main.js', './fonts/roboto-flex-latin.woff2', './fonts/roboto-flex-cyrillic.woff2', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
-const LATER = ['./js/depth.js', './js/lowlight.js', './js/ocr.js', './js/changelog-data.js', './js/speed.js', './js/retouch.js', './js/copyset.js', './js/fxmask.js', './js/oneclick.js', './js/backup.js', './js/mockups.js'];
+const LATER = ['./js/depth.js', './js/lowlight.js', './js/ocr.js', './js/changelog-data.js', './js/speed.js', './js/retouch.js', './js/copyset.js', './js/fxmask.js', './js/oneclick.js', './js/backup.js', './js/mockups.js', './js/start.js', './js/i18n.js', './js/i18n-en.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

@@ -94,7 +94,7 @@ function anSubject(g, w, h) {
    Возвращает { boxes: [{x0,y0,x1,y1}] в долях кадра, fail } либо null, если лиц нет */
 async function anFaces(canvas, bmp) {
   let boxes = null, fail = false, missing = false, eyes = null, xMissing = false, tried = false;
-  if (S.faceAI && S.faceEngine === 'scrfd' && typeof detectFacesSCRFD === 'function') {      // точный поиск: SCRFD с пятью точками
+  if (S.faceAI && S.faceEngine === 'scrfd' && !liteOn() && typeof detectFacesSCRFD === 'function') {      // точный поиск: SCRFD с пятью точками
     if (!compInstalled('facex')) xMissing = true;                                              // не скачан: ниже пробуем лёгкий BlazeFace
     else try { const src = bmp || canvas, fs = await detectFacesSCRFD(src, src.width, src.height); tried = true; boxes = fs.length ? fs : null; eyes = faceEyes(fs); }
     catch (e) { fail = true; console.warn('scrfd', e); }
@@ -125,7 +125,7 @@ async function analyzePhoto(bmp) {
   const f = await anFaces(canvas, bmp), has = f && f.boxes.length > 0;
   const union = has ? anFaceUnion(f.boxes) : null;
   let objects = null, objBox = null, objMain = null, objMissing = false, objFail = false;
-  if (S.objEngine !== 'off' && typeof detectObjects === 'function') {
+  if (S.objEngine !== 'off' && !liteOn() && typeof detectObjects === 'function') {
     const kind = S.objEngine === 'small' ? 'small' : 'nano';
     if (!compInstalled(DET[kind].comp)) objMissing = true;
     else try {

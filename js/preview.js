@@ -146,7 +146,7 @@ function applyView() {
   afterCanvas.style.clipPath = v === 'before' ? 'inset(0 0 0 100%)' : v === 'after' ? 'none' : `inset(0 0 0 ${sliderPos}%)`;
   beforeImg.style.visibility = v === 'after' ? 'hidden' : 'visible';
   sliderHandle.style.left = sliderPos + '%';
-  sliderHandle.setAttribute('aria-valuenow', Math.round(sliderPos));
+  sliderHandle.setAttribute('aria-valuenow', Math.round(sliderPos)); sliderHandle.setAttribute('aria-valuetext', `Оригинал ${Math.round(sliderPos)}%, результат ${100 - Math.round(sliderPos)}%`);
   const canPan = cfgFor(cur()).fit === 'fill' && v !== 'before';
   frame.classList.toggle('can-pan', canPan);
   panHint.hidden = !(canPan && items.length);
@@ -196,8 +196,13 @@ const endDrag = () => {
 frame.addEventListener('pointerup', endDrag);
 frame.addEventListener('pointercancel', endDrag);
 sliderHandle.addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft') { sliderPos = Math.max(3, sliderPos - 5); applyView(); e.preventDefault(); }
-  if (e.key === 'ArrowRight') { sliderPos = Math.min(97, sliderPos + 5); applyView(); e.preventDefault(); }
+  const step = e.shiftKey ? 1 : 5, big = 20;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { sliderPos = Math.max(3, sliderPos - step); applyView(); e.preventDefault(); }
+  else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { sliderPos = Math.min(97, sliderPos + step); applyView(); e.preventDefault(); }
+  else if (e.key === 'PageDown') { sliderPos = Math.max(3, sliderPos - big); applyView(); e.preventDefault(); }
+  else if (e.key === 'PageUp') { sliderPos = Math.min(97, sliderPos + big); applyView(); e.preventDefault(); }
+  else if (e.key === 'Home') { sliderPos = 3; applyView(); e.preventDefault(); }
+  else if (e.key === 'End') { sliderPos = 97; applyView(); e.preventDefault(); }
 });
 
 /* Размытие по глубине: фокус касанием — что на кадре должно остаться резким */

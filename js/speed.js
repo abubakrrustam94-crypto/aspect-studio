@@ -31,6 +31,8 @@ async function speedRun() {
   try { const e = await navigator.storage.estimate(); add('Место для компонентов', Math.round((e.quota - e.usage) / 1048576) + ' МБ свободно', ''); } catch (err) { /* нет данных */ }
   const score = tScale / 3 + tTone + tPix;
   const verdict = score < 400 ? 'Быстро: тяжёлые функции пойдут без проблем.' : score < 1100 ? 'Нормально: большие фото и нейросети займут заметное время.' : 'Медленно: для больших фото лучше уменьшить «Макс. сторону» и не включать несколько нейросетей сразу.';
+  try { localStorage.setItem(SPEED_KEY, JSON.stringify({ score: Math.round(score), t: Date.now() })); } catch (e) { /* без хранилища */ }
+  if (typeof syncUI === 'function') syncUI();
   const out = rows.map(([a, b]) => { const r = document.createElement('div'); r.className = 'sp-row'; const x = document.createElement('span'); x.textContent = a; const y = document.createElement('b'); y.textContent = b; r.append(x, y); return r; });
   const sum = document.createElement('div'); sum.className = 'sp-sum'; sum.textContent = verdict; out.push(sum);
   return out;

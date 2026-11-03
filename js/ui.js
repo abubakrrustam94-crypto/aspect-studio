@@ -68,6 +68,7 @@ function set(key, val) {
   if (exporting) { toast('Идёт экспорт — настройки пока заблокированы'); return; }
   const it = cur();
   histPush('set:' + key);
+  if (liteOn() && val && ['depthOn', 'retouchOn', 'lowOn'].includes(key)) { toast('Режим слабого телефона: эта функция отключена. Выключить режим можно во вкладке «Ещё»', true, { ms: 6000 }); syncUI(); return; }
   if (key === 'cutOn' && val && !compInstalled(cutComp(cfgFor(it)))) { compWarn([cutComp(cfgFor(it))], 'Удаление фона'); syncUI(); return; }
   if (key === 'cutQuality' && val === 'precise' && !compInstalled('cutout2')) { compWarn(['cutout2'], 'Точное удаление фона'); syncUI(); return; }      // без компонента не включаем
   if (key === 'format' && ENC_COMP[val] && (val === 'avif' || val === 'jxl') && !compInstalled(ENC_COMP[val])) { compWarn([ENC_COMP[val]], val === 'avif' ? 'Формат AVIF' : 'Формат JPEG XL'); syncUI(); return; }
@@ -141,6 +142,7 @@ function syncUI() {
   $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
   $('#depthFields').hidden = !E.depthOn;
+  if (window.applyUiPrefs) window.applyUiPrefs();
   $('#lowFields').hidden = !E.lowOn; { const di = cur(); $('#depthPickReset').hidden = !(di && di.depthFocus); }
   $('#retouchFields').hidden = !E.retouchOn;
   { const f = E.format, jx = f === 'jxl' && +S.quality >= 100;

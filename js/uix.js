@@ -82,3 +82,28 @@
   const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.addEventListener('click', e => { if (!calm && navigator.vibrate && e.target.closest(BUZZ)) { try { navigator.vibrate(12); } catch (x) { /* не поддерживается */ } } }, true);
 })();
+
+/* ---------- Язык, размер текста, контраст, анимация, режим слабого телефона, «Начало работы» ---------- */
+(function () {
+  const root = document.documentElement;
+  let lastLang = 'ru';
+  function applyUiPrefs() {
+    root.style.fontSize = S.uiScale && S.uiScale !== 100 ? S.uiScale + '%' : '';
+    root.dataset.contrast = S.uiContrast ? 'high' : '';
+    root.dataset.motion = S.uiMotion ? 'reduce' : '';
+    const why = liteReason(), note = $('#cardLiteNote');
+    if (note) { note.hidden = !why; const w = $('#liteWhy'); if (w) w.textContent = why ? 'Причина: ' + why + '.' : ''; }
+    const li = $('#liteInfo'); if (li) li.textContent = why ? 'Сейчас режим включён: ' + why + '.' : 'Сейчас режим выключен: все функции доступны.';
+    if (S.lang !== lastLang) { lastLang = S.lang; langApply(); }
+  }
+  async function langApply() {
+    root.lang = S.lang === 'en' ? 'en' : 'ru';
+    if (S.lang === 'en') { if (await lazyOk('i18n')) window.i18nSet(true); }
+    else if (window.i18nSet) window.i18nSet(false);
+  }
+  window.applyUiPrefs = applyUiPrefs;
+  if (S.lang === 'en') { lastLang = 'ru'; }
+  applyUiPrefs();
+  try { if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => { if (e.quota && e.quota - (e.usage || 0) < 300 * 1048576) { liteSpace = true; applyUiPrefs(); } }).catch(() => { /* нет данных */ }); } catch (e) { /* нет API */ }
+  const sb = $('#startBtn'); if (sb) sb.addEventListener('click', async () => { if (await lazyOk('start')) window.stOpen(); });
+})();

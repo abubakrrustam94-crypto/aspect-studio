@@ -102,6 +102,8 @@ jobs:
         run: node tests/b1.js
       - name: Сессия, копия настроек, макеты (блок C5)
         run: node tests/c5.js
+      - name: Английский, доступность, слабый телефон (блок D1)
+        run: node tests/d1.js
       - name: Умная ретушь (блок C4)
         run: node tests/c4.js
       - name: Тон: дизеринг, стили, зерно (блок T2)

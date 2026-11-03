@@ -12,7 +12,7 @@ function computeSize(iw, ih, cap, c = S) {
     else { if (ir > r) { ch = ih; cw = ih * r; } else { cw = iw; ch = iw / r; } }
   }
   if (c.enhOn && c.enhScale > 1) { cw *= c.enhScale; ch *= c.enhScale; }
-  const kExport = Math.min(1, S.maxSide / Math.max(cw, ch), Math.sqrt(MAX_AREA / (cw * ch)));
+  const kExport = Math.min(1, maxSideEff() / Math.max(cw, ch), Math.sqrt(MAX_AREA / (cw * ch)));
   const k = cap ? Math.min(kExport, cap / Math.max(cw, ch)) : kExport;
   return { cw: Math.max(1, Math.round(cw * k)), ch: Math.max(1, Math.round(ch * k)), limited: kExport < 0.9999 };
 }
@@ -480,7 +480,7 @@ async function drawPhoto(ctx, bmp, item, L, cw, ch, useEnh, work, c = S, neural 
 }
 
 async function render(canvas, item, bmp, { cap = 0, opaque = false, enh, work = exWork, p3 = false } = {}) {
-  const c = cfgFor(item);
+  const c = liteCfg(cfgFor(item));
   if (c.fit === 'fill' && S.autoCenter && item.an === undefined) await ensureAnalysis(item, bmp);
   const { cw, ch } = computeSize(item.w, item.h, cap, c);
   canvas.width = cw; canvas.height = ch;

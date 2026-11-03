@@ -462,7 +462,7 @@ async function cleanStaleTmp(maxAgeMs) {
 const HW = navigator.hardwareConcurrency || 2;
 function exportConcurrency(list) {
   if (typeof window.EXPORT_CONC === 'number') return Math.max(1, window.EXPORT_CONC);
-  if (list.length < 2) return 1;
+  if (list.length < 2 || liteOn()) return 1;
   let n = DEV_MEM <= 2 || HW < 4 ? 1 : DEV_MEM <= 4 ? 2 : HW >= 6 ? 3 : 2;
   if (list.some(it => ((cfgFor(it).srModel !== 'off' || cfgFor(it).dnModel !== 'off') && cfgFor(it).enhOn) || cfgFor(it).bg === 'inpaint')) n = 1;           // нейросеть считает по одному фото: память и один движок
   if (S.format === 'avif' || S.format === 'jxl') n = Math.min(n, DEV_MEM >= 6 ? 2 : 1);   // кодеры тяжёлые по памяти

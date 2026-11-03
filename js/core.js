@@ -63,12 +63,27 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.50.0';
+const APP_VERSION = '2.51.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
 const PREVIEW_CAP = 1280;          // макс. сторона холста предпросмотра
 const DEV_MEM = navigator.deviceMemory || 4;     // ГБ ОЗУ (Chrome/Android); где API нет (iOS/Firefox) считаем 4
+/* Режим слабого телефона: при малой памяти, медленной проверке скорости или нехватке места тяжёлые функции отключаются (liteCfg), размер ограничен 3000 px */
+const SPEED_KEY = 'aspect-studio-speed'; let liteSpace = false;
+function liteReason() {
+  const m = typeof S !== 'undefined' ? S.liteMode : 'auto';
+  if (m === 'off') return '';
+  if (m === 'on') return 'включён вручную';
+  if (DEV_MEM < 3) return `мало памяти (${DEV_MEM} ГБ)`;
+  try { const sp = JSON.parse(localStorage.getItem(SPEED_KEY) || 'null'); if (sp && sp.score >= 1100) return 'проверка скорости показала медленное устройство'; } catch (e) { /* нет замера */ }
+  if (liteSpace) return 'в браузере мало свободного места';
+  return '';
+}
+const liteOn = () => !!liteReason();
+const LITE_OFF = { depthOn: false, retouchOn: false, lowOn: false, srModel: 'off', dnModel: 'off', cutQuality: 'fast', objEngine: 'off', faceEngine: 'blaze', enhScale: 1 };
+const liteCfg = c => liteOn() ? Object.assign({}, c, LITE_OFF) : c;
+const maxSideEff = () => liteOn() ? Math.min(S.maxSide, 3000) : S.maxSide;
 const MAX_AREA = DEV_MEM <= 2 ? 8000000 : DEV_MEM <= 4 ? 14000000 : 16000000;   // лимит площади холста
 let ZIP_PART = (DEV_MEM <= 2 ? 60 : DEV_MEM <= 4 ? 120 : 250) * 1048576;        // размер одной части ZIP
 
@@ -146,7 +161,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
-  pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, lowOn: false, lowAmt: 70, lowDn: 50, fxMask: 'all', retouchOn: false, retouchStyle: 'exp', retouchAmt: 100, ocrLang: 'rus+eng',
+  pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, lowOn: false, lowAmt: 70, lowDn: 50, fxMask: 'all', lang: 'ru', uiScale: 100, uiContrast: false, uiMotion: false, liteMode: 'auto', retouchOn: false, retouchStyle: 'exp', retouchAmt: 100, ocrLang: 'rus+eng',
   toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none', toneGrain: 0,
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,
