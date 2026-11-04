@@ -63,7 +63,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.51.1';
+const APP_VERSION = '2.51.2';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -161,7 +161,7 @@ const DEFAULTS = {
   fit: 'fit', align: 'center',
   bg: 'blur', color: '#000000', blur: 60, dim: 25,
   grad1: '#7c3aed', grad2: '#0891b2', gradAngle: 'v',
-  pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, lowOn: false, lowAmt: 70, lowDn: 50, fxMask: 'all', lang: 'ru', uiScale: 100, uiContrast: false, uiMotion: false, liteMode: 'auto', retouchOn: false, retouchStyle: 'exp', retouchAmt: 100, ocrLang: 'rus+eng',
+  pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, lowOn: false, lowAmt: 70, lowDn: 50, fxMask: 'all', lang: 'ru', uiScale: 100, uiContrast: false, uiMotion: false, liteMode: 'auto', retouchOn: false, retouchStyle: 'exp', retouchAmt: 100, ocrLang: 'rus+eng', ocrMode: 'auto',
   toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none', toneGrain: 0,
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
   wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,

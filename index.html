@@ -434,12 +434,20 @@
                 <button type="button" data-val="eng">Английский</button>
               </div>
             </div>
+            <div>
+              <span class="field-label">Что на фото</span>
+              <div class="seg" data-group="ocrMode" role="group" aria-label="Режим распознавания">
+                <button type="button" data-val="auto" title="Страница, документ, скриншот: текст строками и абзацами">Документ</button>
+                <button type="button" data-val="sparse" title="Вывески, этикетки, упаковка: отдельные надписи по всему кадру">Надписи</button>
+              </div>
+            </div>
             <div class="row" style="margin:0"><button type="button" class="btn btn-tonal btn-sm" id="ocrBtn" disabled>Распознать текст</button></div>
             <div id="ocrOut" hidden>
-              <textarea id="ocrText" rows="6" style="width:100%" aria-label="Распознанный текст" readonly></textarea>
+              <textarea id="ocrText" rows="6" style="width:100%" aria-label="Распознанный текст (можно править)"></textarea>
               <p class="note" id="ocrInfo" aria-live="polite"></p>
               <div class="row" style="margin:8px 0 0">
                 <button type="button" class="btn btn-tonal btn-sm" id="ocrCopy">Копировать текст</button>
+                <button type="button" class="btn btn-outlined btn-sm" id="ocrSave" hidden>Сохранить в .txt</button>
                 <button type="button" class="btn btn-outlined btn-sm" id="ocrFocus">Кадр смотрит на текст</button>
               </div>
             </div>
@@ -998,6 +1006,8 @@
         <button type="button" data-t="paint" class="active">Закрасить</button>
         <button type="button" data-t="erase">Стереть метку</button>
         <button type="button" data-t="pick" title="Нажми на объект: нейросеть выделит его целиком">Выбрать объект</button>
+        <button type="button" data-t="rect" title="Протяни рамку: всё внутри будет убрано">Рамка</button>
+        <button type="button" data-t="wand" title="Нажми на предмет или надпись: выделится область такого же цвета (нейросеть не нужна)">По цвету</button>
       </div>
       <label class="me-size"><span>Размер</span><input type="range" id="erSize" min="8" max="120" value="36" aria-label="Размер кисти"></label>
     </div>

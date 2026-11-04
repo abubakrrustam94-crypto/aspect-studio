@@ -3,7 +3,7 @@
    Модель работает на 512×512: вокруг каждой области вырезается квадрат с запасом контекста, результат возвращается в полный размер только внутри метки.
    Результат запекается в новый PNG-файл фото (поворот и обрезка применяются), прежний файл хранится для «Вернуть как было». */
 const ER_T = 512, ER_DISP = 1600, ER_CELL = 16, ER_UNDO = 3;
-const er = { open: false, item: null, bmp: null, W: 0, H: 0, dw: 0, dh: 0, mask: null, photo: null, disp: null, ctx: null, tool: 'paint', size: 36, strokes: [], drawing: null };
+const er = { rect: null, rectSnap: null, tol: 34, open: false, item: null, bmp: null, W: 0, H: 0, dw: 0, dh: 0, mask: null, photo: null, disp: null, ctx: null, tool: 'paint', size: 36, strokes: [], drawing: null };
 const erEl = $('#erEd'), erCv = $('#erCanvas');
 const erAbort = () => Object.assign(new Error('Отменено'), { name: 'AbortError' });
 
@@ -93,6 +93,34 @@ async function erPick(e) {
   for (let i = 0; i < g.length; i++) if (g[i]) er.mask[i] = 255;
   erRepaint(); erInfo();
 }
+/* «Рамка»: тянешь прямоугольник, всё внутри помечается */
+function erRectFill(q) {
+  const a = er.rect, W = er.dw, H = er.dh, x0 = Math.max(0, Math.floor(Math.min(a.x, q.x))), x1 = Math.min(W, Math.ceil(Math.max(a.x, q.x))), y0 = Math.max(0, Math.floor(Math.min(a.y, q.y))), y1 = Math.min(H, Math.ceil(Math.max(a.y, q.y)));
+  er.mask.set(er.rectSnap);
+  for (let y = y0; y < y1; y++) er.mask.fill(255, y * W + x0, y * W + x1);
+  erRepaint();
+}
+/* «По цвету»: нажатие выделяет связную область близкого цвета (однотонный предмет, надпись на ровном фоне, пятно). Работает без нейросети */
+function erWand(e) {
+  const p = erPos(e), W = er.dw, H = er.dh, P = er.photo.data, px = Math.max(0, Math.min(W - 1, Math.round(p.x))), py = Math.max(0, Math.min(H - 1, Math.round(p.y)));
+  let sr = 0, sg = 0, sb = 0, c = 0;
+  for (let y = Math.max(0, py - 2); y <= Math.min(H - 1, py + 2); y++) for (let x = Math.max(0, px - 2); x <= Math.min(W - 1, px + 2); x++) { const o = (y * W + x) * 4; sr += P[o]; sg += P[o + 1]; sb += P[o + 2]; c++; }
+  sr /= c; sg /= c; sb /= c;
+  const tol = (er.tol || 34) ** 2 * 3 / 3, cap = W * H * 0.3, seen = new Uint8Array(W * H), st = [py * W + px], blob = []; seen[st[0]] = 1;
+  while (st.length && blob.length < cap) {
+    const i = st.pop(); blob.push(i); const x = i % W, y = (i / W) | 0;
+    for (const n of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) {
+      if (n < 0 || seen[n]) continue; seen[n] = 1; const o = n * 4, d = ((P[o] - sr) ** 2 + (P[o + 1] - sg) ** 2 + (P[o + 2] - sb) ** 2) / 3;
+      if (d <= tol) st.push(n);
+    }
+  }
+  if (blob.length >= cap) { toast('Область слишком большая: цвет сливается с фоном. Закрась кистью или нажми точнее.', false, { ms: 4500 }); return; }
+  if (blob.length < 4) { toast('Тут нечего выделять. Закрась нужное кистью.', false, { ms: 3500 }); return; }
+  er.strokes.push(er.mask.slice()); if (er.strokes.length > 20) er.strokes.shift();
+  const g = new Uint8Array(W * H); blob.forEach(i => { g[i] = 1; }); erGrow(g, W, H, Math.max(2, Math.round(Math.max(W, H) / 350)));
+  for (let i = 0; i < g.length; i++) if (g[i]) er.mask[i] = 255;
+  erRepaint(); erInfo();
+}
 /* Расширить область на r пикселей (чтобы закрасить и каёмку по краю объекта) */
 function erGrow(m, W, H, r) {
   const t = new Uint8Array(W * H);
@@ -102,16 +130,19 @@ function erGrow(m, W, H, r) {
 erCv.addEventListener('pointerdown', e => {
   if (!er.open) return; e.preventDefault();
   if (er.tool === 'pick') { erPick(e); return; }
+  if (er.tool === 'wand') { erWand(e); return; }
   er.strokes.push(er.mask.slice()); if (er.strokes.length > 20) er.strokes.shift();
+  if (er.tool === 'rect') { er.rect = erPos(e); er.rectSnap = er.mask.slice(); try { erCv.setPointerCapture(e.pointerId); } catch (_) {} return; }
   const p = erPos(e); er.drawing = p; try { erCv.setPointerCapture(e.pointerId); } catch (_) {}
   erStroke(p, p);
 });
 erCv.addEventListener('pointermove', e => {
-  const br = $('#erBrush'), r = erCv.getBoundingClientRect(); br.style.display = er.tool === 'pick' ? 'none' : 'block';
+  const br = $('#erBrush'), r = erCv.getBoundingClientRect(); br.style.display = er.tool === 'pick' || er.tool === 'wand' || er.tool === 'rect' ? 'none' : 'block';
   br.style.width = br.style.height = er.size + 'px'; br.style.left = (e.clientX - r.left) + 'px'; br.style.top = (e.clientY - r.top) + 'px';
+  if (er.rect) { erRectFill(erPos(e)); return; }
   if (!er.drawing) return; const p = erPos(e); erStroke(er.drawing, p); er.drawing = p;
 });
-const erEnd = () => { if (er.drawing) { er.drawing = null; erInfo(); } };
+const erEnd = () => { if (er.rect) { er.rect = null; er.rectSnap = null; erInfo(); } if (er.drawing) { er.drawing = null; erInfo(); } };
 erCv.addEventListener('pointerup', erEnd); erCv.addEventListener('pointercancel', erEnd);
 erCv.addEventListener('pointerleave', () => { $('#erBrush').style.display = 'none'; });
 $$('#erTool button').forEach(b => b.addEventListener('click', () => { er.tool = b.dataset.t; $$('#erTool button').forEach(x => x.classList.toggle('active', x === b)); }));
@@ -150,6 +181,73 @@ function erDilate(m, n, r) {                                    // максим�
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let v = 0; for (let d = Math.max(0, x - r); d <= Math.min(n - 1, x + r) && !v; d++) v = m[y * n + d]; tmp[y * n + x] = v; }
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let v = 0; for (let d = Math.max(0, y - r); d <= Math.min(n - 1, y + r) && !v; d++) v = tmp[d * n + x]; m[y * n + x] = v; }
 }
+
+/* Размытие маски (бокс-фильтр по строкам и столбцам, r пикселей): значения 0..255 */
+function erFeather(mk, n, r) {
+  const a = new Float32Array(n * n), t = new Float32Array(n * n); for (let i = 0; i < a.length; i++) a[i] = mk[i];
+  const k = 2 * r + 1;
+  for (let y = 0; y < n; y++) { let sum = 0; for (let x = -r; x <= r; x++) sum += a[y * n + Math.max(0, Math.min(n - 1, x))]; for (let x = 0; x < n; x++) { t[y * n + x] = sum / k; sum += a[y * n + Math.min(n - 1, x + r + 1)] - a[y * n + Math.max(0, x - r)]; } }
+  const out = new Uint8ClampedArray(n * n);
+  for (let x = 0; x < n; x++) { let sum = 0; for (let y = -r; y <= r; y++) sum += t[Math.max(0, Math.min(n - 1, y)) * n + x]; for (let y = 0; y < n; y++) { out[y * n + x] = Math.min(255, sum / k * 255); sum += t[Math.min(n - 1, y + r + 1) * n + x] - t[Math.max(0, y - r) * n + x]; } }
+  for (let i = 0; i < out.length; i++) if (mk[i] && out[i] > 200) out[i] = 255;       // середина заливки непрозрачная
+  return out;
+}
+/* Подгонка тона: на краю дыры сравниваем заливку (внутреннее кольцо) с оригиналом (внешнее кольцо) по клеткам 16 px, разницу растекаем внутрь
+   (мягкое усреднение соседей) и прибавляем к заливке. Так исчезают пятна другого оттенка, в том числе при перепаде яркости по дыре (градиент, небо). */
+function erTone(img, px, mk, n) {
+  const C = 16, g = Math.ceil(n / C), outer = new Uint8Array(n * n), inner = new Uint8Array(n * n), inv = new Uint8Array(n * n);
+  outer.set(mk); erDilate(outer, n, 6); for (let i = 0; i < n * n; i++) { outer[i] = outer[i] && !mk[i] ? 1 : 0; inv[i] = mk[i] ? 0 : 1; }
+  erDilate(inv, n, 6); for (let i = 0; i < n * n; i++) inner[i] = mk[i] && inv[i] ? 1 : 0;      // inv после расширения: пиксели рядом с «не дырой»
+  const so = new Float32Array(g * g * 4), si = new Float32Array(g * g * 4);                  // R, G, B, число точек
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const i = y * n + x, c = ((y / C) | 0) * g + ((x / C) | 0) , o = c * 4;
+    if (outer[i]) { so[o] += px[i * 4]; so[o + 1] += px[i * 4 + 1]; so[o + 2] += px[i * 4 + 2]; so[o + 3]++; }
+    else if (inner[i]) { si[o] += img[i * 4]; si[o + 1] += img[i * 4 + 1]; si[o + 2] += img[i * 4 + 2]; si[o + 3]++; }
+  }
+  const D = new Float32Array(g * g * 3), K = new Uint8Array(g * g), agg = (arr, cx, cy) => { let r = 0, gg = 0, b = 0, k = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= g || y >= g) continue; const o = (y * g + x) * 4; r += arr[o]; gg += arr[o + 1]; b += arr[o + 2]; k += arr[o + 3]; } return [r, gg, b, k]; };
+  let known = 0;
+  for (let cy = 0; cy < g; cy++) for (let cx = 0; cx < g; cx++) {
+    const a = agg(so, cx, cy), b = agg(si, cx, cy), c = cy * g + cx; if (a[3] < 12 || b[3] < 12) continue;
+    D[c * 3] = a[0] / a[3] - b[0] / b[3]; D[c * 3 + 1] = a[1] / a[3] - b[1] / b[3]; D[c * 3 + 2] = a[2] / a[3] - b[2] / b[3]; K[c] = 1; known++;
+  }
+  if (known < 3) return;
+  let sx = 0, sy = 0, sz = 0; for (let c = 0; c < g * g; c++) if (K[c]) { sx += D[c * 3]; sy += D[c * 3 + 1]; sz += D[c * 3 + 2]; }
+  const F = new Float32Array(g * g * 3); for (let c = 0; c < g * g; c++) { F[c * 3] = K[c] ? D[c * 3] : sx / known; F[c * 3 + 1] = K[c] ? D[c * 3 + 1] : sy / known; F[c * 3 + 2] = K[c] ? D[c * 3 + 2] : sz / known; }
+  for (let it = 0; it < 80; it++) for (let cy = 0; cy < g; cy++) for (let cx = 0; cx < g; cx++) {
+    const c = cy * g + cx; if (K[c]) continue; let r = 0, gg = 0, b = 0, k = 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= g || y >= g) continue; const o = (y * g + x) * 3; r += F[o]; gg += F[o + 1]; b += F[o + 2]; k++; }
+    F[c * 3] = r / k; F[c * 3 + 1] = gg / k; F[c * 3 + 2] = b / k;
+  }
+  const lim = v => Math.max(-40, Math.min(40, v));
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const i = y * n + x; if (!img[i * 4 + 3]) continue;
+    const fx = Math.max(0, Math.min(g - 1, (x + .5) / C - .5)), fy = Math.max(0, Math.min(g - 1, (y + .5) / C - .5)), x0 = fx | 0, y0 = fy | 0, x1 = Math.min(g - 1, x0 + 1), y1 = Math.min(g - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
+    for (let ch = 0; ch < 3; ch++) {
+      const v = (F[(y0 * g + x0) * 3 + ch] * (1 - tx) + F[(y0 * g + x1) * 3 + ch] * tx) * (1 - ty) + (F[(y1 * g + x0) * 3 + ch] * (1 - tx) + F[(y1 * g + x1) * 3 + ch] * tx) * ty;
+      img[i * 4 + ch] = Math.max(0, Math.min(255, img[i * 4 + ch] + lim(v)));
+    }
+  }
+}
+/* Зерно: уровень шума берём из оригинала вокруг (медиана отклонений от соседей), добавляем такой же шум в заливку */
+function erGrain(U, uctx, wctx, rx, ry, S, cs) {
+  const u = getPix(uctx, 0, 0, S, S, cs), ud = u.data, o = getPix(wctx, rx, ry, S, S, cs).data, devs = [];
+  for (let y = 1; y < S - 1; y += 3) for (let x = 1; x < S - 1; x += 3) {
+    const i = y * S + x; if (ud[i * 4 + 3] > 0) continue;
+    const L = j => o[j * 4] * 0.3 + o[j * 4 + 1] * 0.59 + o[j * 4 + 2] * 0.11;
+    devs.push(Math.abs(L(i) - (L(i - 1) + L(i + 1) + L(i - S) + L(i + S)) / 4));
+    if (devs.length > 60000) break;
+  }
+  if (devs.length < 200) return;
+  devs.sort((a, b) => a - b); const sig = Math.min(9, devs[devs.length >> 1] * 1.48 * 0.9);          // 0,9 — часть шума уже есть в заливке
+  if (sig < 0.8) return;
+  let seed = 0x9e3779b9; const rnd = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) / 4294967296); };
+  for (let i = 0; i < S * S; i++) {
+    const a = ud[i * 4 + 3]; if (!a) continue;
+    const n = (rnd() + rnd() + rnd() - 1.5) * 2 * sig * (a / 255);
+    ud[i * 4] = Math.max(0, Math.min(255, ud[i * 4] + n)); ud[i * 4 + 1] = Math.max(0, Math.min(255, ud[i * 4 + 1] + n)); ud[i * 4 + 2] = Math.max(0, Math.min(255, ud[i * 4 + 2] + n));
+  }
+  uctx.putImageData(u, 0, 0);
+}
 /* Одна область: квадрат вокруг метки → 512×512 → MI-GAN → обратно только внутри метки */
 async function erPatch(wc, wctx, cs, comp) {
   const W = er.W, H = er.H, kd = er.dw / W, m = Math.min(W, H), fx0 = comp.x0 / kd, fy0 = comp.y0 / kd, fx1 = comp.x1 / kd, fy1 = comp.y1 / kd;
@@ -173,9 +271,12 @@ async function erPatch(wc, wctx, cs, comp) {
     }
     const res = await ortRun('vendor/models/migan.onnx', { x: { data: f32, dims: [1, 4, T, T], type: 'float32' } });
     const d = res[Object.keys(res)[0]].data, img = new Uint8ClampedArray(pl * 4);
-    for (let i = 0, q = 0; i < pl; i++, q += 4) { img[q] = (d[i] * .5 + .5) * 255; img[q + 1] = (d[pl + i] * .5 + .5) * 255; img[q + 2] = (d[2 * pl + i] * .5 + .5) * 255; img[q + 3] = mk[i] * 255; }
+    const al = erFeather(mk, T, 3);                                        // мягкий край вставки: шва не видно
+    for (let i = 0, q = 0; i < pl; i++, q += 4) { img[q] = (d[i] * .5 + .5) * 255; img[q + 1] = (d[pl + i] * .5 + .5) * 255; img[q + 2] = (d[2 * pl + i] * .5 + .5) * 255; img[q + 3] = al[i]; }
+    erTone(img, px, mk, T);                                                // цвет и яркость на краю дыры подгоняем под окружение
     const oc = mkCanvas(T, T); oc.getContext('2d', { colorSpace: cs }).putImageData(mkImageData(img, T, T, cs), 0, 0);
     const U = mkCanvas(S, S), uctx = U.getContext('2d', { colorSpace: cs }); uctx.imageSmoothingQuality = 'high'; uctx.drawImage(oc, 0, 0, S, S);
+    if (S <= 2600) erGrain(U, uctx, wctx, rx, ry, S, cs);   // нейросеть работает на 512 px: на крупном кадре заливка гладкая, возвращаем зерно
     wctx.drawImage(U, rx, ry); oc.width = oc.height = 0; U.width = U.height = 0;
   }
   const cx0 = Math.max(0, Math.floor(rx * kd)), cy0 = Math.max(0, Math.floor(ry * kd)), cx1 = Math.min(er.dw, Math.ceil((rx + S) * kd)), cy1 = Math.min(er.dh, Math.ceil((ry + S) * kd));
