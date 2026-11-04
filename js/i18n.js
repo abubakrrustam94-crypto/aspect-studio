@@ -13,8 +13,8 @@
   function trCore(c, depth) {
     const v = D.x[c]; if (v !== undefined) return v;
     if (depth > 3) return null;
-    const um = /^(.*\d) (КБ|МБ|ГБ|мм|см|Мп|МП|мс|мин|с|ч)$/.exec(c); if (um) return um[1] + ' ' + UNITS[um[2]];
-    if (c.includes(' · ')) { const ps = c.split(' · '); let ch = false; const out = ps.map(x => { let t = CYR.test(x) ? trCore(x, depth + 1) : null; if (t == null && CYR.test(x)) { const f = x.replace(/\(вместе с /g, '(with ').replace(/«/g, '“').replace(/»/g, '”').replace(/(\d) (КБ|МБ|ГБ)/g, (_, n, u) => n + ' ' + UNITS[u]); if (f !== x) t = f; } if (t != null) ch = true; return t == null ? x : t; }); if (ch) return out.join(' · '); }
+    if (c.includes(' · ')) { const ps = c.split(' · '); let ch = false; const out = ps.map(x => { let t = CYR.test(x) ? trCore(x, depth + 1) : null; if (t == null && CYR.test(x)) { const f = x.replace(/\(вместе с /g, '(with ').replace(/«/g, '“').replace(/»/g, '”').replace(/“([^”]+)”/g, (_, q) => '“' + trCap(q) + '”').replace(/(\d) (КБ|МБ|ГБ)/g, (_, n, u) => n + ' ' + UNITS[u]); if (f !== x) t = f; } if (t != null) ch = true; return t == null ? x : t; }); if (ch) return out.join(' · '); }
+    const um = /^(.*\d) (КБ|МБ|ГБ|мм|см|Мп|МП|мс|мин|с|ч)$/.exec(c); if (um && !CYR.test(um[1])) return um[1] + ' ' + UNITS[um[2]];
     for (let i = 0; i < D.p.length; i++) {
       let rx = rxCache.get(i);
       if (!rx) { rx = new RegExp('^' + D.p[i][0].map(p => esc(norm(p) === p ? p : p.replace(/\s+/g, ' '))).join('([\\s\\S]*?)') + '$'); rxCache.set(i, rx); }
@@ -22,6 +22,7 @@
       if (m) return D.p[i][1].replace(/\{(\d+)\}/g, (_, k) => m[+k] === undefined ? '' : trCap(m[+k]));
     }
     for (const [k, en] of D.pre) { const key = k.trimEnd(); if (key.length >= 4 && c.length > key.length && c.startsWith(key) && (k === key || c[key.length] === ' ')) return en.trimEnd() + trCap(c.slice(key.length)); }
+    for (const [k, en] of D.suf) { const key = k.trim(); if (c === key) return en.trim(); }
     for (const [k, en] of D.suf) { const key = k.trim(); if (c.length > key.length && c.endsWith(key)) { const head = c.slice(0, c.length - key.length); return trCap(head) + (k.startsWith(' ') && !en.startsWith(' ') ? ' ' : '') + en; } }
     return null;
   }
