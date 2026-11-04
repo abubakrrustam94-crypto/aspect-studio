@@ -1,4 +1,10 @@
 'use strict';
+/* Защита от встраивания в чужую страницу (clickjacking): GitHub Pages не ставит X-Frame-Options, а frame-ancestors в <meta> браузеры игнорируют. */
+if (window.top !== window.self) {
+  try { window.top.location.href = window.self.location.href; } catch (e) { /* чужой сайт не даёт: ниже прячем страницу */ }
+  document.documentElement.textContent = 'Открой Aspect Studio в отдельной вкладке.';
+  throw new Error('framed');
+}
 /* Aspect Studio — Ядро: константы, состояние, тема, уведомления, загрузка изображений */
 /* ===================================================================
    Aspect Studio v2 — чистый JS, без зависимостей
@@ -63,7 +69,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.51.2';
+const APP_VERSION = '2.51.3';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -171,8 +177,31 @@ const DEFAULTS = {
   faceAI: true, cutOn: false, cutBg: 'white', cutColor: '#ffffff', cutEdge: 50, cutQuality: 'fast', rawMode: 'full', srModel: 'off', nnThreads: 'auto', dnModel: 'off', dnLevel: 2, faceEngine: 'blaze', faceEyes: true, objEngine: 'off', rawWb: 'camera', jpgEngine: 'native', pngOpt: 'off', pngColors: 256, encEffort: 'normal', nameStart: 1, nameTranslit: false, nameSpaces: false, folderOn: false,
 };
 
+/* Проверка настроек, пришедших извне (localStorage, файл настроек, набор, сохранённая сессия): оставляем только известные ключи, нужный тип,
+   допустимые значения списков и разумные пределы чисел. Так испорченный или подсунутый файл не заморозит вкладку (maxSide: 1e9) и не навсегда:
+   плохое значение заменяется стандартным. Ключ __proto__ и любые чужие ключи отбрасываются. */
+const SET_RANGE = {"ratioW":[1,999],"ratioH":[1,999],"outW":[1,16384],"outH":[1,16384],"maxSide":[64,16384],"quality":[1,100],"targetKB":[1,100000],"blur":[0,200],"dim":[0,100],"depthBlur":[0,100],"lowAmt":[0,100],"lowDn":[0,100],"cutEdge":[0,100],"sharp":[0,200],"denoise":[0,200],"wmSize":[1,100],"wmOpacity":[0,100],"wmGap":[0,1000],"wmAngle":[-360,360],"toneExp":[-100,100],"toneCon":[-100,100],"toneSat":[-100,100],"toneWarm":[-100,100],"toneGrain":[0,100],"retouchAmt":[0,200],"uiScale":[50,200],"enhScale":[1,4],"dnLevel":[0,5],"pngColors":[2,256],"metaDpi":[0,2400],"nameStart":[0,999999]};
+const SET_ENUM = {"view":["after","before","slider"],"lang":["en","ru"],"liteMode":["auto","off","on"],"sizeMode":["auto","fixed"],"fit":["fill","fit"],"align":["center","end","start"],"cutBg":["color","transparent","white"],"cutQuality":["fast","precise"],"bg":["blur","color","dominant","edge","gradient","inpaint","mirror","transparent"],"gradAngle":["d","h","v"],"ocrLang":["eng","rus","rus+eng"],"ocrMode":["auto","sparse"],"multiPages":["all","first"],"nnThreads":["1","2","4","auto"],"rawMode":["full","preview"],"rawWb":["auto","camera"],"wmMode":["single","tile"],"wmPos":["bc","bl","br","c","cl","cr","tc","tl","tr"],"faceEngine":["blaze","scrfd"],"objEngine":["nano","off","small"],"toneStyle":["bw","bwfilm","cine","cool","fade","film","kodak","none","vivid","warm"],"retouchStyle":["exp","vivid"],"fxMask":["all","bg","face","sky","subject"],"dnModel":["ffd","off","scu"],"srModel":["fast","general","max","off"],"enhLevel":["high","low","mid"],"pdfPage":["a4","image"],"format":["avif","jpg","jxl","png","webp"],"jpgEngine":["moz","native"],"pngOpt":["lossless","lossy","off"],"encEffort":["best","fast","normal"],"meta":["basic","custom","none"],"metaDate":["keep","none","today"],"colorSpace":["adobe","p3","prophoto","rec2020","source","srgb"]};
+const SET_HEX = ['color', 'cutColor', 'grad1', 'grad2'], SET_TEXT = { nameTpl: 200, wmText: 200, metaCopy: 200, author: 200, presetId: 40 };
+function sanitizeSettings(src, only) {
+  const out = {}; if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  for (const k of (only || Object.keys(DEFAULTS))) {
+    if (!Object.prototype.hasOwnProperty.call(DEFAULTS, k) || !Object.prototype.hasOwnProperty.call(src, k)) continue;
+    const v = src[k], d = DEFAULTS[k]; if (typeof v !== typeof d) continue;
+    if (typeof v === 'number') { if (!Number.isFinite(v)) continue; const r = SET_RANGE[k] || [-1e4, 1e4]; if (v < r[0] || v > r[1]) continue; out[k] = v; }
+    else if (typeof v === 'string') {
+      if (SET_ENUM[k]) { if (!SET_ENUM[k].includes(v)) continue; }
+      else if (SET_HEX.includes(k)) { if (!/^#[0-9a-fA-F]{6}$/.test(v)) continue; }
+      else if (k === 'presetId') { if (!/^[\w-]{1,40}$/.test(v)) continue; }
+      else if (v.length > (SET_TEXT[k] || 200)) continue;
+      out[k] = v;
+    } else out[k] = v;
+  }
+  return out;
+}
+
 let S = { ...DEFAULTS };
-try { Object.assign(S, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) {}
+try { Object.assign(S, sanitizeSettings(JSON.parse(localStorage.getItem(STORE_KEY) || '{}'))); } catch (e) {}
 // Миграция со старых настроек (v2.7 и ниже): «wide» и «keepMeta» заменены на colorSpace и meta
 try {
   const old = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');

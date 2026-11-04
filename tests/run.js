@@ -42,7 +42,7 @@ let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if 
   await p.$eval('.thumb .thumb-sel', e => e.click());
   ok(await p.evaluate(() => items[0].skip === true) && /0 из 1|ZIP/.test(await p.textContent('#zipLabel')), 'фото можно исключить из ZIP');
   await p.$eval('#accentRow [data-id="green"]', e => e.click());
-  ok(await p.evaluate(() => document.getElementById('accentStyle').textContent.includes('hsl(142')), 'акцентный цвет применяется');
+  ok(await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--md-sys-color-primary').includes('hsl(142')), 'акцентный цвет применяется');
   // вкладки настроек
   const tabsOk = await p.evaluate(() => {
     const res = {};

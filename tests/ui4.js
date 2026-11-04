@@ -44,7 +44,7 @@ const EXP = `async (o) => { Object.assign(S, o.g || {}); const it = items[0]; fo
   ok(await p.evaluate(() => { document.getElementById('toast').style.pointerEvents = 'auto'; const t = document.getElementById('toast').getBoundingClientRect(), top = document.elementFromPoint(t.left + t.width / 2, t.top + t.height / 2); return document.getElementById('toast').contains(top); }), 'уведомление видно и над полноэкранными окнами');
   // ---------- обход ВСЕХ кнопок на телефоне: нажатие и наведение не меняют форму ----------
   await p.evaluate(async () => { for (const t of document.querySelectorAll('#settingsTabs [role=tab]')) { t.click(); await new Promise(r => setTimeout(r, 20)); } document.querySelector('#settingsTabs [data-tab=frame]').click(); });
-  await p.addStyleTag({ content: '*, *::before, *::after { transition: none !important; animation: none !important; }' });
+  await p.evaluate(c => { const sh = new CSSStyleSheet(); sh.replaceSync(c); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sh]; }, '*, *::before, *::after { transition: none !important; animation: none !important; }');
   const cdp2 = await mob.newCDPSession(p); await cdp2.send('DOM.enable'); await cdp2.send('CSS.enable');
   const root = await cdp2.send('DOM.getDocument', { depth: 0 });
   const nodes = (await cdp2.send('DOM.querySelectorAll', { nodeId: root.root.nodeId, selector: 'button, [role=button], [role=tab], .chip, .swatch, #uploadZone, .toast-act' })).nodeIds;

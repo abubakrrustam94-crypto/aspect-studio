@@ -1,12 +1,9 @@
-# Автоматические запросы на обновление зависимостей разработки и GitHub Actions (раз в неделю)
+# Обновления GitHub Actions и dev-зависимостей предлагаются отдельными запросами: версии не уплывают незаметно.
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: monthly }

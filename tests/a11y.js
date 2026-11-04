@@ -12,7 +12,7 @@ const SHOW = process.argv.includes('-v');
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto(url); await p.waitForTimeout(500);
   await p.addScriptTag({ path: axeSrc });
-  await p.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important}' });   // иначе axe ловит цвета посреди анимации
+  await p.evaluate(c => { const sh = new CSSStyleSheet(); sh.replaceSync(c); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sh]; }, '*,*::before,*::after{transition:none!important;animation:none!important}');   // иначе axe ловит цвета посреди анимации
   const minor = new Map();
   const scan = async label => {
     const r = await p.evaluate(async () => (await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] }, resultTypes: ['violations'] })).violations.map(v => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 4).map(n => n.target.join(' ') + ' → ' + (n.failureSummary || '').split('\n').slice(1, 3).join(' ').slice(0, 160)), n: v.nodes.length })));

@@ -149,10 +149,10 @@ async function sessRestore() {
   await addFiles(files);
   d.meta.items.forEach((m, i) => {
     const it = items[before + d.files.slice(0, i).filter(Boolean).length]; if (!it || !d.files[i]) return;
-    it.ov = m.ov || null; XF_KEYS.forEach(k => { if (m[k] !== undefined) it[k] = m[k]; });
+    it.ov = (m.ov && typeof m.ov === 'object' ? (o => Object.keys(o).length ? o : null)(sanitizeSettings(m.ov, OV_KEYS)) : null); XF_KEYS.forEach(k => { if (m[k] !== undefined) it[k] = m[k]; });
     syncDims(it);
   });
-  if (d.meta.S) { const keep = ['view']; Object.keys(d.meta.S).forEach(k => { if (k in DEFAULTS && typeof d.meta.S[k] === typeof DEFAULTS[k] && !keep.includes(k)) S[k] = d.meta.S[k]; }); save(); }
+  if (d.meta.S) { Object.assign(S, sanitizeSettings(d.meta.S, Object.keys(DEFAULTS).filter(k => k !== 'view'))); save(); }
   items.slice(before).forEach(it => { if (it.rot || it.tilt || it.flipH || it.flipV || it.crop) { if (cache.id === it.id) releaseCache(); commitXform(it).then(() => { const m = d.meta.items.find(x => x.key === sessKey(it)); if (m) { it.focus = m.focus || it.focus; it.zoom = m.zoom || 1; it.manual = !!m.manual; } schedule(); }).catch(() => {}); } });
   idx = Math.min(before + Math.max(0, d.meta.idx || 0), items.length - 1); updateChrome(); syncUI(); schedule();
 }

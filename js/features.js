@@ -51,7 +51,11 @@ async function inspShow(mode) {
 /* ---------- Акцентный цвет темы ---------- */
 const ACCENT_KEY = 'aspect-studio-accent';
 const ACCENTS = [['violet', 262, 'Фиолетовый'], ['blue', 217, 'Синий'], ['teal', 174, 'Бирюзовый'], ['green', 142, 'Зелёный'], ['orange', 28, 'Оранжевый'], ['pink', 330, 'Розовый']];
-const accentStyle = document.head.appendChild(Object.assign(document.createElement('style'), { id: 'accentStyle' }));
+/* Акцент кладём в конструируемую таблицу стилей: политика безопасности без 'unsafe-inline' не пускает встроенные <style>, а такие таблицы пускает */
+const accentStyle = (() => {
+  try { const sh = new CSSStyleSheet(); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sh]; return { set textContent(t) { sh.replaceSync(t || ''); } }; }
+  catch (e) { return document.head.appendChild(Object.assign(document.createElement('style'), { id: 'accentStyle' })); }
+})();
 /* Контраст WCAG: подбираем яркость так, чтобы текст на цвете читался (≥ 4.5:1) в обеих темах */
 function hslRgb(h, s, l) { s /= 100; l /= 100; const a = s * Math.min(l, 1 - l), f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return [f(0), f(8), f(4)].map(x => x * 255); }
 function relLum(c) { const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; }
@@ -173,7 +177,7 @@ $('#applyAllBtn').addEventListener('click', () => {
 const PRESET_KEY = 'aspect-studio-presets', PRESET_SKIP = ['view', 'pin'];
 let myPresets = [];
 try { myPresets = JSON.parse(localStorage.getItem(PRESET_KEY) || '[]'); if (!Array.isArray(myPresets)) myPresets = []; } catch (e) { myPresets = []; }
-myPresets = myPresets.filter(p => p && typeof p.name === 'string' && p.cfg && typeof p.cfg === 'object');
+myPresets = myPresets.filter(p => p && typeof p.name === 'string' && p.cfg && typeof p.cfg === 'object').map(p => ({ name: p.name.slice(0, 30), cfg: cleanPresetCfg(p.cfg) }));
 const savePresets = () => { try { localStorage.setItem(PRESET_KEY, JSON.stringify(myPresets)); } catch (e) {} };
 function renderPresets() {
   const box = $('#myPresets'); box.replaceChildren();
@@ -188,9 +192,9 @@ function renderPresets() {
 }
 function applyMyPreset(p) {
   histPush('preset');
-  const it = cur(), ok = k => k in DEFAULTS && typeof p.cfg[k] === typeof DEFAULTS[k];
-  Object.keys(p.cfg).forEach(k => { if (ok(k) && !PRESET_SKIP.includes(k)) S[k] = p.cfg[k]; });
-  if (it && it.ov) OV_KEYS.forEach(k => { if (ok(k)) it.ov[k] = p.cfg[k]; });
+  const it = cur(), cfg = cleanPresetCfg(p.cfg);
+  Object.assign(S, cfg);
+  if (it && it.ov) OV_KEYS.forEach(k => { if (k in cfg) it.ov[k] = cfg[k]; });
   save(); syncUI(); schedule(); toast(`Набор «${p.name}» применён`);
 }
 $('#savePreset').addEventListener('click', () => {
@@ -652,9 +656,7 @@ $('#recenter').addEventListener('click', () => { const it = cur(); if (!it) retu
 
 /* ---------- Экспорт / импорт наборов, сброс, «О программе» ---------- */
 function cleanPresetCfg(cfg) {
-  const out = {};
-  Object.keys(cfg || {}).forEach(k => { if (k in DEFAULTS && !PRESET_SKIP.includes(k) && typeof cfg[k] === typeof DEFAULTS[k]) out[k] = cfg[k]; });
-  return out;
+  return sanitizeSettings(cfg, Object.keys(DEFAULTS).filter(k => !PRESET_SKIP.includes(k)));
 }
 function parsePresetsFile(text) {
   let d; try { d = JSON.parse(text); } catch (e) { return null; }

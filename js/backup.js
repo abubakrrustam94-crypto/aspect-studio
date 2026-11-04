@@ -13,7 +13,7 @@ function bkParse(text) {
   if (typeof text !== 'string' || text.length > 2e6) return null;
   let d; try { d = JSON.parse(text); } catch (e) { return null; }
   if (!d || d.app !== 'aspect-studio' || d.kind !== 'settings' || !d.S || typeof d.S !== 'object') return null;
-  const s = {}; Object.keys(d.S).forEach(k => { if (k in DEFAULTS && !BK_SKIP.includes(k) && typeof d.S[k] === typeof DEFAULTS[k] && (typeof d.S[k] !== 'number' || Number.isFinite(d.S[k]))) s[k] = d.S[k]; });
+  const s = sanitizeSettings(d.S, Object.keys(DEFAULTS).filter(k => !BK_SKIP.includes(k)));
   const ls = {};
   if (d.ls && typeof d.ls === 'object') Object.keys(d.ls).forEach(k => {
     const kind = BK_LS[k], v = d.ls[k]; if (!kind || typeof v !== 'string' || v.length > 5e5) return;
@@ -35,7 +35,7 @@ window.bkImportText = function (text) {
   histPush('importSettings');
   Object.assign(S, r.S);
   Object.keys(r.ls).forEach(k => { try { localStorage.setItem(k, r.ls[k]); } catch (e) { /* без хранилища */ } });
-  if (r.ls['aspect-studio-presets']) { try { const l = JSON.parse(r.ls['aspect-studio-presets']); myPresets = (Array.isArray(l) ? l : []).filter(p => p && typeof p.name === 'string' && p.cfg && typeof p.cfg === 'object').slice(-30); renderPresets(); } catch (e) { /* пропускаем */ } }
+  if (r.ls['aspect-studio-presets']) { try { const l = JSON.parse(r.ls['aspect-studio-presets']); myPresets = (Array.isArray(l) ? l : []).filter(p => p && typeof p.name === 'string' && p.cfg && typeof p.cfg === 'object').slice(-30).map(p => ({ name: p.name.slice(0, 30), cfg: cleanPresetCfg(p.cfg) })).filter(p => Object.keys(p.cfg).length); renderPresets(); } catch (e) { /* пропускаем */ } }
   if (r.ls['aspect-studio-accent']) applyAccent(r.ls['aspect-studio-accent']);
   if (r.ls['aspect-studio-theme']) { const t = r.ls['aspect-studio-theme']; applyTheme(t === 'auto' ? sysTheme() : t, t); }
   save(); syncUI(); renderThumbs(); schedule();

@@ -1,5 +1,8 @@
 name: Автотесты
 
+permissions:
+  contents: read            # токен только на чтение: тесты ничего не пишут в репозиторий
+
 on:
   push:
     branches: [main]
@@ -19,7 +22,7 @@ jobs:
       - name: Утилиты для проверки PDF
         run: sudo apt-get install -y poppler-utils
       - name: Установка зависимостей
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund       # по package-lock.json: те же версии, что проверены у автора
       - name: Статический аудит кода (необъявленные имена, дубли, офлайн-список)
         run: npm run audit
       - name: Установка Chromium для Playwright
@@ -106,6 +109,8 @@ jobs:
         run: node tests/d1.js
       - name: Текст на фото и удаление объектов (блок E1)
         run: node tests/e1.js
+      - name: Безопасность (блок E2)
+        run: node tests/sec.js
       - name: Умная ретушь (блок C4)
         run: node tests/c4.js
       - name: Тон: дизеринг, стили, зерно (блок T2)

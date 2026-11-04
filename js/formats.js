@@ -407,7 +407,7 @@ async function aiToFile(file, u8, notes, pageNo) {
   try { pdfjs = await import(vendorUrl('vendor/pdfjs/pdf.min.mjs')); } catch (e) { throw new FormatError('Не удалось загрузить модуль чтения PDF/AI. Проверь соединение (нужно один раз)'); }
   pdfjs.GlobalWorkerOptions.workerSrc = vendorUrl('vendor/pdfjs/pdf.worker.min.mjs');
   let doc;
-  try { doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)) }).promise; } catch (e) { throw new FormatError('Не удалось прочитать AI/PDF'); }
+  try { doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)), isEvalSupported: false, enableXfa: false }).promise; } catch (e) { throw new FormatError('Не удалось прочитать AI/PDF'); }
   try {
     const page = await doc.getPage(pageNo || 1), v1 = page.getViewport({ scale: 1 });
     const scale = Math.min(6, Math.max(1, 3000 / Math.max(v1.width, v1.height))), vp = page.getViewport({ scale });
@@ -524,7 +524,7 @@ async function pdfPages(file, notes) {
   let pdfjs;
   pdfjs = await import(vendorUrl('vendor/pdfjs/pdf.min.mjs'));
   pdfjs.GlobalWorkerOptions.workerSrc = vendorUrl('vendor/pdfjs/pdf.worker.min.mjs');
-  const doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)) }).promise;
+  const doc = await pdfjs.getDocument({ data: u8.slice(u8.indexOf(0x25)), isEvalSupported: false, enableXfa: false }).promise;
   const n = doc.numPages; try { await doc.destroy(); } catch (e) {}
   if (n < 2) return null;
   const base = file.name.replace(/\.[^.]+$/, ''), out = [], cnt = Math.min(n, MULTI_MAX);

@@ -25,6 +25,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   const tabs = {};
   for (const t of ['phone', 'story', 'avatar', 'feed', 'link']) {
     await p.click(`#mkTabs [data-t=${t}]`);
+    await p.waitForFunction(() => { const cs = [...document.querySelectorAll('#mkStage canvas.mk-pic')]; return cs.length && cs.every(c => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 148) s += d[i] + d[i + 1] + d[i + 2]; return s > 100; }); }, null, { timeout: 10000 }).catch(() => {});   // под нагрузкой кадр дорисовывается чуть позже
     tabs[t] = await p.evaluate(() => { const cs = [...document.querySelectorAll('#mkStage canvas.mk-pic')]; const nonEmpty = c => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4 * 37) s += d[i] + d[i + 1] + d[i + 2]; return s > 100; }; return { n: cs.length, drawn: cs.every(nonEmpty), note: document.querySelector('#mkNote').textContent }; });
   }
   ok(tabs.phone.n === 1 && tabs.story.n === 1 && tabs.avatar.n === 3 && tabs.feed.n === 1 && tabs.link.n === 1, 'на вкладках правильное число кадров (аватар — 3 размера)');
