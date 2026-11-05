@@ -8,6 +8,13 @@ const ST_SCENARIOS = [
   { id: 'shop', icon: 'package', name: 'Товар для маркетплейса', desc: '3:4 (900×1200), белые поля вокруг товара.', p: { presetId: 'wb', outW: 900, outH: 1200 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'color', color: '#ffffff' } },
   { id: 'wall', icon: 'frame', name: 'Обои на телефон', desc: 'Под экран iPhone или Android: заполнение без чёрных полос.', p: { presetId: 'android', outW: 1080, outH: 2400 }, s: { sizeMode: 'fixed', fit: 'fill', autoCenter: true } },
   { id: 'print', icon: 'save', name: 'Печать 10×15', desc: '300 dpi, фото целиком, белые поля по краям.', p: { presetId: 'p10x15', outW: 1181, outH: 1772 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'color', color: '#ffffff' } },
+  { id: 'thumb', icon: 'image', name: 'Превью для YouTube', desc: '16:9 (1280×720), фото целиком, фон — размытая копия.', p: { presetId: 'ytthumb', outW: 1280, outH: 720 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'blur' } },
+  { id: 'avito', icon: 'package', name: 'Объявление на Авито', desc: '4:3 (1600×1200), белые поля, без обрезки.', p: { presetId: 'avito', outW: 1600, outH: 1200 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'color', color: '#ffffff' } },
+  { id: 'ozon', icon: 'package', name: 'Товар на Ozon', desc: '3:4 (1200×1600), белые поля вокруг товара.', p: { presetId: 'ozon', outW: 1200, outH: 1600 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'color', color: '#ffffff' } },
+  { id: 'pin', icon: 'frame', name: 'Пин для Pinterest', desc: '2:3 (1000×1500), фото целиком, фон — размытая копия.', p: { presetId: 'pin', outW: 1000, outH: 1500 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'blur' } },
+  { id: 'vk', icon: 'frame', name: 'Пост ВКонтакте', desc: 'Квадрат 1080×1080, фото целиком, фон — размытая копия.', p: { presetId: 'vk', outW: 1080, outH: 1080 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'blur' } },
+  { id: 'tgst', icon: 'sparkles', name: 'Стикер для Telegram', desc: 'Квадрат 512×512, фото целиком. Для прозрачного фона включи «Вырезать фон».', p: { presetId: 'tgsticker', outW: 512, outH: 512 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'blur' } },
+  { id: 'xpost', icon: 'frame', name: 'Пост в X и Facebook', desc: '16:9 (1600×900), без обрезки.', p: { presetId: 'x', outW: 1600, outH: 900 }, s: { sizeMode: 'fixed', fit: 'fit', bg: 'blur' } },
   { id: 'keep', icon: 'sparkles', name: 'Просто привести в порядок', desc: 'Размер не меняется: включаются улучшение, автотон и сжатие JPG.', p: {}, s: { sizeMode: 'auto', enhOn: true, format: 'jpg', quality: 90 } },
 ];
 /* Чистая логика: какие настройки получатся (проверяется тестом) */
@@ -45,6 +52,7 @@ function stPlan(sc) { return Object.assign({}, sc.s, sc.p); }
       else if (e.key === 'Tab') { const f = [...box.querySelectorAll('button')]; const a = f[0], z = f[f.length - 1]; if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); } }
     });
   }
-  function hide() { box.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  function hide() { if (box) box.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  window.stApply = function (id) { const sc = ST_SCENARIOS.find(x => x.id === id); if (sc) apply(sc); };
   window.stOpen = function () { if (!box) build(); lastFocus = document.activeElement; box.hidden = false; box.querySelector('.st-item').focus(); };
 })();

@@ -11,7 +11,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   await new Promise(r => server.listen(8812, r));
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 }, serviceWorkers: 'block' });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://localhost:8812/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(800);
+  await p.goto('http://localhost:8812/'); await p.evaluate(SEEN); await p.reload(); await p.waitForFunction(() => document.getElementById('exRow'), null, { timeout: 10000 }); await p.waitForTimeout(800);
   // --- Начало работы ---
   await p.click('#startBtn'); await p.waitForSelector('#startDlg:not([hidden])');
   ok(await p.evaluate(() => document.querySelectorAll('#stList .st-item').length === ST_SCENARIOS.length && ST_SCENARIOS.length >= 8), 'окно «Начало работы»: сценарии показаны');
@@ -54,7 +54,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   ok(await p.evaluate(() => document.documentElement.dataset.contrast === 'high' && document.documentElement.dataset.motion === 'reduce'), 'высокий контраст и «без анимации» включаются');
   const cr = await p.evaluate(() => { const rl = c => { const [r, g, b] = c.match(/\d+/g).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; }; const t = getComputedStyle(document.querySelector('.card-title')).color, bg = getComputedStyle(document.body).backgroundColor; const a = rl(t), b = rl(bg); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); });
   ok(cr >= 7, `в режиме высокого контраста заголовки читаются (контраст ${cr.toFixed(1)}:1)`);
-  await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(800);
+  await p.waitForTimeout(500); await p.reload(); await p.waitForFunction(() => document.getElementById('exRow'), null, { timeout: 10000 }); await p.waitForTimeout(800);
   ok(await p.evaluate(() => document.documentElement.style.fontSize === '130%' && document.documentElement.dataset.contrast === 'high'), 'настройки читаемости сохраняются после перезагрузки');
   await p.evaluate(() => { set('uiScale', 100); set('uiContrast', false); set('uiMotion', false); });
   ok(await p.evaluate(() => document.documentElement.style.fontSize === '' && !document.documentElement.dataset.contrast), 'возврат к обычному виду');

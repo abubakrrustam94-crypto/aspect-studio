@@ -138,3 +138,6 @@
     new MutationObserver(sync).observe(infoRow, { childList: true, subtree: true, characterData: true }); sync();
   }
 })();
+
+/* ===== v2.54: подсказки на старте подгружаются лениво (js/hints.js) ===== */
+addEventListener('load', () => setTimeout(() => lazyLoad('hints').catch(() => {}), 1500));
