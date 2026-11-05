@@ -207,12 +207,13 @@ function paintBackground(ctx, bmp, item, cw, ch, L, opaque, c = S) {
   } else drawBlurBg(ctx, bmp, item.w, item.h, cw, ch, c);
 }
 
+const lumaOf = hex => { const n = parseInt(String(hex).slice(1), 16) || 0; return .299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255); };
 function drawWatermark(ctx, cw, ch) {
   if (!S.wmOn) return;
   const hasText = S.wmText.trim().length > 0;
   if (!wmLogo && !hasText) return;
   const tile = S.wmMode === 'tile';
-  const pad = tile ? 0 : Math.round(Math.min(cw, ch) * 0.03);
+  const pad = tile ? 0 : Math.round(Math.min(cw, ch) * S.wmPad / 100);
   const targetW = cw * S.wmSize / 100;
   ctx.save();
   ctx.globalAlpha = S.wmOpacity / 100;
@@ -234,8 +235,8 @@ function drawWatermark(ctx, cw, ch) {
     ctx.font = font(fs);
     w = ctx.measureText(S.wmText).width; h = fs;
     ctx.textBaseline = 'top';
-    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = fs * .18; ctx.shadowOffsetY = fs * .04;
-    ctx.fillStyle = '#fff';
+    if (S.wmShadow) { ctx.shadowColor = lumaOf(S.wmColor) > 140 ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)'; ctx.shadowBlur = fs * .18; ctx.shadowOffsetY = fs * .04; }
+    ctx.fillStyle = S.wmColor;
     paint = (x, y) => ctx.fillText(S.wmText, x, y);
   }
   if (!tile) {

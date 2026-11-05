@@ -69,7 +69,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.54.0';
+const APP_VERSION = '2.55.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -170,7 +170,7 @@ const DEFAULTS = {
   pdfPage: 'a4', multiPages: 'first', depthOn: false, depthBlur: 60, lowOn: false, lowAmt: 70, lowDn: 50, fxMask: 'all', lang: 'ru', uiScale: 100, uiContrast: false, uiMotion: false, liteMode: 'auto', retouchOn: false, retouchStyle: 'exp', retouchAmt: 100, ocrLang: 'rus+eng', ocrMode: 'auto',
   toneExp: 0, toneCon: 0, toneSat: 0, toneWarm: 0, toneStyle: 'none', toneGrain: 0,
   format: 'png', quality: 92, maxSide: 4096, targetOn: false, targetKB: 500, nameTpl: '{name}_{w}x{h}', autoCenter: true, diskZip: true,
-  wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80,
+  wmOn: false, wmText: '@aspect.studio', wmPos: 'br', wmSize: 22, wmOpacity: 75, wmMode: 'single', wmAngle: -30, wmGap: 80, wmColor: '#ffffff', wmShadow: true, wmPad: 3,
   view: 'slider', pin: true,
   enhOn: true, enhScale: 1, enhLevel: 'mid', sharp: 45, denoise: 20, smart: true,
   meta: 'none', author: '', colorSpace: 'p3', metaCam: true, metaDate: 'keep', metaCopy: '', metaDpi: 0,
@@ -180,9 +180,9 @@ const DEFAULTS = {
 /* Проверка настроек, пришедших извне (localStorage, файл настроек, набор, сохранённая сессия): оставляем только известные ключи, нужный тип,
    допустимые значения списков и разумные пределы чисел. Так испорченный или подсунутый файл не заморозит вкладку (maxSide: 1e9) и не навсегда:
    плохое значение заменяется стандартным. Ключ __proto__ и любые чужие ключи отбрасываются. */
-const SET_RANGE = {"ratioW":[1,999],"ratioH":[1,999],"outW":[1,16384],"outH":[1,16384],"maxSide":[64,16384],"quality":[1,100],"targetKB":[1,100000],"blur":[0,200],"dim":[0,100],"depthBlur":[0,100],"lowAmt":[0,100],"lowDn":[0,100],"cutEdge":[0,100],"sharp":[0,200],"denoise":[0,200],"wmSize":[1,100],"wmOpacity":[0,100],"wmGap":[0,1000],"wmAngle":[-360,360],"toneExp":[-100,100],"toneCon":[-100,100],"toneSat":[-100,100],"toneWarm":[-100,100],"toneGrain":[0,100],"retouchAmt":[0,200],"uiScale":[50,200],"enhScale":[1,4],"dnLevel":[0,5],"pngColors":[2,256],"metaDpi":[0,2400],"nameStart":[0,999999]};
+const SET_RANGE = {"ratioW":[1,999],"ratioH":[1,999],"outW":[1,16384],"outH":[1,16384],"maxSide":[64,16384],"quality":[1,100],"targetKB":[1,100000],"blur":[0,200],"dim":[0,100],"depthBlur":[0,100],"lowAmt":[0,100],"lowDn":[0,100],"cutEdge":[0,100],"sharp":[0,200],"denoise":[0,200],"wmSize":[1,100],"wmOpacity":[0,100],"wmGap":[0,1000],"wmAngle":[-360,360],"wmPad":[0,15],"toneExp":[-100,100],"toneCon":[-100,100],"toneSat":[-100,100],"toneWarm":[-100,100],"toneGrain":[0,100],"retouchAmt":[0,200],"uiScale":[50,200],"enhScale":[1,4],"dnLevel":[0,5],"pngColors":[2,256],"metaDpi":[0,2400],"nameStart":[0,999999]};
 const SET_ENUM = {"view":["after","before","slider"],"lang":["en","ru"],"liteMode":["auto","off","on"],"sizeMode":["auto","fixed"],"fit":["fill","fit"],"align":["center","end","start"],"cutBg":["color","transparent","white"],"cutQuality":["fast","precise"],"bg":["blur","color","dominant","edge","gradient","inpaint","mirror","transparent"],"gradAngle":["d","h","v"],"ocrLang":["eng","rus","rus+eng"],"ocrMode":["auto","sparse"],"multiPages":["all","first"],"nnThreads":["1","2","4","auto"],"rawMode":["full","preview"],"rawWb":["auto","camera"],"wmMode":["single","tile"],"wmPos":["bc","bl","br","c","cl","cr","tc","tl","tr"],"faceEngine":["blaze","scrfd"],"objEngine":["nano","off","small"],"toneStyle":["bw","bwfilm","cine","cool","fade","film","kodak","none","vivid","warm"],"retouchStyle":["exp","vivid"],"fxMask":["all","bg","face","sky","subject"],"dnModel":["ffd","off","scu"],"srModel":["fast","general","max","off"],"enhLevel":["high","low","mid"],"pdfPage":["a4","image"],"format":["avif","jpg","jxl","png","webp"],"jpgEngine":["moz","native"],"pngOpt":["lossless","lossy","off"],"encEffort":["best","fast","normal"],"meta":["basic","custom","none"],"metaDate":["keep","none","today"],"colorSpace":["adobe","p3","prophoto","rec2020","source","srgb"]};
-const SET_HEX = ['color', 'cutColor', 'grad1', 'grad2'], SET_TEXT = { nameTpl: 200, wmText: 200, metaCopy: 200, author: 200, presetId: 40 };
+const SET_HEX = ['wmColor', 'color', 'cutColor', 'grad1', 'grad2'], SET_TEXT = { nameTpl: 200, wmText: 200, metaCopy: 200, author: 200, presetId: 40 };
 function sanitizeSettings(src, only) {
   const out = {}; if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
   for (const k of (only || Object.keys(DEFAULTS))) {

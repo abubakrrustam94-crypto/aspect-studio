@@ -760,7 +760,7 @@ function updateFolderUI() {
 /* ===================================================================
    Шаблоны водяного знака (хранятся в браузере вместе с логотипом)
    =================================================================== */
-const WMTPL_KEY = 'aspect-studio-wmtpl', WMTPL_KEYS = ['wmText', 'wmMode', 'wmPos', 'wmSize', 'wmOpacity', 'wmAngle', 'wmGap'];
+const WMTPL_KEY = 'aspect-studio-wmtpl', WMTPL_KEYS = ['wmText', 'wmMode', 'wmPos', 'wmSize', 'wmOpacity', 'wmAngle', 'wmGap', 'wmColor', 'wmShadow', 'wmPad'];
 let wmTpls = [];
 try { wmTpls = JSON.parse(localStorage.getItem(WMTPL_KEY) || '[]'); if (!Array.isArray(wmTpls)) wmTpls = []; } catch (e) { wmTpls = []; }
 wmTpls = wmTpls.filter(t => t && typeof t.name === 'string' && t.cfg && typeof t.cfg === 'object');

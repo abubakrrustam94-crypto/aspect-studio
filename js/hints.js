@@ -121,5 +121,21 @@
     $('#settingsTabs').addEventListener('click', e => { if (e.target.closest('[data-tab="about"]')) draw(); });
   }
 
-  buildExamples(); buildHold(); buildOffline();
+  /* ---------- 4. «Сохранить как набор» во вкладке «Экспорт» ---------- */
+  function buildPresetShortcut() {
+    const cards = document.querySelectorAll('.card[data-tab="export"]'), last = cards[cards.length - 1];
+    if (!last || document.getElementById('presetShortcut')) return;
+    const row = el('div', 'row'); row.style.marginTop = '12px';
+    const b = el('button', 'btn btn-tonal btn-sm', '★ Сохранить настройки как набор'); b.type = 'button'; b.id = 'presetShortcut';
+    b.addEventListener('click', () => {
+      if (window.setSettingsTab) window.setSettingsTab('extra');
+      const c = document.getElementById('cardPresets'), i = document.getElementById('presetName');
+      if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (i) setTimeout(() => i.focus({ preventScroll: true }), 250);
+      toast('Назови набор и нажми «Сохранить»', false, { ms: 4000 });
+    });
+    row.appendChild(b); last.appendChild(row);
+  }
+
+  buildExamples(); buildHold(); buildOffline(); buildPresetShortcut();
 })();

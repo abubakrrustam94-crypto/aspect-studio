@@ -107,6 +107,8 @@ jobs:
         run: node tests/c5.js
       - name: Английский, доступность, слабый телефон (блок D1)
         run: node tests/d1.js
+      - name: Водяной знак, наборы, приём фото (блок B, v2.55)
+        run: node tests/b1.js
       - name: Подсказки на старте (блок A, v2.54)
         run: node tests/a1.js
       - name: Текст на фото и удаление объектов (блок E1)

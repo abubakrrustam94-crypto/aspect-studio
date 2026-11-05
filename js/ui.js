@@ -138,7 +138,7 @@ function syncUI() {
   $('#cutAlphaNote').hidden = E.cutBg !== 'transparent';
   afterCanvas.classList.toggle('checker', !!((E.cutOn && E.cutBg === 'transparent') || (E.fit === 'fit' && E.bg === 'transparent')));
   $('#wmFields').hidden = !E.wmOn;
-  $('#wmPosBox').hidden = E.wmMode === 'tile';
+  $('#wmPosBox').hidden = $('#wmPadBox').hidden = E.wmMode === 'tile';
   $('#wmTileBox').hidden = E.wmMode !== 'tile';
   $('#enhFields').hidden = !E.enhOn;
   $('#depthFields').hidden = !E.depthOn;
