@@ -69,7 +69,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.55.0';
+const APP_VERSION = '2.56.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -245,7 +245,7 @@ const toolbar = $('#toolbar'), toastEl = $('#toast');
 const progressEl = $('#progress'), progressFill = $('#progressFill');
 /* процент в окне обработки следует за шириной полосы — вызывающим коду трогать ничего не нужно */
 try { new MutationObserver(() => { const w = parseFloat(progressFill.style.width) || 0; $('#progressPct').textContent = Math.round(w) + '%'; }).observe(progressFill, { attributes: true, attributeFilter: ['style'] }); } catch (e) {}
-const mqDesktop = matchMedia('(min-width: 900px)');
+const mqDesktop = matchMedia('(min-width: 760px)');
 
 const cur = () => items[idx];
 

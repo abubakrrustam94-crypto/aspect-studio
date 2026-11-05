@@ -137,5 +137,37 @@
     row.appendChild(b); last.appendChild(row);
   }
 
-  buildExamples(); buildHold(); buildOffline(); buildPresetShortcut();
+  /* ---------- 5. «Как это работает и безопасно ли» ---------- */
+  const HOW = [
+    ['Фото не уходят на сервер', 'Всё считает твой браузер. У сайта нет сервера, куда можно что-то загрузить: адреса, куда страница вообще может обращаться, ограничены защитой самой страницы (CSP) и ведут только на этот же сайт.'],
+    ['Что скачивается', 'Только сам сайт и, если ты сам нажал «Установить» в «Компонентах», файлы нейросетей. Они лежат на том же сайте, а не на чужих серверах. Без этого работают размер, фон, водяной знак, экспорт.'],
+    ['Что хранится на устройстве', 'Настройки, твои наборы и (если включишь) прошлая сессия. Хранится в самом браузере. «Забыть» в баннере сессии и «Сбросить все настройки» в «О программе» стирают это.'],
+    ['Как проверить самому', 'Загрузи страницу, выключи интернет (авиарежим) и обработай фото: всё продолжит работать. Либо открой вкладку «Сеть» в инструментах браузера: во время обработки там нет запросов. Исходный код открыт на GitHub.'],
+  ];
+  let howBox = null, howOpener = null;
+  function howClose() { if (!howBox) return; howBox.hidden = true; if (howOpener && howOpener.focus) howOpener.focus(); }
+  function howOpen() {
+    howOpener = document.activeElement;
+    if (!howBox) {
+      howBox = el('div', 'modal onb'); howBox.id = 'howDlg'; howBox.setAttribute('role', 'dialog'); howBox.setAttribute('aria-modal', 'true'); howBox.setAttribute('aria-labelledby', 'howTitle');
+      const card = el('div', 'onb-card'); card.style.cssText = 'text-align:left;max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;width:min(100%,460px)';
+      const h = el('h2', '', 'Как это работает'); h.id = 'howTitle'; h.style.textAlign = 'center';
+      const list = el('div', 'how-list'); list.tabIndex = 0; list.style.cssText = 'overflow:auto;min-height:0;flex:1 1 auto';
+      HOW.forEach(([t, d]) => { const b = el('div', 'how-item'); b.style.margin = '0 0 14px'; const tt = el('b', '', t); tt.style.display = 'block'; const dd = el('p', '', d); dd.style.margin = '4px 0 0'; b.append(tt, dd); list.appendChild(b); });
+      const act = el('div', 'onb-actions'); const ok = el('button', 'btn btn-main', 'Понятно'); ok.type = 'button'; act.appendChild(ok);
+      card.append(h, list, act); howBox.appendChild(card); document.body.appendChild(howBox);
+      ok.addEventListener('click', howClose);
+      howBox.addEventListener('click', e => { if (e.target === howBox) howClose(); });
+      howBox.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); howClose(); } });
+    }
+    howBox.hidden = false; howBox.querySelector('button').focus();
+  }
+  function buildHow() {
+    if (document.getElementById('howBtn')) return;
+    const row = document.querySelector('#cardAbout .row'); if (row) { const b = el('button', 'btn btn-outlined btn-sm', 'Как это работает'); b.type = 'button'; b.id = 'howBtn'; b.addEventListener('click', howOpen); row.insertBefore(b, row.children[1] || null); }
+    const ex = document.getElementById('exRow');
+    if (ex) { const a = el('button', 'btn btn-outlined btn-sm', 'Фото не уходят на сервер. Как это работает?'); a.type = 'button'; a.id = 'howLink'; a.style.cssText = 'grid-column:1/-1;justify-self:center'; a.addEventListener('click', howOpen); ex.appendChild(a); }
+  }
+
+  buildExamples(); buildHold(); buildOffline(); buildPresetShortcut(); buildHow();
 })();
