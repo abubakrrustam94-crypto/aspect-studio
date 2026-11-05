@@ -9,10 +9,10 @@ process.env.CSP_WATCH_OFF = '1';          // тест намеренно нар�
 let fail = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) fail++; };
 const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); localStorage.setItem('aspect-studio-seen', '999'); };
 (async () => {
-  await new Promise(r => server.listen(8792, r));
+  await new Promise(r => server.listen(8853, r));
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 }, serviceWorkers: 'block' });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://localhost:8792/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(500);
+  await p.goto('http://localhost:8853/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(500);
 
   // ---- 1. проверка настроек ----
   const u = await p.evaluate(() => {
@@ -65,9 +65,9 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   ok(/style-src 'self';/.test(csp.meta) && !/script-src[^;]*unsafe-inline/.test(csp.meta) && /style-src-attr 'unsafe-inline'/.test(csp.meta) && /frame-src 'none'/.test(csp.meta), 'в политике нет unsafe-inline для скриптов и <style>');
 
   // ---- 5. защита от встраивания ----
-  const hostSrv = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'text/html' }); r.end('<iframe id="f" src="http://localhost:8792/" style="width:900px;height:700px"></iframe>'); }); await new Promise(r => hostSrv.listen(8793, r));
-  const host = await ctx.newPage(); await host.goto('http://127.0.0.1:8793/'); await host.waitForTimeout(2500); hostSrv.close();
-  const navigated = /localhost:8792/.test(host.url());
+  const hostSrv = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'text/html' }); r.end('<iframe id="f" src="http://localhost:8853/" style="width:900px;height:700px"></iframe>'); }); await new Promise(r => hostSrv.listen(8854, r));
+  const host = await ctx.newPage(); await host.goto('http://127.0.0.1:8854/'); await host.waitForTimeout(2500); hostSrv.close();
+  const navigated = /localhost:8853/.test(host.url());
   const framed = navigated ? null : await (await (await host.$('#f')).contentFrame()).evaluate(() => ({ t: document.documentElement.textContent.trim(), file: !!document.querySelector('#fileInput') }));
   console.log('  iframe:', navigated, JSON.stringify(framed));
   ok(navigated || (framed && /отдельной вкладке/.test(framed.t) && !framed.file), navigated ? 'страница в iframe увела верхнее окно на себя' : 'в чужом iframe интерфейс не показывается');

@@ -839,3 +839,62 @@ body.progress-on .busy { bottom: calc(86px + env(safe-area-inset-bottom) + var(-
 .st-ic { flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
 .st-tx { display: grid; gap: 2px; } .st-tx small { color: var(--md-sys-color-on-surface-variant); line-height: 1.35; }
 .st-steps { text-align: center; margin: 8px 0 12px; }
+
+/* ========== v2.52: интерфейс ========== */
+/* меню «⋯» (сортировка и сброс фото) */
+.more-menu { position: relative; }
+.more-menu > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; min-width: 42px; font-weight: 800; letter-spacing: .08em; }
+.more-menu > summary::-webkit-details-marker { display: none; }
+.more-menu[open] > summary { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.more-pop { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; min-width: 230px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 18px; background: var(--md-sys-color-surface-container-highest); box-shadow: var(--elevation-3); border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 60%, transparent); }
+.more-pop .sel-sm, .more-pop .btn { width: 100%; justify-content: center; }
+/* вес файла на кнопке «Скачать» */
+.tb-size { font-weight: 500; font-size: .78rem; opacity: .85; margin-left: 2px; white-space: nowrap; }
+.tb-size[hidden] { display: none; }
+/* инструменты отделены от переключателя области */
+.scope-tools-label { margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 55%, transparent); font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--md-sys-color-on-surface-variant); }
+.scope-tools { margin-top: 8px; }
+/* пустое поле рядом с фото читается как «холст», а не как ошибка */
+.frame:not(.checker) { background: repeating-conic-gradient(color-mix(in srgb, var(--md-sys-color-on-surface) 7%, transparent) 0 25%, transparent 0 50%) 0 0 / 20px 20px, var(--md-sys-color-surface-container-highest); }
+/* после добавления фото зона загрузки превращается в тонкую строку */
+.upload-zone.compact { padding: 10px 16px; }
+.upload-zone.compact .upload-icon .ic, .upload-zone.compact .upload-icon svg { width: 22px; height: 22px; }
+/* крестик на миниатюре: цель нажатия шире рисунка */
+.thumb-x::after { content: ''; position: absolute; inset: -10px; }
+@media (pointer: coarse) { .thumb-x { width: 28px; height: 28px; top: -8px; right: -8px; } }
+/* компьютер: панель действий лежит под превью, а не закрывает его */
+@media (min-width: 900px) {
+  .preview-card > .toolbar { position: static; transform: none; margin: 14px auto 0; width: fit-content; max-width: 100%; box-shadow: none; transition: none; background: var(--md-sys-color-surface-container); }
+  .preview-card > .toolbar:not(.show) { display: none; }
+}
+/* телефон: компактная шапка, переносимый ряд управления превью */
+@media (max-width: 560px) {
+  .top-bar { padding: 2px 2px 12px; gap: 8px; }
+  .brand { gap: 10px; }
+  .brand-text h1 { font-size: 1.12rem; white-space: nowrap; }
+  .brand-text p { display: none; }
+  .top-actions { gap: 6px; flex: none; }
+  .preview-head { flex-wrap: wrap; row-gap: 8px; }
+  .preview-head .seg { flex: 1 1 100%; }
+  .preview-head .seg button { flex: 1 1 0; }
+  .head-right { flex: 1 1 100%; justify-content: space-between; }
+  .preview-card.pinned .preview-head .seg { flex: 1 1 auto; }
+  .preview-card.pinned .head-right { flex: 0 0 auto; }
+  .order-row { gap: 6px; }
+  .ui-hint { font-size: .76rem; padding: 6px 10px; }
+}
+/* телефон: ряд управления фото переносится на вторую строку, а не прячется за краем */
+@media (max-width: 899px) {
+  body.has-photos #orderRow:not([hidden]) { flex-wrap: wrap; overflow: visible; margin: 12px 0 0; padding: 0; }
+  body.has-photos #orderRow > * { flex: 0 1 auto; }
+}
+@media (max-width: 560px) { .order-row .btn { padding: 8px 12px; } }
+.frame:not(.checker) { background: repeating-conic-gradient(color-mix(in srgb, var(--md-sys-color-on-surface) 5%, transparent) 0 25%, transparent 0 50%) 0 0 / 20px 20px, var(--md-sys-color-surface-container-highest); }
+/* ряд миниатюр: «Снять все» и «Очистить» тише, «Добавить» главнее; на телефоне действия идут строкой под миниатюрами */
+.thumbs-actions .btn-outlined { border-color: transparent; background: transparent; }
+@media (max-width: 560px) {
+  .thumbs-row { flex-wrap: wrap; }
+  .thumbs { flex: 1 1 100%; }
+  .thumbs-actions { flex-direction: row !important; flex-wrap: wrap; align-items: center !important; width: 100%; gap: 6px !important; }
+  .thumbs-actions .count-pill { margin-right: auto; }
+}

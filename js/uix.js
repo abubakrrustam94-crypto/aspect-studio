@@ -107,3 +107,33 @@
   try { if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(e => { if (e.quota && e.quota - (e.usage || 0) < 300 * 1048576) { liteSpace = true; applyUiPrefs(); } }).catch(() => { /* нет данных */ }); } catch (e) { /* нет API */ }
   const sb = $('#startBtn'); if (sb) sb.addEventListener('click', async () => { if (await lazyOk('start')) window.stOpen(); });
 })();
+
+/* ===== v2.52: меню «⋯», панель действий в карточке превью на компьютере, размер файла на кнопке «Скачать» ===== */
+(function () {
+  const more = $('#moreMenu');
+  if (more) {
+    document.addEventListener('click', e => { if (more.open && !more.contains(e.target)) more.open = false; });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && more.open) { more.open = false; const s = more.querySelector('summary'); if (s) s.focus(); } });
+    more.addEventListener('toggle', () => {                                       // окошко не должно вылезать за край экрана
+      const pop = more.querySelector('.more-pop'); if (!more.open) return;
+      pop.style.left = '0px'; pop.style.right = 'auto'; const r = pop.getBoundingClientRect();
+      pop.style.left = Math.min(0, innerWidth - 8 - r.right) + 'px';
+    });
+    more.addEventListener('change', () => { more.open = false; });                // выбрал сортировку: меню закрывается
+    const rb = $('#resetPhoto'); if (rb) rb.addEventListener('click', () => { more.open = false; });
+  }
+  /* На компьютере панель «Скачать / ZIP / Поделиться» лежит под превью и ничего не закрывает; на телефоне плавает внизу экрана */
+  const mq = window.matchMedia('(min-width: 900px)');
+  const place = () => { if (mq.matches) { if (toolbar.parentNode !== previewCard) previewCard.appendChild(toolbar); } else if (toolbar.parentNode !== document.body) document.body.appendChild(toolbar); };
+  place(); if (mq.addEventListener) mq.addEventListener('change', place);
+  /* Вес файла из плашки «Вес …» дублируем на кнопке: решение «скачать» принимают, глядя на неё */
+  const tb = $('#tbSize');
+  if (tb && infoRow) {
+    const sync = () => {
+      const p = infoRow.querySelector('.info-weight'), m = p && /^Вес\s+(.*?)(?:\s·.*)?$/.exec(p.textContent.trim());
+      const v = m && /\d/.test(m[1]) && !/…/.test(m[1]) ? m[1] : '';
+      tb.textContent = v ? '· ' + v : ''; tb.hidden = !v;
+    };
+    new MutationObserver(sync).observe(infoRow, { childList: true, subtree: true, characterData: true }); sync();
+  }
+})();

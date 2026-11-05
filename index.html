@@ -10,7 +10,8 @@
   <meta name="theme-color" content="#0f0f14">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="no-toolbar">
@@ -86,21 +87,26 @@
           <div class="order-row" id="orderRow" hidden>
             <button type="button" class="btn btn-outlined btn-sm" id="moveL" title="Сдвинуть это фото влево" aria-label="Сдвинуть фото влево"><svg class="ic" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
             <button type="button" class="btn btn-outlined btn-sm" id="moveR" title="Сдвинуть это фото вправо" aria-label="Сдвинуть фото вправо"><svg class="ic" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
-            <select class="sel-sm" id="sortSel" aria-label="Сортировка фото">
+            <button type="button" class="btn btn-outlined btn-sm" id="undoBtn" title="Шаг назад (Ctrl+Z)" aria-label="Шаг назад" disabled><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg></button>
+            <button type="button" class="btn btn-outlined btn-sm" id="redoBtn" title="Шаг вперёд (Ctrl+Shift+Z)" aria-label="Шаг вперёд" disabled><svg class="ic" aria-hidden="true"><use href="#i-cw"/></svg></button>
+            <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Результаты</button>
+            <details class="more-menu" id="moreMenu">
+              <summary class="btn btn-outlined btn-sm" aria-label="Ещё: сортировка и сброс фото" title="Сортировка, сброс фото">⋯</summary>
+              <div class="more-pop">
+                <select class="sel-sm" id="sortSel" aria-label="Сортировка фото">
               <option value="">Сортировка…</option>
               <option value="name">По имени (1, 2, 10)</option>
               <option value="date">По дате съёмки/файла</option>
               <option value="size">По размеру файла</option>
               <option value="rev">Развернуть порядок</option>
             </select>
-            <button type="button" class="btn btn-outlined btn-sm" id="undoBtn" title="Шаг назад (Ctrl+Z)" aria-label="Шаг назад" disabled><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg></button>
-            <button type="button" class="btn btn-outlined btn-sm" id="redoBtn" title="Шаг вперёд (Ctrl+Shift+Z)" aria-label="Шаг вперёд" disabled><svg class="ic" aria-hidden="true"><use href="#i-cw"/></svg></button>
-            <button type="button" class="btn btn-outlined btn-sm" id="resetPhoto" title="Сбросить это фото: настройки, поворот, обрезку">Сбросить фото</button>
-            <button type="button" class="btn btn-tonal btn-sm" id="reviewBtn" title="Какими получатся файлы"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg> Результаты</button>
+                <button type="button" class="btn btn-outlined btn-sm" id="resetPhoto" title="Сбросить это фото: настройки, поворот, обрезку">Сбросить фото</button>
+              </div>
+            </details>
           </div>
           <div class="thumbs-row" id="thumbsRow" hidden>
             <div class="thumbs" id="thumbs"></div>
-            <div class="row" style="flex-direction:column;align-items:flex-end;gap:6px">
+            <div class="row thumbs-actions" style="flex-direction:column;align-items:flex-end;gap:6px">
               <span class="count-pill" id="countPill"></span>
               <button class="btn btn-tonal btn-sm add-more" id="addMoreBtn" type="button" title="Добавить ещё фото">＋ Добавить</button>
               <button class="btn btn-outlined btn-sm" id="selAll" type="button" title="Какие фото попадут в ZIP">Снять все</button>
@@ -126,7 +132,7 @@
               <button type="button" class="pin-btn" id="pinBtn" aria-pressed="true" aria-label="Закреплять предпросмотр при прокрутке" title="Закреплять предпросмотр при прокрутке"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg></button>
             </div>
           </div>
-          <p class="hint-line ui-hint" id="uiHint" hidden><span><b>A/B</b> — сравнить два набора настроек. <b>Булавка</b> закрепляет предпросмотр. Свайп листает фото.</span> <button type="button" class="toast-act" id="uiHintOk">Понятно</button></p>
+          <p class="hint-line ui-hint" id="uiHint" hidden><span><b>A/B</b> сравнивает два набора настроек, <b>булавка</b> закрепляет превью, свайп листает фото.</span> <button type="button" class="toast-act" id="uiHintOk" aria-label="Скрыть подсказку">Понятно</button></p>
           <div class="stage" id="stage" tabindex="-1">
             <div class="frame" id="frame">
               <img id="beforeImg" class="before-img" alt="Оригинал">
@@ -176,7 +182,8 @@
             <button type="button" data-s="all">Всех фото</button>
             <button type="button" data-s="one">Только этого</button>
           </div>
-          <div class="row" style="margin-top:12px">
+          <div class="scope-tools-label" aria-hidden="true">Инструменты</div>
+          <div class="row scope-tools">
             <button type="button" class="btn btn-tonal btn-sm" id="cropBtn"><svg class="ic" aria-hidden="true"><use href="#i-crop"/></svg> Обрезка и поворот</button>
             <button type="button" class="btn btn-tonal btn-sm" id="eraseBtn" title="Закрасить лишнее: нейросеть дорисует фон"><svg class="ic" aria-hidden="true"><use href="#i-wand"/></svg> Убрать лишнее</button>
             <button type="button" class="btn btn-outlined btn-sm" id="eraseUndoBtn" hidden title="Вернуть фото таким, каким оно было до последнего удаления"><svg class="ic" aria-hidden="true"><use href="#i-ccw"/></svg> Вернуть как было</button>
@@ -938,7 +945,7 @@
 
   <!-- Плавающая панель действий -->
   <div class="toolbar" id="toolbar" role="region" aria-label="Действия">
-    <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> <span>Скачать</span></button>
+    <button class="tb-btn primary" id="btnDownload" type="button" title="Скачать (D)"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg> <span>Скачать</span><small class="tb-size" id="tbSize" hidden></small></button>
     <button class="tb-btn" id="btnZip" type="button" title="Скачать всё ZIP (Shift+D)" hidden><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg> <span class="lbl" id="zipLabel">ZIP</span></button>
     <button class="tb-btn" id="btnGallery" type="button" title="Все фото в галерею телефона через «Поделиться» (Shift+S)" hidden><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg> <span class="lbl" id="galLabel">В галерею</span></button>
     <button class="tb-btn" id="btnShare" type="button" title="Поделиться (S)" hidden><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg> <span class="lbl">Поделиться</span></button>

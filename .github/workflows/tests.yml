@@ -111,6 +111,8 @@ jobs:
         run: node tests/e1.js
       - name: Безопасность (блок E2)
         run: node tests/sec.js
+      - name: Интерфейс и иконки (блок E3)
+        run: node tests/ui5.js
       - name: Умная ретушь (блок C4)
         run: node tests/c4.js
       - name: Тон: дизеринг, стили, зерно (блок T2)

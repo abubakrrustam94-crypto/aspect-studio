@@ -29,7 +29,7 @@ const SEEN = () => { localStorage.setItem('aspect-studio-onboarded', '1'); local
   await p.evaluate(() => { histPush('t'); const it = items[0]; it.ov = {}; OV_KEYS.forEach(k => { it.ov[k] = S[k]; }); it.ov.fit = 'fit'; it.rot = 90; syncDims(it); syncUI(); renderThumbs(); histButtons(); });
   ok(await p.evaluate(() => !document.getElementById('resetPhoto').disabled), '«Сбросить фото» активна, когда у фото есть свои настройки');
   const w0 = await p.evaluate(() => items[0].w);
-  await p.click('#resetPhoto'); await p.waitForTimeout(800);
+  await p.click('#moreMenu > summary'); await p.click('#resetPhoto'); await p.waitForTimeout(800);
   ok(await p.evaluate(() => items[0].ov === null && items[0].rot === 0 && !items[0].crop), 'сброс убрал свои настройки и поворот');
   ok(await p.evaluate(w => items[0].w !== w || true, w0), 'размеры пересчитаны');
   await p.click('#undoBtn'); await p.waitForTimeout(800); ok(await p.evaluate(() => items[0].ov !== null && items[0].rot === 90), 'сброс можно отменить');

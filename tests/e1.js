@@ -17,10 +17,10 @@ const MAKE = {
   sign: () => { const c = document.createElement('canvas'); c.width = 1400; c.height = 900; const g = c.getContext('2d'); g.fillStyle = '#7aa05a'; g.fillRect(0, 0, 1400, 900); g.fillStyle = '#fff'; g.font = 'bold 120px Arial, sans-serif'; g.fillText('OPEN', 120, 200); g.fillStyle = '#222'; g.fillText('CAFE', 780, 700); return c; },
 };
 (async () => {
-  await new Promise(r => server.listen(8791, r));
+  await new Promise(r => server.listen(8852, r));
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 1000 }, serviceWorkers: 'block' });
   const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://localhost:8791/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(600);
+  await p.goto('http://localhost:8852/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(600);
   const imgs = {}; for (const k of Object.keys(MAKE)) { const f = '/tmp/e1_' + k + '.png'; fs.writeFileSync(f, Buffer.from(await p.evaluate(async src => { const c = (new Function('return (' + src + ')'))()(); const bl = await new Promise(r => c.toBlob(r, 'image/png')); return Array.from(new Uint8Array(await bl.arrayBuffer())); }, MAKE[k].toString()))); imgs[k] = f; }
   await p.setInputFiles('#fileInput', Object.values(imgs)); await p.waitForFunction(n => items.length === n, Object.keys(imgs).length); await p.waitForTimeout(500);
   await p.click('#settingsTabs [data-tab=extra]'); await p.evaluate(() => compInstall('ocr')); ok(await p.evaluate(() => compInstalled('ocr')), 'компонент распознавания скачался');
