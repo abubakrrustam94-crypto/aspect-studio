@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; style-src-attr 'unsafe-inline'; frame-src 'none'; img-src 'self' blob: data:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: data:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, minimum-scale=1">
   <title>Aspect Studio — смена формата фото без обрезки</title>
   <meta name="description" content="Меняй соотношение сторон фото без обрезки: размытый фон, градиенты, пресеты для соцсетей, пакетная обработка и ZIP. Всё локально в браузере.">
   <meta name="theme-color" content="#0f0f14">
@@ -953,9 +953,12 @@
   </div>
 
   <div class="progress-sheet" id="progress" role="status" aria-live="polite">
-    <div class="progress-top"><span id="progressTitle">Обработка…</span><button class="btn btn-outlined btn-sm" id="progressPause" type="button" hidden>Пауза</button><button class="btn btn-outlined btn-sm" id="progressCancel" type="button">Отмена</button></div>
+    <div class="progress-top">
+      <div class="progress-head"><span class="progress-title" id="progressTitle">Обработка…</span><div class="progress-name" id="progressName"></div></div>
+      <span class="progress-pct" id="progressPct" aria-hidden="true">0%</span>
+    </div>
     <div class="wavy"><div class="wavy-fill" id="progressFill"></div></div>
-    <div class="progress-name" id="progressName"></div>
+    <div class="progress-actions"><button class="btn btn-tonal btn-sm" id="progressPause" type="button" hidden>Пауза</button><button class="btn btn-outlined btn-sm progress-cancel" id="progressCancel" type="button">Отмена</button></div>
   </div>
 
   <div class="cropper" id="cropper" role="dialog" aria-modal="true" aria-label="Обрезка и поворот">

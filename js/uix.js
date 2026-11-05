@@ -116,8 +116,9 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && more.open) { more.open = false; const s = more.querySelector('summary'); if (s) s.focus(); } });
     more.addEventListener('toggle', () => {                                       // окошко не должно вылезать за край экрана
       const pop = more.querySelector('.more-pop'); if (!more.open) return;
+      if (matchMedia('(max-width: 899px)').matches) { pop.style.left = ''; pop.style.right = ''; return; }   // на телефоне меню само занимает ширину ряда
       pop.style.left = '0px'; pop.style.right = 'auto'; const r = pop.getBoundingClientRect();
-      pop.style.left = Math.min(0, innerWidth - 8 - r.right) + 'px';
+      pop.style.left = Math.min(0, document.documentElement.clientWidth - 8 - r.right) + 'px';
     });
     more.addEventListener('change', () => { more.open = false; });                // выбрал сортировку: меню закрывается
     const rb = $('#resetPhoto'); if (rb) rb.addEventListener('click', () => { more.open = false; });

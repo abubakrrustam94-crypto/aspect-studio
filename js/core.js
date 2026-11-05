@@ -69,7 +69,7 @@ window.addEventListener('unhandledrejection', ev => logError(ev.reason, 'promise
 (() => { const orig = console.error; console.error = function (...a) { logError(a.map(x => (x && x.stack) || (x && x.message) || String(x)).join(' '), 'console'); return orig.apply(this, a); }; })();
 
 /* ---------- Константы ---------- */
-const APP_VERSION = '2.52.0';
+const APP_VERSION = '2.53.0';
 const STORE_KEY = 'aspect-studio-v2';
 const THEME_KEY = 'aspect-studio-theme';
 const MAX_INPUT_BYTES = 600 * 1048576;      // файлы больше не открываем: защита от зависания вкладки на гигантских или специально собранных файлах
@@ -243,6 +243,8 @@ const sliderHandle = $('#sliderHandle'), infoRow = $('#infoRow');
 const tagBefore = $('#tagBefore'), tagAfter = $('#tagAfter'), panHint = $('#panHint');
 const toolbar = $('#toolbar'), toastEl = $('#toast');
 const progressEl = $('#progress'), progressFill = $('#progressFill');
+/* процент в окне обработки следует за шириной полосы — вызывающим коду трогать ничего не нужно */
+try { new MutationObserver(() => { const w = parseFloat(progressFill.style.width) || 0; $('#progressPct').textContent = Math.round(w) + '%'; }).observe(progressFill, { attributes: true, attributeFilter: ['style'] }); } catch (e) {}
 const mqDesktop = matchMedia('(min-width: 900px)');
 
 const cur = () => items[idx];
@@ -317,7 +319,7 @@ function etaText(done, total) {
 function showProgress(title) {
   etaStart();
   $('#progressTitle').textContent = title;
-  progressFill.style.width = '0%';
+  progressFill.style.width = '0%'; progressEl.classList.remove('paused'); $('#progressPct').textContent = '0%';
   progressEl.classList.add('show'); document.body.classList.add('progress-on');
   document.documentElement.style.setProperty('--prog-h', progressEl.offsetHeight + 'px');
 }
@@ -333,7 +335,7 @@ try { new ResizeObserver(() => document.documentElement.style.setProperty('--pro
 /* Пауза пакетного сохранения: уже начатые фото дорабатываются, новые не берутся, пока не нажмёшь «Продолжить» */
 function setPause(on) {
   if (on === pauseFlag) return;
-  pauseFlag = on; const b = $('#progressPause');
+  pauseFlag = on; const b = $('#progressPause'); progressEl.classList.toggle('paused', on);
   if (on) { pauseT0 = performance.now(); b.textContent = 'Продолжить'; $('#progressTitle').textContent = 'Пауза'; }
   else { const d = performance.now() - pauseT0; eta.t0 += d; eta.lastT += d; b.textContent = 'Пауза'; }
   b.setAttribute('aria-pressed', on);

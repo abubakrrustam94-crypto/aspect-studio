@@ -898,3 +898,36 @@ body.progress-on .busy { bottom: calc(86px + env(safe-area-inset-bottom) + var(-
   .thumbs-actions { flex-direction: row !important; flex-wrap: wrap; align-items: center !important; width: 100%; gap: 6px !important; }
   .thumbs-actions .count-pill { margin-right: auto; }
 }
+
+/* v2.52.1: на телефоне меню «⋯» растягивается на ширину ряда и не может выйти за экран (иначе Chrome уменьшает всю страницу) */
+@media (max-width: 899px) {
+  body.has-photos #orderRow:not([hidden]) { position: relative; }
+  .more-menu { position: static; }
+  .more-pop { left: 0 !important; right: 0 !important; width: auto; min-width: 0; }
+}
+html, body { overflow-x: clip; }
+@media (max-width: 560px) {
+  .thumbs-actions { flex-wrap: nowrap; }
+  .thumbs-actions .btn { padding: 8px 10px; font-size: .82rem; white-space: nowrap; }
+}
+
+/* ---------- v2.53: окно обработки ---------- */
+.progress-sheet { padding: 16px 18px 14px; border-radius: 28px; border: 1px solid var(--md-sys-color-outline-variant); box-shadow: var(--elevation-3), 0 12px 40px rgba(0,0,0,.18); }
+.progress-top { align-items: flex-start; margin-bottom: 12px; }
+.progress-head { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.progress-title { font-weight: 700; font-size: 1rem; line-height: 1.25; }
+.progress-sheet .progress-name { margin: 0; min-height: 1.2em; font-size: .8rem; }
+.progress-pct { flex: none; font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--md-sys-color-primary); }
+.progress-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.progress-actions .btn { min-height: 40px; }
+.progress-cancel { color: var(--md-sys-color-error); border-color: var(--md-sys-color-outline-variant); }
+.progress-sheet.paused .wavy-fill { animation-play-state: paused; opacity: .55; }
+.progress-sheet.paused .progress-pct { color: var(--md-sys-color-on-surface-variant); }
+.progress-sheet.indeterminate .wavy-fill { width: 100% !important; opacity: .35; }
+@media (max-width: 599px) {
+  .progress-sheet { border-radius: 24px; padding: 14px 16px 12px; }
+  .progress-actions .btn { flex: 1; min-height: 44px; }
+  .progress-pct { font-size: 1.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { .wavy-fill { animation: none; } .progress-sheet { transition: opacity .2s; } }
+.busy { border: 1px solid var(--md-sys-color-outline-variant); }

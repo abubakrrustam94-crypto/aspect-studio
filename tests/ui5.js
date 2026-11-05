@@ -52,6 +52,19 @@ async function open(b, vp, mobile) {
     ok(!p.__errs.length, `${w}px: нет ошибок JS` + (p.__errs.length ? ': ' + p.__errs[0] : '')); await p.context().close();
   }
 
+  // ---- телефон, одно фото: меню «⋯» в первой строке не расширяет страницу (было: Chrome уменьшал всё, справа пустая полоса) ----
+  {
+    const ctx = await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.25, serviceWorkers: 'block' }); const p = await ctx.newPage();
+    await p.goto('http://localhost:8851/'); await p.evaluate(SEEN); await p.reload(); await p.waitForTimeout(500);
+    await p.setInputFiles('#fileInput', FILES[0]); await p.waitForFunction(() => items.length === 1); await p.waitForTimeout(700);
+    await p.click('#moreMenu > summary'); await p.waitForTimeout(300);
+    const m = await p.evaluate(() => { const pop = document.querySelector('.more-pop').getBoundingClientRect(), row = document.getElementById('orderRow').getBoundingClientRect(); return { sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, vv: visualViewport.scale, l: pop.left, r: pop.right, rl: row.left, rr: row.right, vp: document.querySelector('meta[name=viewport]').content }; });
+    ok(m.sw <= m.cw && m.vv === 1, `412px, одно фото: открытое меню не расширяет страницу (scrollWidth ${m.sw} ≤ ${m.cw}, масштаб ${m.vv})`);
+    ok(m.l >= m.rl - 1 && m.r <= m.rr + 1, 'меню занимает ширину ряда и не выходит за него');
+    ok(/minimum-scale=1/.test(m.vp), 'в meta viewport задан minimum-scale=1: браузер не сжимает страницу при переполнении');
+    await ctx.close();
+  }
+
   // ---- компьютер ----
   const d = await open(b, { width: 1366, height: 820 });
   const dd = await d.evaluate(() => { const tb = toolbar.getBoundingClientRect(), st = document.getElementById('stage').getBoundingClientRect(), uz = document.getElementById('uploadZone').getBoundingClientRect(), fr = getComputedStyle(document.getElementById('frame')).backgroundImage; return { inCard: toolbar.parentNode === previewCard, pos: getComputedStyle(toolbar).position, below: tb.top >= st.bottom - 1, upH: uz.height, fr, shown: toolbar.classList.contains('show'), vis: tb.width > 0 }; });
