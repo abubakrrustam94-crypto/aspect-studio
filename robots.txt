@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://abubakrrustam94-crypto.github.io/aspect-studio/sitemap.xml

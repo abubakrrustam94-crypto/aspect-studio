@@ -1,0 +1,22 @@
+:root { --bg: #fdfbff; --fg: #1b1b1f; --muted: #5f5f6a; --pri: #6b2fd4; --on: #fff; --card: #f1ecfa; }
+@media (prefers-color-scheme: dark) { :root { --bg: #141318; --fg: #e6e1e9; --muted: #a9a4b2; --pri: #cdb7ff; --on: #2b1260; --card: #211f27; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; max-width: 760px; margin: 0 auto; padding: 16px; }
+.brand { font-weight: 700; color: var(--fg); text-decoration: none; }
+.lang { color: var(--pri); text-decoration: none; }
+main { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 8px 0 12px; }
+h2 { font-size: 1.15rem; margin: 28px 0 8px; }
+h3 { font-size: 1rem; margin: 16px 0 4px; }
+p { margin: 0 0 12px; }
+.lead { font-size: 1.08rem; color: var(--muted); }
+.size { background: var(--card); padding: 10px 14px; border-radius: 12px; display: inline-block; }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 20px 0; }
+.btn { display: inline-block; background: var(--pri); color: var(--on); padding: 12px 22px; border-radius: 999px; text-decoration: none; font-weight: 600; min-height: 44px; }
+.btn:focus-visible, a:focus-visible { outline: 3px solid var(--pri); outline-offset: 3px; }
+.muted { color: var(--muted); font-size: .9rem; }
+li { margin: 4px 0; }
+.more ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; }
+.more a { display: inline-block; padding: 8px 14px; border-radius: 999px; background: var(--card); color: var(--fg); text-decoration: none; }
+a { color: var(--pri); }

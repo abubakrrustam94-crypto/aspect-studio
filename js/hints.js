@@ -115,7 +115,7 @@
         : (navigator.serviceWorker && navigator.serviceWorker.controller ? 'Файлы ещё докачиваются. Подожди минуту и открой вкладку снова.' : 'Офлайн-режим включится после первой полной загрузки по https (на «Установить» или обычном посещении).');
       return ok;
     };
-    if (await draw() && ls.get('aspect-offline-ok') !== '1') { ls.set('aspect-offline-ok', '1'); toast('Готово: сайт работает без интернета', false, { ms: 5000 }); }
+    if (await draw() && ls.get('aspect-studio-offline-ok') !== '1') { ls.set('aspect-studio-offline-ok', '1'); toast('Готово: сайт работает без интернета', false, { ms: 5000 }); }
     addEventListener('offline', async () => { draw(); toast((await offlineReady()) ? 'Нет сети. Всё нужное скачано, можно работать' : 'Нет сети. Часть функций может не открыться', false, { ms: 5000 }); });
     addEventListener('online', () => { draw(); });
     $('#settingsTabs').addEventListener('click', e => { if (e.target.closest('[data-tab="about"]')) draw(); });
@@ -169,5 +169,33 @@
     if (ex) { const a = el('button', 'btn btn-outlined btn-sm', 'Фото не уходят на сервер. Как это работает?'); a.type = 'button'; a.id = 'howLink'; a.style.cssText = 'grid-column:1/-1;justify-self:center'; a.addEventListener('click', howOpen); ex.appendChild(a); }
   }
 
-  buildExamples(); buildHold(); buildOffline(); buildPresetShortcut(); buildHow();
+  /* ---------- 7. Счётчик, «Сообщить о проблеме», переход со страниц-сценариев ---------- */
+  const REPO = 'https://github.com/abubakrrustam94-crypto/aspect-studio';
+  function buildAboutExtras() {
+    const host = document.querySelector('#cardAbout .about-line'); if (!host || document.getElementById('cntLine')) return;
+    const cnt = el('p', 'note'); cnt.id = 'cntLine'; cnt.style.marginTop = '4px';
+    const draw = () => { const n = +ls.get('aspect-studio-count') || 0; cnt.textContent = n ? `Сохранено на этом устройстве: ${n} фото. Счёт хранится только в браузере.` : ''; cnt.hidden = !n; };
+    draw(); host.after(cnt);
+    const tabs = document.getElementById('settingsTabs'); if (tabs) tabs.addEventListener('click', e => { if (e.target.closest('[data-tab="about"]')) draw(); });
+    const row = document.querySelector('#cardAbout .row');
+    if (row && !document.getElementById('reportBtn')) {
+      const b = el('button', 'btn btn-outlined btn-sm', 'Сообщить о проблеме'); b.type = 'button'; b.id = 'reportBtn';
+      b.addEventListener('click', () => {
+        let log = ''; try { log = typeof errLogText === 'function' ? errLogText() : ''; } catch (e) { /* без журнала */ }
+        const body = `**Что случилось** (опиши своими словами; фото прикладывать не нужно)\n\n\n**Что ожидал(а)**\n\n\n---\nСлужебные сведения (без фото и имён файлов):\n\`\`\`\n${String(log).slice(0, 2200)}\n\`\`\`\n`;
+        const url = `${REPO}/issues/new?title=${encodeURIComponent('Проблема: ')}&body=${encodeURIComponent(body)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+      row.appendChild(b);
+    }
+  }
+  /* страницы-сценарии (?scenario=stories) ведут сюда: сразу выбираем нужный размер */
+  async function takeScenario() {
+    const id = new URLSearchParams(location.search).get('scenario'); if (!id) return;
+    const MAP = { stories: 'story', feed: 'feed', marketplace: 'shop', youtube: 'thumb', pinterest: 'pin', avatar: 'avatar', print: 'print', vk: 'vk' };
+    const sc = MAP[id]; try { history.replaceState(null, '', location.pathname); } catch (e) { /* ok */ }
+    if (sc && await lazyOk('start')) { window.stApply(sc); toast('Размер выбран. Добавь фото', false, { ms: 4000 }); }
+  }
+
+  buildExamples(); buildHold(); buildOffline(); buildPresetShortcut(); buildHow(); buildAboutExtras(); takeScenario();
 })();

@@ -294,6 +294,7 @@ const downloadCurrent = async () => {
     const r = await exportBlob(item, bmp);
     let saved = r.name;
     if (useFolder) saved = await writeToFolder(r.blob, r.name); else saveBlob(r.blob, r.name);
+    bumpCount(1);
     const where = useFolder ? ` в папку «${dirHandle.name}»` : '';
     if (r.fit && !r.fit.met) { toast(`Не удалось уложиться в ${S.targetKB} КБ: получилось ${fmtSize(r.blob.size)}`, true); return; }
     toast(r.fit ? `Сохранено${where} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)} · качество ${Math.round(r.fit.q * 100)}%` : r.fellBack ? (ENC_COMP[S.format] && !compInstalled(ENC_COMP[S.format]) ? `Для ${S.format.toUpperCase()} нужен компонент (вкладка «Компоненты») — сохранён ${saved.split('.').pop().toUpperCase()}${where}` : `Браузер не умеет ${S.format.toUpperCase()} — сохранён ${saved.split('.').pop().toUpperCase()}${where}`) : `Сохранено${where} · ${saved} · ${r.w}×${r.h} · ${fmtSize(r.blob.size)}`);
@@ -474,7 +475,9 @@ function exportConcurrency(list) {
 const BATCH_KEY = 'aspect-studio-batch';
 let batchInfo = null;
 function batchBegin(total, mode) { batchInfo = { t: Date.now(), total, done: 0, mode }; batchWrite(); }
-function batchStep(done) { if (batchInfo) { batchInfo.done = done; batchWrite(); } }
+/* счётчик «обработано фото»: только в браузере, ничего не отправляется */
+function bumpCount(n) { try { localStorage.setItem('aspect-studio-count', String((+localStorage.getItem('aspect-studio-count') || 0) + n)); } catch (e) { /* без хранилища */ } }
+function batchStep(done) { bumpCount(1); if (batchInfo) { batchInfo.done = done; batchWrite(); } }
 function batchWrite() { try { localStorage.setItem(BATCH_KEY, JSON.stringify(batchInfo)); } catch (e) {} }
 function batchEnd() { batchInfo = null; try { localStorage.removeItem(BATCH_KEY); } catch (e) {} }
 function batchCheckLeft() {

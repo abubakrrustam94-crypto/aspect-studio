@@ -107,6 +107,8 @@ jobs:
         run: node tests/c5.js
       - name: Английский, доступность, слабый телефон (блок D1)
         run: node tests/d1.js
+      - name: SEO-страницы, счётчик, отчёт о проблеме (блок D, v2.57)
+        run: node tests/d2.js
       - name: Планшет, «Как это работает» (блок C, v2.56)
         run: node tests/c1.js
       - name: Водяной знак, наборы, приём фото (блок B, v2.55)
